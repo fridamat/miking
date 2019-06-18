@@ -113,8 +113,7 @@ and tm =
 | TmClos        of info * ustring * ty * tm * env * pemode (* Closure *)
 | TmApp         of info * tm * tm                   (* Application *)
 | TmConst       of info * const                     (* Constant *)
-| TmDive        of info                             (* Dive operator *)
-| TmIfexp       of info * bool option * tm option
+| TmIfexp       of info * tm * tm * tm              (* If expression *)
 | TmFix         of info                             (* Fix point *)
 | TmTyLam       of info * ustring * kind * tm       (* Type abstraction *)
 | TmTyApp       of info * tm * ty                   (* Type application *)
@@ -171,8 +170,7 @@ let tm_info t =
   | TmClos(fi,_,_,_,_,_) -> fi
   | TmApp(fi,_,_) -> fi
   | TmConst(fi,_) -> fi
-  | TmDive(fi) -> fi
-  | TmIfexp(fi,_,_) -> fi
+  | TmIfexp(fi,_,_,_) -> fi
   | TmFix(fi) -> fi
   | TmTyLam(fi,_,_,_) -> fi
   | TmTyApp(fi,_,_) -> fi

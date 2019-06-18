@@ -29,9 +29,7 @@
       | TmFix(_) -> false
       | TmTyLam(fi,x,k,t1) -> hasx t1
       | TmTyApp(fi,t1,ty1) -> hasx t1
-      | TmDive(_) -> false
-      | TmIfexp(_,_,None) -> false
-      | TmIfexp(_,_,Some(t1)) -> hasx t1
+      | TmIfexp(fi,cnd,thn,els) -> hasx cnd || hasx thn || hasx els
       | TmChar(_,_) -> false
       | TmExprSeq(_,t1,t2) -> hasx t1 || hasx t2
       | TmUC(fi,uct,ordered,uniqueness) ->
@@ -169,6 +167,9 @@ mc_term:
   | LET IDENT EQ mc_term IN mc_term
       { let fi = mkinfo $1.i (tm_info $4) in
         TmApp(fi,TmLam(fi,$2.v,TyDyn,$6),$4) }
+  | IF mc_term THEN mc_term ELSE mc_term
+      { let fi = mkinfo $1.i (tm_info $6) in
+        TmIfexp(fi, $2, $4, $6) }
 
 
 mc_left:
@@ -188,8 +189,6 @@ mc_atom:
   | FALSE                { TmConst($1.i,CBool(false)) }
   | NOP                  { TmNop }
   | FIX                  { TmFix($1.i) }
-  | PEVAL                { TmDive($1.i) }
-  | IFEXP                { TmIfexp($1.i,None,None) }
   | ATOM                 { TmConst($1.i,CAtom($1.v,[])) }
 
 

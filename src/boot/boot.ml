@@ -101,8 +101,7 @@ let rec debruijn env t =
   | TmFix(_) -> t
   | TmTyLam(fi,x,kind,t1) -> TmTyLam(fi,x,kind,debruijn (VarTy(x)::env) t1)
   | TmTyApp(fi,t1,ty1) -> TmTyApp(fi,debruijn env t1, debruijnTy env ty1)
-  | TmDive(_) -> t
-  | TmIfexp(_,_,_) -> t
+  | TmIfexp(fi,cnd,thn,els) -> TmIfexp(fi, debruijn env cnd, debruijn env thn, debruijn env els)
   | TmChar(_,_) -> t
   | TmExprSeq(fi,t1,t2) -> TmExprSeq(fi,debruijn env t1,debruijn env t2)
   | TmUC(fi,uct,o,u) -> TmUC(fi, UCLeaf(List.map (debruijn env) (uct2list uct)),o,u)
@@ -197,24 +196,6 @@ let rec eval_match env pat t final =
     | None -> None)
 
 let fail_constapp fi = raise_error fi "Incorrect application "
-
-(* Debug function used in the PE readback function *)
-let debug_readback env n t =
-  if enable_debug_readback then
-    (printf "\n-- readback --   n=%d  \n" n;
-     uprint_endline (pprint true t);
-     if enable_debug_readback_env then
-        uprint_endline (pprint_env env))
-  else ()
-
-(* Debug function used in the PE normalize function *)
-let debug_normalize env n t =
-  if enable_debug_normalize then
-    (printf "\n-- normalize --   n=%d" n;
-     uprint_endline (pprint true t);
-     if enable_debug_normalize_env then
-        uprint_endline (pprint_env env))
-  else ()
 
 (* Debug function used in the eval function *)
 let debug_eval env t =
@@ -471,117 +452,6 @@ let optimize_const_app fi v1 v2 =
   | vv1,vv2 -> TmApp(fi,vv1,vv2)
 
 
-(* The readback function is the second pass of the partial evaluation.
-   It removes symbols for the term. If this is the complete version,
-   this is the final pass before JIT *)
-let rec readback env n t =
-  debug_readback env n t;
-  match t with
-  (* Variables using debruijn indices. Need to evaluate because fix point. *)
-  | TmVar(fi,x,k,false) -> readback env n (List.nth env k)
-  (* Variables as PE symbol. Convert symbol to de bruijn index. *)
-  | TmVar(fi,x,k,true) -> TmVar(fi,x,n-k,false)
-  (* Lambda *)
-  | TmLam(fi,x,ty,t1) -> TmLam(fi,x,ty,readback (TmVar(fi,x,n+1,true)::env) (n+1) t1)
-  (* Normal closure *)
-  | TmClos(fi,x,ty,t1,env2,false) -> t
-  (* PE closure *)
-  | TmClos(fi,x,ty,t1,env2,true) ->
-      TmLam(fi,x,ty,readback (TmVar(fi,x,n+1,true)::env2) (n+1) t1)
-  (* Application *)
-  | TmApp(fi,t1,t2) -> optimize_const_app fi (readback env n t1) (readback env n t2)
-  (* Constant, fix, and PEval  *)
-  | TmConst(_,_) | TmFix(_) | TmDive(_) -> t
-  (* System F terms *)
-  | TmTyLam(fi,_,_,_) | TmTyApp(fi,_,_) -> failwith "System F terms should not exist (1)"
-  (* If expression *)
-  | TmIfexp(fi,x,Some(t3)) -> TmIfexp(fi,x,Some(readback env n t3))
-  | TmIfexp(fi,x,None) -> TmIfexp(fi,x,None)
-  (* Other old, to remove *)
-  | TmChar(_,_) -> t
-  | TmExprSeq(fi,t1,t2) ->
-      TmExprSeq(fi,readback env n t1, readback env n t2)
-  | TmUC(fi,uct,o,u) -> t
-  | TmUtest(fi,t1,t2,tnext) ->
-      TmUtest(fi,readback env n t1, readback env n t2,tnext)
-  | TmMatch(fi,t1,cases) ->
-      TmMatch(fi,readback env n t1,cases)
-  | TmNop -> t
-
-
-
-
-(* The function normalization function that leaves symbols in the
-   term. These symbols are then removed using the readback function.
-   'env' is the environment, 'n' the lambda depth number, 'm'
-   the number of lambdas that we can go under, and
-   't' the term. *)
-let rec normalize env n t =
-  debug_normalize env n t;
-  match t with
-  (* Variables using debruijn indices. *)
-  | TmVar(fi,x,k,false) -> normalize env n (List.nth env k)
-  (* PEMode variable (symbol) *)
-  | TmVar(fi,x,k,true) -> t
-  (* Lambda and closure conversions to PE closure *)
-  | TmLam(fi,x,ty,t1) -> TmClos(fi,x,ty,t1,env,true)
-  (* Closures, both PE and non PE *)
-  | TmClos(fi,x,ty,t2,env2,pemode) -> t
-  (* Application: closures and delta  *)
-  | TmApp(fi,t1,t2) ->
-    (match normalize env n t1 with
-    (* Closure application (PE on non PE) TODO: use affine lamba check *)
-    | TmClos(fi,x,ty,t3,env2,_) ->
-         normalize ((normalize env n t2)::env2) n t3
-    (* Constant application using the delta function *)
-    | TmConst(fi1,c1) ->
-        (match normalize env n t2 with
-        | TmConst(fi2,c2) as tt-> delta c1 tt
-        | nf -> TmApp(fi,TmConst(fi1,c1),nf))
-    (* Partial evaluation *)
-    | TmDive(fi) ->
-      (match normalize env n t2 with
-      | TmClos(fi2,x,ty,t2,env2,pemode) ->
-          let pesym = TmVar(NoInfo,us"",n+1,true) in
-          let t2' = (TmApp(fi,TmDive(fi),t2)) in
-          TmClos(fi2,x,ty,normalize (pesym::env2) (n+1) t2',env2,true)
-      | v2 -> v2)
-    (* If-expression *)
-    | TmIfexp(fi2,x1,x2) ->
-      (match x1,x2,normalize env n t2 with
-      | None,None,TmConst(fi3,CBool(b)) -> TmIfexp(fi2,Some(b),None)
-      | Some(b),Some(TmClos(_,_,_,t3,env3,_)),TmClos(_,_,_,t4,env4,_) ->
-        if b then normalize (TmNop::env3) n t3 else normalize (TmNop::env4) n t4
-      | Some(b),_,(TmClos(_,_,_,t3,_,_) as v3) -> TmIfexp(fi2,Some(b),Some(v3))
-      | _,_,v2 -> TmApp(fi,TmIfexp(fi2,x1,x2),v2))
-    (* Fix *)
-    | TmFix(fi2) ->
-       (match normalize env n t2 with
-       | TmClos(fi,x,_,t3,env2,_) as tt ->
-           normalize ((TmApp(fi,TmFix(fi2),tt))::env2) n t3
-       | v2 -> TmApp(fi,TmFix(fi2),v2))
-    (* System F terms *)
-    | TmTyLam(fi,_,_,_) | TmTyApp(fi,_,_) -> failwith "System F terms should not exist (2)"
-    (* Stay in normalized form *)
-    | v1 -> TmApp(fi,v1,normalize env n t2))
-  (* Constant, fix, and Peval  *)
-  | TmConst(_,_) | TmFix(_) | TmDive(_) -> t
-  (* System F terms *)
-  | TmTyLam(fi,_,_,_) | TmTyApp(fi,_,_) -> failwith "System F terms should not exist (3)"
-  (* If expression *)
-  | TmIfexp(_,_,_) -> t  (* TODO!!!!!! *)
-  (* Other old, to remove *)
-  | TmChar(_,_) -> t
-  | TmExprSeq(fi,t1,t2) ->
-      TmExprSeq(fi,normalize env n t1, normalize env n t2)
-  | TmUC(fi,uct,o,u) -> t
-  | TmUtest(fi,t1,t2,tnext) ->
-      TmUtest(fi,normalize env n t1,normalize env n t2,tnext)
-  | TmMatch(fi,t1,cases) ->
-      TmMatch(fi,normalize env n t1,cases)
-  | TmNop -> t
-
-
 
 (* Main evaluation loop of a term. Evaluates using big-step semantics *)
 let rec eval env t =
@@ -599,29 +469,42 @@ let rec eval env t =
        | TmClos(fi,x,_,t3,env2,_) -> eval ((eval env t2)::env2) t3
        (* Constant application using the delta function *)
        | TmConst(fi,c) -> delta c (eval env t2)
-       (* Partial evaluation *)
-       | TmDive(fi2) -> normalize env 0 (TmApp(fi,TmDive(fi2),eval env t2))
-           |> readback env 0 |> debug_after_peval |> eval env
        (* Fix *)
        | TmFix(fi) ->
          (match eval env t2 with
          | TmClos(fi,x,_,t3,env2,_) as tt -> eval ((TmApp(fi,TmFix(fi),tt))::env2) t3
          | _ -> failwith "Incorrect CFix")
        (* If-expression *)
-       | TmIfexp(fi,x1,x2) ->
-         (match x1,x2,eval env t2 with
-         | None,None,TmConst(fi,CBool(b)) -> TmIfexp(fi,Some(b),None)
-         | Some(b),Some(TmClos(_,_,_,t3,env3,_)),TmClos(_,_,_,t4,env4,_) ->
-              if b then eval (TmNop::env3) t3 else eval (TmNop::env4) t4
-         | Some(b),_,(TmClos(_,_,_,t3,_,_) as v3) -> TmIfexp(fi,Some(b),Some(v3))
-         | _ -> raise_error fi "Incorrect if-expression in the eval function.")
+       | TmIfexp(fi,cnd,thn,els) ->
+         (match cnd with
+          | TmConst(_,CBool(b)) ->
+            if b then
+              (match thn with
+               | TmClos(_,_,_,thn_t,thn_env,_) -> eval (TmNop::thn_env) thn_t
+               | _ -> eval env thn)
+            else
+              (match els with
+               | TmClos(_,_,_,els_t,els_env,_) -> eval (TmNop::els_env) els_t
+               | _ -> eval env els)
+          | _ -> eval env (TmIfexp(fi,(eval env cnd),thn,els)))
        | _ -> raise_error fi "Application to a non closure value.")
   (* Constant *)
-  | TmConst(_,_) | TmFix(_) | TmDive(_) -> t
+  | TmConst(_,_) | TmFix(_) -> t
   (* System F terms *)
   | TmTyLam(fi,_,_,_) | TmTyApp(fi,_,_) -> failwith "System F terms should not exist (4)"
   (* If expression *)
-  | TmIfexp(fi,_,_) -> t
+  | TmIfexp(fi,cnd,thn,els) ->
+    (match cnd with
+     | TmConst(_,CBool(b)) ->
+       if b then
+         (match thn with
+          | TmClos(_,_,_,thn_t,thn_env,_) -> eval (TmNop::thn_env) thn_t
+          | _ -> eval env thn)
+       else
+         (match els with
+          | TmClos(_,_,_,els_t,els_env,_) -> eval (TmNop::els_env) els_t
+          | _ -> eval env els)
+     | _ -> eval env (TmIfexp(fi,(eval env cnd),thn,els)))
   (* The rest *)
   | TmChar(_,_) -> t
   | TmExprSeq(_,t1,t2) -> let _ = eval env t1 in eval env t2
