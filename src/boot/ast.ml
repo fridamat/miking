@@ -95,10 +95,6 @@ and const =
 (* MCore unified collection type (UCT) intrinsics *)
 | CConcat of tm option
 
-(* Ragnar temp functions for handling polymorphic arguments *)
-| CPolyEq  of tm option
-| CPolyNeq of tm option
-
 (* Atom - an untyped lable that can be used to implement
    domain specific constructs *)
 | CAtom of sid * tm list
@@ -128,7 +124,6 @@ and tm =
 
 
 | TmChar        of info * int
-| TmExprSeq     of info * tm * tm
 | TmUC          of info * ucTree * ucOrder * ucUniqueness
 | TmUtest       of info * tm * tm * tm
 | TmMatch       of info * tm * case list
@@ -186,7 +181,6 @@ let tm_info t =
   | TmSeqMethod(fi,_,_,_) -> fi
 
   | TmChar(fi,_) -> fi
-  | TmExprSeq(fi,_,_) -> fi
   | TmUC(fi,_,_,_) -> fi
   | TmUtest(fi,_,_,_) -> fi
   | TmMatch(fi,_,_) -> fi
@@ -258,9 +252,6 @@ let arity c =
   | CArgv       -> 1
   (* MCore unified collection type (UCT) intrinsics *)
   | CConcat(None)  -> 2  | CConcat(Some(_))  -> 1
-  (* Ragnar temp functions for handling polymorphic arguments *)
-  | CPolyEq(None)  -> 2  | CPolyEq(Some(_))  -> 1
-  | CPolyNeq(None) -> 2  | CPolyNeq(Some(_)) -> 1
   (* Atom - an untyped lable that can be used to implement
      domain specific constructs *)
   | CAtom(_,_)     -> 0

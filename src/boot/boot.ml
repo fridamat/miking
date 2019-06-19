@@ -1,4 +1,3 @@
-
 (*
    Miking is licensed under the MIT license.
    Copyright (C) David Broman. See file LICENSE.txt
@@ -21,13 +20,8 @@ open Pprint
 let prog_argv = ref []          (* Argv for the program that is executed *)
 
 (* Debug options *)
-let enable_debug_normalize = false
-let enable_debug_normalize_env = false
-let enable_debug_readback = false
-let enable_debug_readback_env = false
 let enable_debug_eval = false
 let enable_debug_eval_env = false
-let enable_debug_after_peval = false
 let enable_debug_after_parse = false
 let enable_debug_after_debruijn = false
 let enable_debug_after_erase = false
@@ -111,7 +105,6 @@ let rec debruijn env t =
   | TmSeqMethod(fi,ds_choice,fun_name,args) ->
     TmSeqMethod(fi,ds_choice,fun_name, (debruijn_list env args))
   | TmChar(_,_) -> t
-  | TmExprSeq(fi,t1,t2) -> TmExprSeq(fi,debruijn env t1,debruijn env t2)
   | TmUC(fi,uct,o,u) -> TmUC(fi, UCLeaf(List.map (debruijn env) (uct2list uct)),o,u)
   | TmUtest(fi,t1,t2,tnext)
       -> TmUtest(fi,debruijn env t1,debruijn env t2,debruijn env tnext)
@@ -223,7 +216,6 @@ let debug_after t flag text=
 
 
 (* Debug function used after specific tasks *)
-let debug_after_peval t = debug_after t enable_debug_after_peval "After peval"
 let debug_after_parse t = debug_after t enable_debug_after_parse "After parsing"
 let debug_after_debruijn t = debug_after t enable_debug_after_debruijn "After debruijn"
 let debug_after_erase t = debug_after t enable_debug_after_erase "After erase"
@@ -409,21 +401,6 @@ let delta c v  =
     | CConcat(Some(TmUC(l,t1,o1,u1))),tm2 -> TmUC(l,UCNode(t1,UCLeaf([tm2])),o1,u1)
     | CConcat(Some(_)),t -> fail_constapp (tm_info t)
 
-    (* Ragnar polymorphic functions, special case for Ragnar in the boot interpreter.
-       These functions should be defined using well-defined ad-hoc polymorphism
-       in the real Ragnar compiler. *)
-    | CPolyEq(None),t -> TmConst(NoInfo,CPolyEq((Some(t))))
-    | CPolyEq(Some(TmConst(_,c1))),TmConst(_,c2) -> TmConst(NoInfo,CBool(c1 = c2))
-    | CPolyEq(Some(TmChar(_,v1))),TmChar(_,v2) -> TmConst(NoInfo,CBool(v1 = v2))
-    | CPolyEq(Some(TmUC(_,_,_,_) as v1)),(TmUC(_,_,_,_) as v2) -> TmConst(NoInfo,CBool(val_equal v1 v2))
-    | CPolyEq(Some(_)),t  -> fail_constapp (tm_info t)
-
-    | CPolyNeq(None),t -> TmConst(NoInfo,CPolyNeq(Some(t)))
-    | CPolyNeq(Some(TmConst(_,c1))),TmConst(_,c2) -> TmConst(NoInfo,CBool(c1 <> c2))
-    | CPolyNeq(Some(TmChar(_,v1))),TmChar(_,v2) -> TmConst(NoInfo,CBool(v1 <> v2))
-    | CPolyNeq(Some(TmUC(_,_,_,_) as v1)),(TmUC(_,_,_,_) as v2) -> TmConst(NoInfo,CBool(not (val_equal v1 v2)))
-    | CPolyNeq(Some(_)),t  -> fail_constapp (tm_info t)
-
     (* Atom - an untyped lable that can be used to implement
        domain specific constructs *)
     | CAtom(id,tms),t -> !eval_atom (tm_info t) id tms t
@@ -547,7 +524,6 @@ let rec eval env t =
   | TmSeqMethod(_,_,_,_) -> t
   (* The rest *)
   | TmChar(_,_) -> t
-  | TmExprSeq(_,t1,t2) -> let _ = eval env t1 in eval env t2
   | TmUC(fi,uct,o,u) -> TmUC(fi,ucmap (eval env) uct,o,u)
   | TmUtest(fi,t1,t2,tnext) ->
     if !utest then begin
@@ -643,12 +619,7 @@ let files_of_folders lst = List.fold_left (fun a v ->
 (* Iterate over all potential test files and run tests *)
 let testprog lst typecheck =
     utest := true;
-    (* Select the lexer and parser, depending on the DSL*)
-    let eprog name =
-      if Ustring.ends_with (us".ppl") (us name) then
-        (eval_atom := Ppl.eval_atom;
-         (Ppl.evalprog debruijn eval builtin) name)
-      else evalprog name typecheck
+    let eprog name = evalprog name typecheck
     in
     (* Evaluate each of the programs in turn *)
     List.iter eprog (files_of_folders lst);
@@ -664,10 +635,7 @@ let testprog lst typecheck =
 (* Run program *)
 let runprog name lst typecheck =
     prog_argv := lst;
-      if Ustring.ends_with (us".ppl") (us name) then
-        (eval_atom := Ppl.eval_atom;
-         (Ppl.evalprog debruijn eval builtin) name)
-      else evalprog name typecheck
+    evalprog name typecheck
 
 
 (* Print out main menu *)

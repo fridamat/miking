@@ -152,11 +152,6 @@ and pprint_const c =
   (* MCore unified collection type (UCT) intrinsics *)
   | CConcat(None) -> us"concat"
   | CConcat(Some(v)) -> us"concat(" ^. (pprint true v) ^. us")"
-  (* Ragnar polymorpic temps *)
-  | CPolyEq(None) -> us"polyeq"
-  | CPolyEq(Some(v)) -> us"polyeq(" ^. (pprint true v) ^. us")"
-  | CPolyNeq(None) -> us"polyneq"
-  | CPolyNeq(Some(v)) -> us"polyneq(" ^. (pprint true v) ^. us")"
   (* Atom - an untyped lable that can be used to implement
      domain specific constructs *)
   | CAtom(id,tms) -> us"[" ^. (ustring_of_sid id) ^. us"]" ^.
@@ -188,7 +183,6 @@ and pprint basic t =
   | TmSeq(fi,ty) -> us"Seq[]" (*TODO:Print the selected data structure type ty*)
   | TmSeqMethod(fi,ty,fun_name,arguments) -> us"Seq." ^. fun_name ^. us"()" (*TODO:Print the selected data structure type ty and the arguments?*)
   | TmChar(fi,c) -> us"'" ^. list2ustring [c] ^. us"'"
-  | TmExprSeq(fi,t1,t2) -> ppt false t1 ^. us"\n" ^. ppt false t2
   | TmUC(fi,uct,ordered,uniqueness) -> (
     match ordered, uniqueness with
     | UCOrdered,UCMultivalued when not basic ->

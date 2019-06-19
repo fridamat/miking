@@ -149,9 +149,6 @@ let type_const c =
   | CDStr | CDPrint | CPrint | CArgv
 (* MCore unified collection type (UCT) intrinsics *)
   | CConcat(_)
-(* Ragnar temp functions for handling polymorphic arguments *)
-  | CPolyEq(_)
-  | CPolyNeq(_)
 (* Atom - an untyped lable that can be used to implement domain specific constructs *)
   | CAtom(_,_)
     -> error NoInfo (us"The constant is not supported in the current type system")
@@ -257,7 +254,6 @@ let rec typeOf tyenv t =
              (us"Type application expects an universal type, but found " ^.
               pprint_ty ty ^. us"."))
   | TmChar(fi,x) -> failwith "TODO8"
-  | TmExprSeq(fi,t1,t2) -> failwith "TODO9"
   | TmUC(fi,tree,ord,unique) -> failwith "TODO10"
   | TmUtest(fi,t1,t2,t3) ->
       let (ty1,ty2) = (normTy (typeOf tyenv t1),normTy (typeOf tyenv t2)) in
@@ -445,7 +441,6 @@ let rec biTypeOf env ty t =
       else errorKindMismatch  (ty_info ty2) ki11 ki12
     | ty -> errorExpectsUniversal (tm_info t1) ty)
   | TmChar(fi,x) -> failwith "TODO TmChar (later)"
-  | TmExprSeq(fi,t1,t2) -> failwith "TODO TmExprSeq (later)"
   | TmUC(fi,tree,ord,unique) -> failwith "TmUC (later)"
   | TmUtest(fi,t1,t2,t3) ->
     let ty1  = biTypeOf env TyDyn t1 in
@@ -457,13 +452,8 @@ let rec biTypeOf env ty t =
   | TmNop -> TyGround(NoInfo,GVoid)
 
 
-
-
-
-
 (* Erase type abstractions and applications *)
 let rec erase t =
-  let eraseOp op = match op with | None -> None | Some(t) -> Some(erase t) in
   match t with
   | TmVar(fi,x,n,pe) -> t
   | TmLam(fi,x,ty1,t1) -> TmLam(fi,x,ty1,erase t1)
@@ -475,7 +465,6 @@ let rec erase t =
   | TmTyLam(fi,x,kind,t1) -> erase t1
   | TmTyApp(fi,t1,ty1) -> erase t1
   | TmChar(fi,x) -> t
-  | TmExprSeq(fi,t1,t2) -> TmExprSeq(fi, erase t1, erase t2)
   | TmUC(fi,tree,ord,unique) -> t
   | TmUtest(fi,t1,t2,t3) -> TmUtest(fi, erase t1, erase t2, erase t3)
   | TmMatch(fi,t1,cases) -> t (* TODO if needed *)
