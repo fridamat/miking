@@ -531,6 +531,7 @@ let evalprog filename typecheck =
         |> debruijn (builtin |> List.split |> fst |> (List.map (fun x-> VarTm(us x))))
         |> debug_after_debruijn
         |> (if typecheck then Typesys.typecheck builtin else fun x -> x)
+        (*TODO: Data structure selection*)
         |> Typesys.erase |> debug_after_erase
         |> eval (builtin |> List.split |> snd |> List.map (fun x -> TmConst(NoInfo,x)))
         |> fun _ -> ()

@@ -14,6 +14,7 @@ type row = int
 type col = int
 type filename = ustring
 type info =
+  (*TODO: Add type to info?*)
   | Info of filename * row * col * row * col
   | NoInfo
 

@@ -1,0 +1,2 @@
+// Simple sequence test
+utest 0 (Seq.length (Seq[int]))

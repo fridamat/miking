@@ -237,6 +237,7 @@ let rec typeOf tyenv t =
   | TmConst(fi,c) -> type_const c
   | TmIfexp(fi,cnd,thn,els) -> failwith "TODO6"
   | TmFix(fi) -> failwith "TODO7"
+  (*Add sequences like if has above*)
   | TmTyLam(fi,x,kind,t1) ->
       let ty2 = typeOf (TyenvTyvar(x,kind)::tyenv) t1 in
       TyAll(fi,x,kind,ty2)
@@ -429,6 +430,7 @@ let rec biTypeOf env ty t =
       in dive ty1' ty2' env 0
   | TmConst(fi,c) -> type_const c
   | TmIfexp(fi,cnd,thn,els) -> failwith "TODO TmIfexp (later)"
+  (*TODO:Add sequences here perhaps like if above*)
   | TmFix(fi) -> failwith "TODO TmFix (later)"
   | TmTyLam(fi,x,kind,t1) ->
     let ty1' = biTypeOf (TyenvTyvar(x,kind)::env) TyDyn t1 in

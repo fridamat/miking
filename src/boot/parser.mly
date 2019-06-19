@@ -43,6 +43,7 @@
       | TmMatch(fi,t1,cases) ->
           List.exists (fun (Case(_,_,t)) -> hasx t) cases
       | TmNop -> false
+      (*TODO: Add sequence declaration and method call*)
     in
     if hasx t then TmApp(NoInfo,TmFix(NoInfo), (TmLam(NoInfo,x,TyDyn,t))) else t
 
@@ -88,6 +89,7 @@ let mkopkind fi op =
 %token <unit Ast.tokendata> IN
 %token <unit Ast.tokendata> NOP
 %token <unit Ast.tokendata> FIX
+/*TODO:Add sequence tokens*/
 
 
 
@@ -178,6 +180,7 @@ mc_term:
   | IF mc_term THEN mc_term ELSE mc_term
       { let fi = mkinfo $1.i (tm_info $6) in
         TmIfexp(fi, $2, $4, $6) }
+  /*TODO: Add sequence declaration and method if term*/
 
 ty_op:
   | COLON ty
