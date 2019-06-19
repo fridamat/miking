@@ -474,19 +474,6 @@ let rec eval env t =
          (match eval env t2 with
          | TmClos(fi,x,_,t3,env2,_) as tt -> eval ((TmApp(fi,TmFix(fi),tt))::env2) t3
          | _ -> failwith "Incorrect CFix")
-       (* If-expression *)
-       | TmIfexp(fi,cnd,thn,els) ->
-         (match cnd with
-          | TmConst(_,CBool(b)) ->
-            if b then
-              (match thn with
-               | TmClos(_,_,_,thn_t,thn_env,_) -> eval (TmNop::thn_env) thn_t
-               | _ -> eval env thn)
-            else
-              (match els with
-               | TmClos(_,_,_,els_t,els_env,_) -> eval (TmNop::els_env) els_t
-               | _ -> eval env els)
-          | _ -> eval env (TmIfexp(fi,(eval env cnd),thn,els)))
        | _ -> raise_error fi "Application to a non closure value.")
   (* Constant *)
   | TmConst(_,_) | TmFix(_) -> t
@@ -494,17 +481,13 @@ let rec eval env t =
   | TmTyLam(fi,_,_,_) | TmTyApp(fi,_,_) -> failwith "System F terms should not exist (4)"
   (* If expression *)
   | TmIfexp(fi,cnd,thn,els) ->
-    (match cnd with
+    (match eval env cnd with
      | TmConst(_,CBool(b)) ->
        if b then
-         (match thn with
-          | TmClos(_,_,_,thn_t,thn_env,_) -> eval (TmNop::thn_env) thn_t
-          | _ -> eval env thn)
+         eval env thn
        else
-         (match els with
-          | TmClos(_,_,_,els_t,els_env,_) -> eval (TmNop::els_env) els_t
-          | _ -> eval env els)
-     | _ -> eval env (TmIfexp(fi,(eval env cnd),thn,els)))
+         eval env els
+     | _ -> raise_error fi "Condition in if-expression not a bool.")
   (* The rest *)
   | TmChar(_,_) -> t
   | TmExprSeq(_,t1,t2) -> let _ = eval env t1 in eval env t2
