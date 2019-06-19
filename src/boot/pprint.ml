@@ -185,6 +185,8 @@ and pprint basic t =
   | TmTyApp(_,t1,ty1) ->
       left inside ^. ppt false t1 ^. us" [" ^. pprint_ty ty1 ^. us"]" ^. right inside
   | TmIfexp(_,c,t,e) -> us"if " ^. ppt false c ^. us" then " ^. ppt false t ^. us" else " ^. ppt false e
+  | TmSeq(fi,ty) -> us"Seq[]" (*TODO:Print the selected data structure type ty*)
+  | TmSeqMethod(fi,ty,fun_name,arguments) -> us"Seq." ^. fun_name ^. us"()" (*TODO:Print the selected data structure type ty and the arguments?*)
   | TmChar(fi,c) -> us"'" ^. list2ustring [c] ^. us"'"
   | TmExprSeq(fi,t1,t2) -> ppt false t1 ^. us"\n" ^. ppt false t2
   | TmUC(fi,uct,ordered,uniqueness) -> (

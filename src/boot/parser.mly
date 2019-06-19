@@ -32,6 +32,11 @@
       | TmTyLam(fi,x,k,t1) -> hasx t1
       | TmTyApp(fi,t1,ty1) -> hasx t1
       | TmIfexp(fi,cnd,thn,els) -> hasx cnd || hasx thn || hasx els
+      | TmSeq(fi,ty) -> false
+      | TmSeqMethod(fi,ty,fun_name,args) ->
+      (match args with
+        | [] -> false
+        | hd::tl -> hasx hd || hasx (TmSeqMethod(fi,ty,fun_name,tl)))
       | TmChar(_,_) -> false
       | TmExprSeq(_,t1,t2) -> hasx t1 || hasx t2
       | TmUC(fi,uct,ordered,uniqueness) ->
