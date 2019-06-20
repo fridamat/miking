@@ -1,2 +1,8 @@
-// Simple sequence test
-utest 0 (Seq.length (Seq[int]))
+lang mcore
+
+// Simple sequence test 1
+let s = newseq [ "int" ]
+utest 0 (seqmethod . "length" s)
+
+// Simple sequence test 2
+utest 0 (seqmethod . "length" (newseq [ "int" ]))

@@ -180,8 +180,8 @@ and pprint basic t =
   | TmTyApp(_,t1,ty1) ->
       left inside ^. ppt false t1 ^. us" [" ^. pprint_ty ty1 ^. us"]" ^. right inside
   | TmIfexp(_,c,t,e) -> us"if " ^. ppt false c ^. us" then " ^. ppt false t ^. us" else " ^. ppt false e
-  | TmSeq(fi,ty) -> us"Seq[]" (*TODO:Print the selected data structure type ty*)
-  | TmSeqMethod(fi,ty,fun_name,arguments) -> us"Seq." ^. fun_name ^. us"()" (*TODO:Print the selected data structure type ty and the arguments?*)
+  | TmSeq(fi,ds_choice,sequence) -> us"Seq[]" (*TODO:Print the selected data structure type ty*)
+  | TmSeqMethod(fi,ds_choice,fun_name,args,arg_index) -> us"Seq." ^. fun_name ^. us"()" (*TODO:Print the selected data structure type ty and the arguments?*)
   | TmChar(fi,c) -> us"'" ^. list2ustring [c] ^. us"'"
   | TmUC(fi,uct,ordered,uniqueness) -> (
     match ordered, uniqueness with

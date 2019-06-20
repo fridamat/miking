@@ -102,9 +102,11 @@ and const =
 (* Tells if a variable is a pe variable or if a closure is a pe closure *)
 and pemode = bool
 
+and arg_index = int
+and args = tm list
 and ds_choice = int
-and args = (tm list)
 and fun_name = ustring
+and sequence = tm list
 
 (* Terms / expressions *)
 and tm =
@@ -119,8 +121,8 @@ and tm =
 | TmTyApp       of info * tm * ty                   (* Type application *)
 (*TODO: Add ability to create a new seq with a list of elements, that is add '* tm list option'*)
 (*TODO: Make ds_choice:s below optional*)
-| TmSeq         of info * ds_choice                (* Sequence constructor *)
-| TmSeqMethod   of info * ds_choice * fun_name * args (* Sequence method *)
+| TmSeq         of info * ds_choice * sequence                (* Sequence constructor *)
+| TmSeqMethod   of info * ds_choice * fun_name * args * arg_index (* Sequence method *)
 
 
 | TmChar        of info * int
@@ -177,8 +179,8 @@ let tm_info t =
   | TmFix(fi) -> fi
   | TmTyLam(fi,_,_,_) -> fi
   | TmTyApp(fi,_,_) -> fi
-  | TmSeq(fi,_) -> fi
-  | TmSeqMethod(fi,_,_,_) -> fi
+  | TmSeq(fi,_,_) -> fi
+  | TmSeqMethod(fi,_,_,_,_) -> fi
 
   | TmChar(fi,_) -> fi
   | TmUC(fi,_,_,_) -> fi

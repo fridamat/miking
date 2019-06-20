@@ -32,11 +32,14 @@
       | TmTyLam(fi,x,k,t1) -> hasx t1
       | TmTyApp(fi,t1,ty1) -> hasx t1
       | TmIfexp(fi,cnd,thn,els) -> hasx cnd || hasx thn || hasx els
-      | TmSeq(fi,ty) -> false
-      | TmSeqMethod(fi,ty,fun_name,args) ->
+      | TmSeq(fi,ds_choice,sequence) ->
+      (match sequence with
+        | [] -> false
+        | hd::tl -> hasx hd || hasx (TmSeq(fi,ds_choice,tl)))
+      | TmSeqMethod(fi,ds_choice,fun_name,args,arg_index) ->
       (match args with
         | [] -> false
-        | hd::tl -> hasx hd || hasx (TmSeqMethod(fi,ty,fun_name,tl)))
+        | hd::tl -> hasx hd || hasx (TmSeqMethod(fi,ds_choice,fun_name,tl,arg_index)))
       | TmChar(_,_) -> false
       | TmUC(fi,uct,ordered,uniqueness) ->
           let rec work uc = match uc with
@@ -93,7 +96,8 @@ let mkopkind fi op =
 %token <unit Ast.tokendata> IN
 %token <unit Ast.tokendata> NOP
 %token <unit Ast.tokendata> FIX
-/*TODO:Add sequence tokens*/
+%token <unit Ast.tokendata> SEQ
+%token <unit Ast.tokendata> SEQMETHOD
 
 
 
@@ -184,7 +188,15 @@ mc_term:
   | IF mc_term THEN mc_term ELSE mc_term
       { let fi = mkinfo $1.i (tm_info $6) in
         TmIfexp(fi, $2, $4, $6) }
-  /*TODO: Add sequence declaration and method if term*/
+  | SEQ LSQUARE STRING RSQUARE
+      { let fi = mkinfo ($1.i) ($4.i) in
+        (*TODO:Change ds_choice to None?*)
+        (*TODO:Collect a list instead of creating an empty OCaml list*)
+        TmSeq(fi, 0, []) }
+  | SEQMETHOD DOT STRING mc_atom
+      { let fi = mkinfo ($1.i) (tm_info $4) in
+        (*TODO:Change ds_choice to None?*)
+        TmApp(fi,TmSeqMethod(fi, 0, $3.v, [], 0),$4) }
 
 ty_op:
   | COLON ty

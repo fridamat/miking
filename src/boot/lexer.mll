@@ -38,8 +38,8 @@ let reserved_strings = [
   ("in",            fun(i) -> Parser.IN{i=i;v=()});
   ("nop",           fun(i) -> Parser.NOP{i=i;v=()});
   ("fix",           fun(i) -> Parser.FIX{i=i;v=()});
-  (*TODO: Add sequence declaration*)
-  (*TODO: Add call to sequence method*)
+  ("newseq",        fun(i) -> Parser.SEQ{i=i;v=()});
+  ("seqmethod",     fun(i) -> Parser.SEQMETHOD{i=i;v=()});
 
   (* v *)
   ("=",             fun(i) -> Parser.EQ{i=i;v=()});

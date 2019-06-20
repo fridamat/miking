@@ -101,9 +101,9 @@ let rec debruijn env t =
   | TmTyLam(fi,x,kind,t1) -> TmTyLam(fi,x,kind,debruijn (VarTy(x)::env) t1)
   | TmTyApp(fi,t1,ty1) -> TmTyApp(fi,debruijn env t1, debruijnTy env ty1)
   | TmIfexp(fi,cnd,thn,els) -> TmIfexp(fi, debruijn env cnd, debruijn env thn, debruijn env els)
-  | TmSeq(_,_) -> t
-  | TmSeqMethod(fi,ds_choice,fun_name,args) ->
-    TmSeqMethod(fi,ds_choice,fun_name, (debruijn_list env args))
+  | TmSeq(fi,ds_choice,sequence) -> TmSeq(fi,ds_choice,debruijn_list env sequence)
+  | TmSeqMethod(fi,ds_choice,fun_name,args,arg_index) ->
+    TmSeqMethod(fi,ds_choice,fun_name,(debruijn_list env args),arg_index)
   | TmChar(_,_) -> t
   | TmUC(fi,uct,o,u) -> TmUC(fi, UCLeaf(List.map (debruijn env) (uct2list uct)),o,u)
   | TmUtest(fi,t1,t2,tnext)
@@ -436,39 +436,31 @@ let optimize_const_app fi v1 v2 =
   | vv1,vv2 -> TmApp(fi,vv1,vv2)
 
 (*eval helper methods*)
-let rec init_args_helper index =
-  match index with
-  | 0 -> []
-  | _ -> TmNop::(init_args_helper (index-1))
-
-let init_args fun_name =
-  (*TODO: Look up number of args in sequence function table for fun_name*)
-  let no_args = 1 in
-  init_args_helper no_args
-
-let rec get_first_unevaluated_arg_index_helper args index =
-  if index >= (List.length args) then
-    -1
-  else
-    (match (List.nth args index) with
-     | TmNop -> index
-     | _ -> get_first_unevaluated_arg_index_helper args (index+1))
-
-let get_first_unevaluated_arg_index args =
-  get_first_unevaluated_arg_index_helper args 0
-
 let rec add_evaluated_term_to_args args term =
   match args with
-  | [] -> [] (*TODO: Raise error*)
-  | TmNop::tl -> term::tl
-  | hd::tl -> add_evaluated_term_to_args tl term
+  | [] -> term::[]
+  | hd::tl -> hd::(add_evaluated_term_to_args tl term)
 
-let call_seq_method ds_choice fun_name args =
+let get_arg_types_length_dummy fi fun_name =
+  match Ustring.to_utf8 fun_name with
+  | "length" -> 0
+  | _ -> raise_error fi "Sequence method not implemented."
+
+let get_last_arg_index fun_name =
+  (*TODO: Check length of arg types in sequence function table*)
+  get_arg_types_length_dummy fun_name
+
+let call_seq_method fi ds_choice fun_name args =
   (*TODO: Open ds_choice for method*)
   (*TODO: Check arg types against sequence function table*)
-  let test_list = [1;2;3] in
-  match fun_name with
-  | "length" -> List.length test_list
+  match Ustring.to_utf8 fun_name with
+  | "length" ->
+    (match (List.nth args 0) with
+    | TmSeq(fi2,ds_choice2,sequence) ->
+      let seq_length = List.length sequence in
+      TmConst(fi, CInt(seq_length))
+    | _ -> raise_error fi "Argument has the wrong type.")
+  | _ -> raise_error fi "Sequence method not implemented."
 
 (* Main evaluation loop of a term. Evaluates using big-step semantics *)
 let rec eval env t =
@@ -491,17 +483,13 @@ let rec eval env t =
          (match eval env t2 with
          | TmClos(fi,x,_,t3,env2,_) as tt -> eval ((TmApp(fi,TmFix(fi),tt))::env2) t3
          | _ -> failwith "Incorrect CFix")
-       | TmSeqMethod(fi,ds_choice,fun_name,[]) ->
-         let args = init_args fun_name in
-         eval env (TmApp(fi,TmSeqMethod(fi,ds_choice,fun_name,args),t2))
-       | TmSeqMethod(fi,ds_choice,fun_name,args) ->
-         let curr_arg_index = get_first_unevaluated_arg_index args in
-         let last_arg_index = (List.length args) - 1 in
+       | TmSeqMethod(fi,ds_choice,fun_name,args,arg_index) ->
          let updated_args = add_evaluated_term_to_args args (eval env t2) in
-         if curr_arg_index < last_arg_index then
-           TmSeqMethod(fi,ds_choice,fun_name,updated_args)
-         else if curr_arg_index == last_arg_index then
-           call_seq_method ds_choice fun_name updated_args
+         let last_arg_index = get_last_arg_index fi fun_name in
+         if arg_index == last_arg_index then
+           call_seq_method fi ds_choice fun_name updated_args
+         else if arg_index < last_arg_index then
+           TmSeqMethod(fi,ds_choice,fun_name,updated_args,(arg_index+1))
          else
            raise_error fi "Argument index is out of bounds."
        | _ -> raise_error fi "Application to a non closure value.")
@@ -519,9 +507,9 @@ let rec eval env t =
          eval env els
      | _ -> raise_error fi "Condition in if-expression not a bool.")
   (* Sequence constructor *)
-  | TmSeq(fi,ds_choice) -> [] (*TODO:Create an empty list of type ds_choice*)
+  | TmSeq(_,_,_) -> t
   (* Sequence method*)
-  | TmSeqMethod(_,_,_,_) -> t
+  | TmSeqMethod(_,_,_,_,_) -> t
   (* The rest *)
   | TmChar(_,_) -> t
   | TmUC(fi,uct,o,u) -> TmUC(fi,ucmap (eval env) uct,o,u)
