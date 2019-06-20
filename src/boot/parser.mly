@@ -20,6 +20,8 @@
       | (NoInfo, Info(fn,r1,c1,r2,c2)) -> Info(fn,r1,c1,r2,c2)
       | (_,_) -> NoInfo
 
+  let mktinfo fi1 fi2 = {ety = None; fi = mkinfo fi1 fi2}
+
    (** Add fix-point, if recursive function *)
   let addrec x t =
     let rec hasx t = match t with
@@ -52,7 +54,12 @@
       | TmNop -> false
       (*TODO: Add sequence declaration and method call*)
     in
-    if hasx t then TmApp(NoInfo,TmFix(NoInfo), (TmLam(NoInfo,x,TyDyn,t))) else t
+    if hasx t then
+      TmApp({ety = None; fi = NoInfo},
+            TmFix({ety = None; fi = NoInfo}),
+            TmLam({ety = None; fi = NoInfo},x,TyDyn,t))
+    else
+      t
 
 (* Create kind when optionally available *)
 let mkopkind fi op =
@@ -167,34 +174,34 @@ main:
 mcore_scope:
   | { TmNop }
   | UTEST mc_atom mc_atom mcore_scope
-      { let fi = mkinfo $1.i (tm_info $3) in
+      { let fi = mktinfo $1.i.fi (tm_info $3) in
         TmUtest(fi,$2,$3,$4) }
   | LET IDENT EQ mc_term mcore_scope
-      { let fi = mkinfo $1.i (tm_info $4) in
+      { let fi = mktinfo $1.i.fi (tm_info $4) in
         TmApp(fi,TmLam(fi,$2.v,TyDyn,$5),$4) }
 
 mc_term:
   | mc_left
       { $1 }
   | LAM IDENT ty_op DOT mc_term
-      { let fi = mkinfo $1.i (tm_info $5) in
+      { let fi = mktinfo $1.i.fi (tm_info $5) in
         TmLam(fi,$2.v,$3,$5) }
   | BIGLAM IDENT opkind DOT mc_term
-      { let fi = mkinfo $1.i (tm_info $5) in
-        TmTyLam(fi,$2.v,mkopkind $2.i $3,$5) }
+      { let fi = mktinfo $1.i.fi (tm_info $5) in
+        TmTyLam(fi,$2.v,mkopkind $2.i.fi $3,$5) }
   | LET IDENT EQ mc_term IN mc_term
-      { let fi = mkinfo $1.i (tm_info $4) in
+      { let fi = mktinfo $1.i.fi (tm_info $4) in
         TmApp(fi,TmLam(fi,$2.v,TyDyn,$6),$4) }
   | IF mc_term THEN mc_term ELSE mc_term
-      { let fi = mkinfo $1.i (tm_info $6) in
+      { let fi = mktinfo $1.i.fi (tm_info $6) in
         TmIfexp(fi, $2, $4, $6) }
   | SEQ LSQUARE STRING RSQUARE
-      { let fi = mkinfo ($1.i) ($4.i) in
+      { let fi = mktinfo $1.i.fi $4.i.fi in
         (*TODO:Change ds_choice to None?*)
         (*TODO:Collect a list instead of creating an empty OCaml list*)
         TmSeq(fi, 0, []) }
   | SEQMETHOD DOT STRING mc_atom
-      { let fi = mkinfo ($1.i) (tm_info $4) in
+      { let fi = mktinfo $1.i.fi (tm_info $4) in
         (*TODO:Change ds_choice to None?*)
         TmApp(fi,TmSeqMethod(fi, 0, $3.v, [], 0),$4) }
 
@@ -208,11 +215,11 @@ mc_left:
   | mc_atom
       { $1 }
   | mc_left mc_atom
-      { let fi = mkinfo (tm_info $1) (tm_info $2) in
-        TmApp(fi,$1,$2) }
+      { let ti = mktinfo (tm_info $1) (tm_info $2) in
+        TmApp(ti,$1,$2) }
   | mc_left LSQUARE ty RSQUARE
-      { let fi = mkinfo (tm_info $1) $4.i in
-        TmTyApp(fi,$1,$3) }
+      { let ti = mktinfo (tm_info $1) $4.i.fi in
+        TmTyApp(ti,$1,$3) }
 
 mc_atom:
   | LPAREN mc_term RPAREN   { $2 }
@@ -235,11 +242,11 @@ ty:
       { let fi = mkinfo (ty_info $1) (ty_info $3) in
         TyArrow(fi,$1,$3) }
   | ALL IDENT opkind DOT ty
-      { let fi = mkinfo $1.i (ty_info $5) in
-        TyAll(fi,$2.v,mkopkind $2.i $3,$5) }
+      { let fi = mkinfo $1.i.fi (ty_info $5) in
+        TyAll(fi,$2.v,mkopkind $2.i.fi $3,$5) }
   | LAM IDENT opkind DOT ty
-      { let fi = mkinfo $1.i (ty_info $5) in
-        TyLam(fi,$2.v,mkopkind $2.i $3,$5) }
+      { let fi = mkinfo $1.i.fi (ty_info $5) in
+        TyLam(fi,$2.v,mkopkind $2.i.fi $3,$5) }
 
 
 ty_left:
@@ -252,12 +259,12 @@ ty_left:
 ty_atom:
   | IDENT
       {match Ustring.to_utf8 $1.v with
-       | "Bool" -> TyGround($1.i,GBool)
-       | "Int" -> TyGround($1.i,GInt)
-       | "Float" -> TyGround($1.i,GFloat)
-       | "String" -> TyGround($1.i,GVoid)  (* TODO *)
-       | "Void" -> TyGround($1.i,GVoid)
-       | _ -> TyVar($1.i,$1.v,-1)
+       | "Bool" -> TyGround($1.i.fi,GBool)
+       | "Int" -> TyGround($1.i.fi,GInt)
+       | "Float" -> TyGround($1.i.fi,GFloat)
+       | "String" -> TyGround($1.i.fi,GVoid)  (* TODO *)
+       | "Void" -> TyGround($1.i.fi,GVoid)
+       | _ -> TyVar($1.i.fi,$1.v,-1)
       }
   | LPAREN ty RPAREN
       { $2 }
@@ -279,6 +286,6 @@ kind:
 
 kindatom:
   | MUL
-      { KindStar($1.i) }
+      { KindStar($1.i.fi) }
   | LPAREN kind RPAREN
       { $2 }
