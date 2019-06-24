@@ -75,7 +75,7 @@ let mkopkind fi op =
 %token <unit Ast.tokendata> FUNC
 %token <unit Ast.tokendata> FUNC2
 %token <unit Ast.tokendata> DEF
-%token <unit Ast.tokendata> IN
+%token <unit Ast.tokendata>
 %token <unit Ast.tokendata> IF
 %token <unit Ast.tokendata> IF2           /* Special handling if( */
 %token <unit Ast.tokendata> THEN
@@ -188,15 +188,12 @@ mc_term:
   | IF mc_term THEN mc_term ELSE mc_term
       { let fi = mkinfo $1.i (tm_info $6) in
         TmIfexp(fi, $2, $4, $6) }
-  | SEQ LSQUARE STRING RSQUARE
+  | SEQ LSQUARE IDENT RSQUARE
       { let fi = mkinfo ($1.i) ($4.i) in
         (*TODO:Change ds_choice to None?*)
         (*TODO:Collect a list instead of creating an empty OCaml list*)
         TmSeq(fi, 0, []) }
-  | SEQMETHOD DOT STRING mc_atom
-      { let fi = mkinfo ($1.i) (tm_info $4) in
-        (*TODO:Change ds_choice to None?*)
-        TmApp(fi,TmSeqMethod(fi, 0, $3.v, [], 0),$4) }
+
 
 ty_op:
   | COLON ty
@@ -225,6 +222,10 @@ mc_atom:
   | FALSE                { TmConst($1.i,CBool(false)) }
   | NOP                  { TmNop }
   | FIX                  { TmFix($1.i) }
+  | SEQMETHOD DOT IDENT
+      { let fi = mkinfo ($1.i) ($3.i) in
+        (*TODO:Change ds_choice to None?*)
+        TmSeqMethod(fi, 0, $3.v, [], 0) }
 
 
 
