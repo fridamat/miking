@@ -32,10 +32,7 @@
       | TmTyLam(fi,x,k,t1) -> hasx t1
       | TmTyApp(fi,t1,ty1) -> hasx t1
       | TmIfexp(fi,cnd,thn,els) -> hasx cnd || hasx thn || hasx els
-      | TmSeq(fi,ds_choice,sequence) ->
-      (match sequence with
-        | [] -> false
-        | hd::tl -> hasx hd || hasx (TmSeq(fi,ds_choice,tl)))
+      | TmSeq(fi,ds_choice,sequence) -> false (*TODO: Change if sequence can contain terms*)
       | TmSeqMethod(fi,ds_choice,fun_name,args,arg_index) ->
       (match args with
         | [] -> false

@@ -101,7 +101,7 @@ let rec debruijn env t =
   | TmTyLam(fi,x,kind,t1) -> TmTyLam(fi,x,kind,debruijn (VarTy(x)::env) t1)
   | TmTyApp(fi,t1,ty1) -> TmTyApp(fi,debruijn env t1, debruijnTy env ty1)
   | TmIfexp(fi,cnd,thn,els) -> TmIfexp(fi, debruijn env cnd, debruijn env thn, debruijn env els)
-  | TmSeq(fi,ds_choice,sequence) -> TmSeq(fi,ds_choice,debruijn_list env sequence)
+  | TmSeq(fi,ds_choice,sequence) -> t (*TODO: Change if sequence can consist of terms*)
   | TmSeqMethod(fi,ds_choice,fun_name,args,arg_index) ->
     TmSeqMethod(fi,ds_choice,fun_name,(debruijn_list env args),arg_index)
   | TmChar(_,_) -> t
@@ -444,6 +444,8 @@ let rec add_evaluated_term_to_args args term =
 let get_arg_types_length_dummy fi fun_name =
   match Ustring.to_utf8 fun_name with
   | "length" -> 0
+  | "nth" -> 1
+  | "push" -> 1
   | _ -> raise_error fi "Sequence method not implemented."
 
 let get_last_arg_index fun_name =
@@ -453,6 +455,7 @@ let get_last_arg_index fun_name =
 let call_seq_method fi ds_choice fun_name args =
   (*TODO: Open ds_choice for method*)
   (*TODO: Check arg types against sequence function table*)
+  (*TODO: Check that number of arguments are correct (earlier?)*)
   match Ustring.to_utf8 fun_name with
   | "length" ->
     (match (List.nth args 0) with
@@ -460,6 +463,16 @@ let call_seq_method fi ds_choice fun_name args =
       let seq_length = List.length sequence in
       TmConst(fi, CInt(seq_length))
     | _ -> raise_error fi "Argument has the wrong type.")
+  | "nth" ->
+    (match (List.nth args 0), (List.nth args 1) with
+     | TmSeq(fi2,ds_choice2,sequence), TmConst(fi3,CInt(n)) ->
+       TmConst(fi, CInt(List.nth sequence n))
+     | _ -> raise_error fi "Arguments have the wrong type.")
+  | "push" ->
+    (match (List.nth args 0), (List.nth args 1) with
+     | TmSeq(fi2,ds_choice2,sequence), TmConst(fi3, CInt(e)) ->
+       TmSeq(fi,ds_choice2,(e::sequence))
+     | _ -> raise_error fi "Argument has the wrong type.")
   | _ -> raise_error fi "Sequence method not implemented."
 
 (* Main evaluation loop of a term. Evaluates using big-step semantics *)

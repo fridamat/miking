@@ -106,7 +106,7 @@ and arg_index = int
 and args = tm list
 and ds_choice = int
 and fun_name = ustring
-and sequence = tm list
+and sequence = int list
 
 (* Terms / expressions *)
 and tm =
