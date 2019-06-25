@@ -15,3 +15,7 @@ utest (newseq [int] (1)) (seqmethod . push (newseq [ int ] ()) 1)
 
 // Nth test 1
 utest 1 (seqmethod . nth (seqmethod . push (newseq [ int ] ()) 1) 0)
+
+// Map test 1
+// let double = lam x:Int. muli x 2
+// utest (newseq [int] (2,4)) (seqmethod . map (double) (newseq [int] (1,2)))
