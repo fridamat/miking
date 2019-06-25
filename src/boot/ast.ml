@@ -122,7 +122,7 @@ and tm =
 | TmFix         of info                             (* Fix point *)
 | TmTyLam       of info * ustring * kind * tm       (* Type abstraction *)
 | TmTyApp       of info * tm * ty                   (* Type application *)
-(*TODO: Add ability to create a new seq with a list of elements, that is add '* tm list option'*)
+(*TODO: Add ability to create a new seq with a list of elements, that is add '* tm list option' or reference to CList*)
 (*TODO: Make ds_choice:s below optional*)
 | TmSeq         of info * ds_choice * sequence                (* Sequence constructor *)
 | TmSeqMethod   of info * ds_choice * fun_name * args * arg_index (* Sequence method *)
