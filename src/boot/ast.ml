@@ -102,6 +102,9 @@ and const =
 (* Tells if a variable is a pe variable or if a closure is a pe closure *)
 and pemode = bool
 
+and const_list =
+  | CList      of int list
+
 and arg_index = int
 and args = tm list
 and ds_choice = int

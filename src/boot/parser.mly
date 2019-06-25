@@ -57,6 +57,10 @@ let mkopkind fi op =
   | None -> KindStar(fi)
   | Some(k) -> k
 
+let get_list_from_clist clist =
+  match clist with
+  | CList(seq) -> seq
+
 %}
 
 /* Misc tokens */
@@ -185,11 +189,19 @@ mc_term:
   | IF mc_term THEN mc_term ELSE mc_term
       { let fi = mkinfo $1.i (tm_info $6) in
         TmIfexp(fi, $2, $4, $6) }
-  | SEQ LSQUARE IDENT RSQUARE
+  | SEQ LSQUARE IDENT RSQUARE LPAREN mc_list
       { let fi = mkinfo ($1.i) ($4.i) in
         (*TODO:Change ds_choice to None?*)
         (*TODO:Collect a list instead of creating an empty OCaml list*)
-        TmSeq(fi, 0, []) }
+        TmSeq(fi, 0, (get_list_from_clist $6)) }
+
+mc_list:
+  | RPAREN
+      { CList([]) }
+  | UINT RPAREN
+      { CList($1.v :: []) }
+  | UINT COMMA mc_list
+      { CList($1.v :: (get_list_from_clist $3))}
 
 
 ty_op:

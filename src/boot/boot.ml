@@ -127,6 +127,11 @@ let rec val_equal v1 v2 =
         | _ -> false
       in o1 = o2 && u1 = u2 && eql (uct2revlist t1) (uct2revlist t2)
   | TmNop,TmNop -> true
+  | TmSeq(_,_,seq1), TmSeq(_,_,seq2) ->
+    if seq1 = seq2 then
+      true
+    else
+      false
   | _ -> false
 
 let ustring2uctstring s =
