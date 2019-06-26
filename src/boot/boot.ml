@@ -15,6 +15,7 @@ open Printf
 open Ast
 open Msg
 open Pprint
+open Linkedlist
 
 
 let prog_argv = ref []          (* Argv for the program that is executed *)
@@ -465,18 +466,20 @@ let call_seq_method fi ds_choice fun_name args =
   | "length" ->
     (match (List.nth args 0) with
     | TmSeq(fi2,ds_choice2,sequence) ->
-      let seq_length = List.length sequence in
+      let seq_length = Linkedlist.length (Linkedlist.from_list sequence) in
       TmConst(fi, CInt(seq_length))
     | _ -> raise_error fi "Argument has the wrong type.")
   | "nth" ->
     (match (List.nth args 0), (List.nth args 1) with
      | TmSeq(fi2,ds_choice2,sequence), TmConst(fi3,CInt(n)) ->
-       TmConst(fi, CInt(List.nth sequence n))
+       let nth_element = Linkedlist.nth (Linkedlist.from_list sequence) n in
+       TmConst(fi, CInt(nth_element))
      | _ -> raise_error fi "Arguments have the wrong type.")
   | "push" ->
     (match (List.nth args 0), (List.nth args 1) with
      | TmSeq(fi2,ds_choice2,sequence), TmConst(fi3, CInt(e)) ->
-       TmSeq(fi,ds_choice2,(e::sequence))
+       let updated_sequence = Linkedlist.push (Linkedlist.from_list sequence) e in
+       TmSeq(fi,ds_choice2,(Linkedlist.to_list updated_sequence))
      | _ -> raise_error fi "Argument has the wrong type.")
   | _ -> raise_error fi "Sequence method not implemented."
 
