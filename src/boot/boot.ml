@@ -466,20 +466,20 @@ let call_seq_method fi ds_choice fun_name args =
   | "length" ->
     (match (List.nth args 0) with
     | TmSeq(fi2,ds_choice2,sequence) ->
-      let seq_length = Linkedlist.length (Linkedlist.from_list sequence) in
+      let seq_length = Linkedlist.length sequence in
       TmConst(fi, CInt(seq_length))
     | _ -> raise_error fi "Argument has the wrong type.")
   | "nth" ->
     (match (List.nth args 0), (List.nth args 1) with
      | TmSeq(fi2,ds_choice2,sequence), TmConst(fi3,CInt(n)) ->
-       let nth_element = Linkedlist.nth (Linkedlist.from_list sequence) n in
+       let nth_element = Linkedlist.nth sequence n in
        TmConst(fi, CInt(nth_element))
      | _ -> raise_error fi "Arguments have the wrong type.")
   | "push" ->
     (match (List.nth args 0), (List.nth args 1) with
      | TmSeq(fi2,ds_choice2,sequence), TmConst(fi3, CInt(e)) ->
-       let updated_sequence = Linkedlist.push (Linkedlist.from_list sequence) e in
-       TmSeq(fi,ds_choice2,(Linkedlist.to_list updated_sequence))
+       let updated_sequence = Linkedlist.push sequence e in
+       TmSeq(fi,ds_choice2,updated_sequence)
      | _ -> raise_error fi "Argument has the wrong type.")
   | _ -> raise_error fi "Sequence method not implemented."
 

@@ -8,6 +8,7 @@
 
 open Ustring.Op
 open Msg
+open Linkedlist
 
 
 
@@ -109,7 +110,7 @@ and arg_index = int
 and args = tm list
 and ds_choice = int
 and fun_name = ustring
-and sequence = int list
+and seq = int Linkedlist.sequence
 
 (* Terms / expressions *)
 and tm =
@@ -124,7 +125,7 @@ and tm =
 | TmTyApp       of info * tm * ty                   (* Type application *)
 (*TODO: Add ability to create a new seq with a list of elements, that is add '* tm list option' or reference to CList*)
 (*TODO: Make ds_choice:s below optional*)
-| TmSeq         of info * ds_choice * sequence                (* Sequence constructor *)
+| TmSeq         of info * ds_choice * seq                (* Sequence constructor *)
 | TmSeqMethod   of info * ds_choice * fun_name * args * arg_index (* Sequence method *)
 
 

@@ -11,6 +11,7 @@
   open Ustring.Op
   open Msg
   open Ast
+  open Linkedlist
 
   (** Create a new info, taking left and right part *)
   let mkinfo fi1 fi2 =
@@ -193,7 +194,7 @@ mc_term:
       { let fi = mkinfo ($1.i) ($4.i) in
         (*TODO:Change ds_choice to None?*)
         (*TODO:Collect a list instead of creating an empty OCaml list*)
-        TmSeq(fi, 0, (get_list_from_clist $6)) }
+        TmSeq(fi, 0, (Linkedlist.from_list (get_list_from_clist $6))) }
 
 mc_list:
   | RPAREN
