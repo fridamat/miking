@@ -173,6 +173,7 @@ mcore_scope:
         TmUtest(fi,$2,$3,$4) }
   | LET IDENT EQ mc_term mcore_scope
       { let fi = mkinfo $1.i (tm_info $4) in
+        (*TODO: Add ds_choice or connection to var for sequences?*)
         TmApp(fi,TmLam(fi,$2.v,TyDyn,$5),$4) }
 
 mc_term:
@@ -186,6 +187,7 @@ mc_term:
         TmTyLam(fi,$2.v,mkopkind $2.i $3,$5) }
   | LET IDENT EQ mc_term IN mc_term
       { let fi = mkinfo $1.i (tm_info $4) in
+        (*TODO: Add ds_choice or connection to var for sequences?*)
         TmApp(fi,TmLam(fi,$2.v,TyDyn,$6),$4) }
   | IF mc_term THEN mc_term ELSE mc_term
       { let fi = mkinfo $1.i (tm_info $6) in
@@ -194,6 +196,7 @@ mc_term:
       { let fi = mkinfo ($1.i) ($4.i) in
         (*TODO:Change ds_choice to None?*)
         (*TODO:Collect a list instead of creating an empty OCaml list*)
+        (*TODO: Treat as a new variable to keep track of in algorithm?*)
         TmSeq(fi, 0, (Linkedlist.from_list (get_list_from_clist $6))) }
 
 mc_list:
