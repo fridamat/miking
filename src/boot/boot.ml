@@ -458,29 +458,22 @@ let get_last_arg_index fun_name =
   (*TODO: Check length of arg types in sequence function table*)
   get_arg_types_length_dummy fun_name
 
+let call_length_method fi args =
+  match args with
+  | [TmSeq(_,ty_id,ds_choice,clist,cseq)] ->
+    (match cseq with
+     | SeqList(ll) ->
+       TmConst(fi,CInt(Linkedlist.length ll))
+     | _ -> raise_error fi "No such data structure type.")
+  | _ -> raise_error fi "Sequence method not implemented."
+
+
 let call_seq_method fi ds_choice fun_name args =
   (*TODO: Open ds_choice for method*)
   (*TODO: Check arg types against sequence function table*)
   (*TODO: Check that number of arguments are correct (earlier?)*)
   match Ustring.to_utf8 fun_name with
-  | "length" ->
-    (match (List.nth args 0) with
-    | TmSeq(fi2,ty_2,ds_choice2,clist,cseq) ->
-      let seq_length = List.length (Ast.get_list_from_clist clist) in
-      TmConst(fi, CInt(seq_length))
-    | _ -> raise_error fi "Argument has the wrong type.")
-  | "nth" ->
-    (match (List.nth args 0), (List.nth args 1) with
-     | TmSeq(fi2,ty_2,ds_choice2,clist,cseq), TmConst(fi3,CInt(n)) ->
-       let nth_element = List.nth (Ast.get_list_from_clist clist) n in
-       TmConst(fi, CInt(nth_element))
-     | _ -> raise_error fi "Arguments have the wrong type.")
-  | "push" ->
-    (match (List.nth args 0), (List.nth args 1) with
-     | TmSeq(fi2,ty_2,ds_choice2,clist,cseq), TmConst(fi3, CInt(e)) ->
-       let updated_clist = CIntList(e::(Ast.get_list_from_clist clist)) in
-       TmSeq(fi2,ty_2,ds_choice2,updated_clist,cseq)
-     | _ -> raise_error fi "Argument has the wrong type.")
+  | "length" -> call_length_method fi args
   | _ -> raise_error fi "Sequence method not implemented."
 
 (* Main evaluation loop of a term. Evaluates using big-step semantics *)

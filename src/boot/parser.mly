@@ -58,9 +58,11 @@ let mkopkind fi op =
   | None -> KindStar(fi)
   | Some(k) -> k
 
-let get_list_from_clist clist =
-  match clist with
-  | CIntList(seq) -> seq
+(*TODO: Remove method from here*)
+let init_seq tm_l =
+  match tm_l with
+  | TmList([]) -> SeqList(Linkedlist.empty)
+  | TmList(l) -> SeqList(Linkedlist.from_list l)
 
 %}
 
@@ -192,22 +194,23 @@ mc_term:
   | IF mc_term THEN mc_term ELSE mc_term
       { let fi = mkinfo $1.i (tm_info $6) in
         TmIfexp(fi, $2, $4, $6) }
-  | SEQ LSQUARE IDENT RSQUARE LPAREN mc_int_list
+  | SEQ LSQUARE IDENT RSQUARE LPAREN mc_list
       { let fi = mkinfo ($1.i) ($4.i) in
         (*TODO:Change ds_choice to None?*)
         (*TODO:Collect a list instead of creating an empty OCaml list*)
         (*TODO: Treat as a new variable to keep track of in algorithm?*)
         (*TODO: Add other types of lists*)
         (*TODO: Add TmPost in parse step 2*)
-        TmSeq(fi, 0, 0, $6, None) }
+        (*TODO: You should not init_seq here, but later*)
+        TmSeq(fi, 0, 0, $6, (init_seq $6)) }
 
-mc_int_list:
+mc_list:
   | RPAREN
-      { CIntList([]) }
-  | UINT RPAREN
-      { CIntList($1.v :: []) }
-  | UINT COMMA mc_int_list
-      { CIntList($1.v :: (get_list_from_clist $3))}
+      { TmList([]) }
+  | mc_term RPAREN
+      { TmList($1 :: []) }
+  | mc_term COMMA mc_list
+      { TmList($1::(get_list_from_tm_list $3))}
 
 
 ty_op:

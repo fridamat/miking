@@ -73,16 +73,6 @@ let uc2ustring uclst =
       |TmChar(_,i) -> i
       | _ -> failwith "Not a string list") uclst
 
-let rec pprint_clist_of_ints clist =
-  match clist with
-  | [] -> us" "
-  | hd::[] -> us(string_of_int hd) ^. us" "
-  | hd::tl -> us(string_of_int hd) ^. (pprint_clist_of_ints tl)
-
-let pprint_clist clist =
-  match clist with
-  | CIntList(l) -> pprint_clist_of_ints l
-
 
 (* Pretty print match cases *)
 let rec pprint_cases basic cases =
@@ -191,7 +181,7 @@ and pprint basic t =
   | TmTyApp(_,t1,ty1) ->
       left inside ^. ppt false t1 ^. us" [" ^. pprint_ty ty1 ^. us"]" ^. right inside
   | TmIfexp(_,c,t,e) -> us"if " ^. ppt false c ^. us" then " ^. ppt false t ^. us" else " ^. ppt false e
-  | TmSeq(fi,ty_id,ds_choice,clist,_) -> us"[" ^. (pprint_clist clist) ^. us"]" (*TODO:Print the selected data structure type ty*) (*TODO:Print the selected data structure type ty*)
+  | TmSeq(fi,ty_id,ds_choice,clist,_) -> us"TmSeq" (*TODO:Print the selected data structure type ty*) (*TODO:Print the selected data structure type ty*)
   | TmSeqMethod(fi,ds_choice,fun_name,args,arg_index) -> us"Seq." ^. fun_name ^. us"()" (*TODO:Print the selected data structure type ty and the arguments?*)
   | TmChar(fi,c) -> us"'" ^. list2ustring [c] ^. us"'"
   | TmUC(fi,uct,ordered,uniqueness) -> (

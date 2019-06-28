@@ -109,10 +109,14 @@ and ds_choice = int
 and fun_name = ustring
 and ty_id = int
 
-and const_list =
-  | CIntList      of int list
-and const_seq =
-  | CLinkedList   of int Linkedlist.sequence
+and tm_list =
+  | TmList   of tm list
+
+and sequence =
+  | SeqList  of tm Linkedlist.sequence
+  | SeqNone
+
+
 
 (* Terms / expressions *)
 and tm =
@@ -127,7 +131,7 @@ and tm =
 | TmTyApp       of info * tm * ty                   (* Type application *)
 (*TODO: Add ability to create a new seq with a list of elements, that is add '* tm list option' or reference to CList*)
 (*TODO: Make ds_choice:s below optional*)
-| TmSeq         of info * ty_id * ds_choice * const_list * const_seq option              (* Sequence constructor *)
+| TmSeq         of info * ty_id * ds_choice * tm_list * sequence              (* Sequence constructor *)
 | TmSeqMethod   of info * ds_choice * fun_name * args * arg_index (* Sequence method *)
 
 
@@ -264,13 +268,12 @@ let arity c =
      domain specific constructs *)
   | CAtom(_,_)     -> 0
 
-(*TODO: Add for other types of lists*)
-let get_list_from_clist clist  =
-  match clist with
-  | CIntList(l) -> l
-
 
 type 'a tokendata = {i:info; v:'a}
+
+let get_list_from_tm_list tm_l =
+  match tm_l with
+  | TmList(l) -> l
 
 
 let ustring2uctm fi str =
