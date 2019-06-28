@@ -102,7 +102,7 @@ let rec debruijn env t =
   | TmTyLam(fi,x,kind,t1) -> TmTyLam(fi,x,kind,debruijn (VarTy(x)::env) t1)
   | TmTyApp(fi,t1,ty1) -> TmTyApp(fi,debruijn env t1, debruijnTy env ty1)
   | TmIfexp(fi,cnd,thn,els) -> TmIfexp(fi, debruijn env cnd, debruijn env thn, debruijn env els)
-  | TmSeq(fi,ty_id,ds_choice,clist,cseq) -> t (*TODO: Change if sequence can consist of terms*)
+  | TmSeq(fi,ty_id,ds_choice,clist,cseq) -> TmSeq(fi,ty_id,ds_choice,TmList(debruijn_list env (get_list_from_tm_list clist)),cseq)
   | TmSeqMethod(fi,ds_choice,fun_name,args,arg_index) ->
     TmSeqMethod(fi,ds_choice,fun_name,(debruijn_list env args),arg_index)
   | TmChar(_,_) -> t
@@ -129,10 +129,9 @@ let rec val_equal v1 v2 =
       in o1 = o2 && u1 = u2 && eql (uct2revlist t1) (uct2revlist t2)
   | TmNop,TmNop -> true
   | TmSeq(_,_,_,seq1,_), TmSeq(_,_,_,seq2,_) ->
-    if seq1 = seq2 then
-      true
-    else
-      false
+    (match seq1, seq2 with
+    | TmList(l1), TmList(l2) -> (l1 = l2)
+    | _ -> false)
   | _ -> false
 
 let ustring2uctstring s =
@@ -478,6 +477,11 @@ let call_seq_method fi ds_choice fun_name args =
 
 (* Main evaluation loop of a term. Evaluates using big-step semantics *)
 let rec eval env t =
+  let rec eval_tmlist env tm_l =
+    (match tm_l with
+     | TmList([]) -> []
+     | TmList(hd::tl) -> (eval env hd)::(eval_tmlist env (TmList(tl)))
+    ) in
   debug_eval env t;
   match t with
   (* Variables using debruijn indices. Need to evaluate because fix point. *)
@@ -521,7 +525,9 @@ let rec eval env t =
          eval env els
      | _ -> raise_error fi "Condition in if-expression not a bool.")
   (* Sequence constructor *)
-  | TmSeq(_,_,_,_,_) -> t
+  | TmSeq(fi,ty_id,ds_choice,tmlist,tmseq) ->
+    let new_tmlist = TmList(eval_tmlist env tmlist) in
+    TmSeq(fi,ty_id,ds_choice,new_tmlist,tmseq)
   (* Sequence method*)
   | TmSeqMethod(_,_,_,_,_) -> t
   (* The rest *)
