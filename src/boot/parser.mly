@@ -33,8 +33,7 @@
       | TmTyLam(fi,x,k,t1) -> hasx t1
       | TmTyApp(fi,t1,ty1) -> hasx t1
       | TmIfexp(fi,cnd,thn,els) -> hasx cnd || hasx thn || hasx els
-      | TmSeqPre(_,_,_) -> false (*TODO: Change if sequence can contain terms*)
-      | TmSeqPost(_,_,_) -> false (*TODO: Change if sequence can contain terms*)
+      | TmSeq(_,_,_,_,_) -> false (*TODO: Change if sequence can contain terms*)
       | TmSeqMethod(fi,ds_choice,fun_name,args,arg_index) ->
       (match args with
         | [] -> false
@@ -200,7 +199,7 @@ mc_term:
         (*TODO: Treat as a new variable to keep track of in algorithm?*)
         (*TODO: Add other types of lists*)
         (*TODO: Add TmPost in parse step 2*)
-        TmSeqPre(fi, 0, $6) }
+        TmSeq(fi, 0, 0, $6, None) }
 
 mc_int_list:
   | RPAREN

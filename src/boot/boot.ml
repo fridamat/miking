@@ -102,8 +102,7 @@ let rec debruijn env t =
   | TmTyLam(fi,x,kind,t1) -> TmTyLam(fi,x,kind,debruijn (VarTy(x)::env) t1)
   | TmTyApp(fi,t1,ty1) -> TmTyApp(fi,debruijn env t1, debruijnTy env ty1)
   | TmIfexp(fi,cnd,thn,els) -> TmIfexp(fi, debruijn env cnd, debruijn env thn, debruijn env els)
-  | TmSeqPre(fi,ty_id,clist) -> t (*TODO: Change if sequence can consist of terms*)
-  | TmSeqPost(fi,ds_choice,cseq) -> t (*TODO: Change if sequence can consist of terms*)
+  | TmSeq(fi,ty_id,ds_choice,clist,cseq) -> t (*TODO: Change if sequence can consist of terms*)
   | TmSeqMethod(fi,ds_choice,fun_name,args,arg_index) ->
     TmSeqMethod(fi,ds_choice,fun_name,(debruijn_list env args),arg_index)
   | TmChar(_,_) -> t
@@ -129,7 +128,7 @@ let rec val_equal v1 v2 =
         | _ -> false
       in o1 = o2 && u1 = u2 && eql (uct2revlist t1) (uct2revlist t2)
   | TmNop,TmNop -> true
-  | TmSeqPre(_,_,seq1), TmSeqPre(_,_,seq2) ->
+  | TmSeq(_,_,_,seq1,_), TmSeq(_,_,_,seq2,_) ->
     if seq1 = seq2 then
       true
     else
@@ -466,21 +465,21 @@ let call_seq_method fi ds_choice fun_name args =
   match Ustring.to_utf8 fun_name with
   | "length" ->
     (match (List.nth args 0) with
-    | TmSeqPre(fi2,ds_choice2,sequence) ->
-      let seq_length = List.length (Ast.get_list_from_clist sequence) in
+    | TmSeq(fi2,ty_2,ds_choice2,clist,cseq) ->
+      let seq_length = List.length (Ast.get_list_from_clist clist) in
       TmConst(fi, CInt(seq_length))
     | _ -> raise_error fi "Argument has the wrong type.")
   | "nth" ->
     (match (List.nth args 0), (List.nth args 1) with
-     | TmSeqPre(fi2,ds_choice2,sequence), TmConst(fi3,CInt(n)) ->
-       let nth_element = List.nth (Ast.get_list_from_clist sequence) n in
+     | TmSeq(fi2,ty_2,ds_choice2,clist,cseq), TmConst(fi3,CInt(n)) ->
+       let nth_element = List.nth (Ast.get_list_from_clist clist) n in
        TmConst(fi, CInt(nth_element))
      | _ -> raise_error fi "Arguments have the wrong type.")
   | "push" ->
     (match (List.nth args 0), (List.nth args 1) with
-     | TmSeqPre(fi2,ds_choice2,sequence), TmConst(fi3, CInt(e)) ->
-       let updated_sequence = CIntList(e::(Ast.get_list_from_clist sequence)) in
-       TmSeqPre(fi,ds_choice2,updated_sequence)
+     | TmSeq(fi2,ty_2,ds_choice2,clist,cseq), TmConst(fi3, CInt(e)) ->
+       let updated_clist = CIntList(e::(Ast.get_list_from_clist clist)) in
+       TmSeq(fi2,ty_2,ds_choice2,updated_clist,cseq)
      | _ -> raise_error fi "Argument has the wrong type.")
   | _ -> raise_error fi "Sequence method not implemented."
 
@@ -529,8 +528,7 @@ let rec eval env t =
          eval env els
      | _ -> raise_error fi "Condition in if-expression not a bool.")
   (* Sequence constructor *)
-  | TmSeqPre(_,_,_) -> t
-  | TmSeqPost(_,_,_) -> t
+  | TmSeq(_,_,_,_,_) -> t
   (* Sequence method*)
   | TmSeqMethod(_,_,_,_,_) -> t
   (* The rest *)
