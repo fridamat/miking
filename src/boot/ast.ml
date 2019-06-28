@@ -103,14 +103,16 @@ and const =
 (* Tells if a variable is a pe variable or if a closure is a pe closure *)
 and pemode = bool
 
-and const_list =
-  | CList      of int list
-
 and arg_index = int
 and args = tm list
 and ds_choice = int
 and fun_name = ustring
-and seq = int Linkedlist.sequence
+and ty_id = int
+
+and const_list =
+  | CIntList      of int list
+and const_seq =
+  | CLinkedList   of int Linkedlist.sequence
 
 (* Terms / expressions *)
 and tm =
@@ -125,7 +127,8 @@ and tm =
 | TmTyApp       of info * tm * ty                   (* Type application *)
 (*TODO: Add ability to create a new seq with a list of elements, that is add '* tm list option' or reference to CList*)
 (*TODO: Make ds_choice:s below optional*)
-| TmSeq         of info * ds_choice * seq                (* Sequence constructor *)
+| TmSeqPre         of info * ty_id * const_list                (* Sequence constructor *)
+| TmSeqPost        of info * ds_choice * const_seq
 | TmSeqMethod   of info * ds_choice * fun_name * args * arg_index (* Sequence method *)
 
 
@@ -183,7 +186,8 @@ let tm_info t =
   | TmFix(fi) -> fi
   | TmTyLam(fi,_,_,_) -> fi
   | TmTyApp(fi,_,_) -> fi
-  | TmSeq(fi,_,_) -> fi
+  | TmSeqPre(fi,_,_) -> fi
+  | TmSeqPost(fi,_,_) -> fi
   | TmSeqMethod(fi,_,_,_,_) -> fi
 
   | TmChar(fi,_) -> fi
@@ -261,6 +265,11 @@ let arity c =
   (* Atom - an untyped lable that can be used to implement
      domain specific constructs *)
   | CAtom(_,_)     -> 0
+
+(*TODO: Add for other types of lists*)
+let get_list_from_clist clist  =
+  match clist with
+  | CIntList(l) -> l
 
 
 type 'a tokendata = {i:info; v:'a}

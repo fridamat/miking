@@ -461,7 +461,8 @@ let rec erase t =
   | TmApp(fi,t1,t2) -> TmApp(fi, erase t1, erase t2)
   | TmConst(fi,c) -> t
   | TmIfexp(fi,cnd,thn,els) -> TmIfexp(fi, cnd, erase thn, erase els)
-  | TmSeq(_,_,_) -> t
+  | TmSeqPre(_,_,_) -> t
+  | TmSeqPost(_,_,_) -> t
   | TmSeqMethod(_,_,_,_,_) -> t
   | TmFix(fi) -> t
   | TmTyLam(fi,x,kind,t1) -> erase t1

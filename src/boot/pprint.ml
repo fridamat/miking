@@ -73,13 +73,15 @@ let uc2ustring uclst =
       |TmChar(_,i) -> i
       | _ -> failwith "Not a string list") uclst
 
-let rec print_sequence sequence i =
-  if i == (Linkedlist.length sequence) then
-    us" " (*TODO: Raise error instead*)
-  else if i == ((Linkedlist.length sequence)-1) then
-    ustring_of_int (Linkedlist.nth sequence i)
-  else
-    ustring_of_int (Linkedlist.nth sequence i) ^. us"," ^. (print_sequence sequence (i+1))
+let rec pprint_clist_of_ints clist =
+  match clist with
+  | [] -> us" "
+  | hd::[] -> us(string_of_int hd) ^. us" "
+  | hd::tl -> us(string_of_int hd) ^. (pprint_clist_of_ints tl)
+
+let pprint_clist clist =
+  match clist with
+  | CIntList(l) -> pprint_clist_of_ints l
 
 
 (* Pretty print match cases *)
@@ -189,7 +191,8 @@ and pprint basic t =
   | TmTyApp(_,t1,ty1) ->
       left inside ^. ppt false t1 ^. us" [" ^. pprint_ty ty1 ^. us"]" ^. right inside
   | TmIfexp(_,c,t,e) -> us"if " ^. ppt false c ^. us" then " ^. ppt false t ^. us" else " ^. ppt false e
-  | TmSeq(fi,ds_choice,sequence) -> us"[" ^. (print_sequence sequence 0) ^. us"]" (*TODO:Print the selected data structure type ty*)
+  | TmSeqPre(fi,ty_id,clist) -> us"[" ^. (pprint_clist clist) ^. us"]" (*TODO:Print the selected data structure type ty*)
+  | TmSeqPost(fi,ds_choice,cseq) -> us"We have a TmSeqPost" (*TODO:Print the selected data structure type ty*)
   | TmSeqMethod(fi,ds_choice,fun_name,args,arg_index) -> us"Seq." ^. fun_name ^. us"()" (*TODO:Print the selected data structure type ty and the arguments?*)
   | TmChar(fi,c) -> us"'" ^. list2ustring [c] ^. us"'"
   | TmUC(fi,uct,ordered,uniqueness) -> (

@@ -33,7 +33,8 @@
       | TmTyLam(fi,x,k,t1) -> hasx t1
       | TmTyApp(fi,t1,ty1) -> hasx t1
       | TmIfexp(fi,cnd,thn,els) -> hasx cnd || hasx thn || hasx els
-      | TmSeq(fi,ds_choice,sequence) -> false (*TODO: Change if sequence can contain terms*)
+      | TmSeqPre(_,_,_) -> false (*TODO: Change if sequence can contain terms*)
+      | TmSeqPost(_,_,_) -> false (*TODO: Change if sequence can contain terms*)
       | TmSeqMethod(fi,ds_choice,fun_name,args,arg_index) ->
       (match args with
         | [] -> false
@@ -60,7 +61,7 @@ let mkopkind fi op =
 
 let get_list_from_clist clist =
   match clist with
-  | CList(seq) -> seq
+  | CIntList(seq) -> seq
 
 %}
 
@@ -192,20 +193,22 @@ mc_term:
   | IF mc_term THEN mc_term ELSE mc_term
       { let fi = mkinfo $1.i (tm_info $6) in
         TmIfexp(fi, $2, $4, $6) }
-  | SEQ LSQUARE IDENT RSQUARE LPAREN mc_list
+  | SEQ LSQUARE IDENT RSQUARE LPAREN mc_int_list
       { let fi = mkinfo ($1.i) ($4.i) in
         (*TODO:Change ds_choice to None?*)
         (*TODO:Collect a list instead of creating an empty OCaml list*)
         (*TODO: Treat as a new variable to keep track of in algorithm?*)
-        TmSeq(fi, 0, (Linkedlist.from_list (get_list_from_clist $6))) }
+        (*TODO: Add other types of lists*)
+        (*TODO: Add TmPost in parse step 2*)
+        TmSeqPre(fi, 0, $6) }
 
-mc_list:
+mc_int_list:
   | RPAREN
-      { CList([]) }
+      { CIntList([]) }
   | UINT RPAREN
-      { CList($1.v :: []) }
-  | UINT COMMA mc_list
-      { CList($1.v :: (get_list_from_clist $3))}
+      { CIntList($1.v :: []) }
+  | UINT COMMA mc_int_list
+      { CIntList($1.v :: (get_list_from_clist $3))}
 
 
 ty_op:
