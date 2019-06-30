@@ -70,7 +70,7 @@ let info2str_startline fi =
 
 (** [message2str m] returns a string representation of message [m].
     Is message is not intended to be read by humans. *)
-let message2str (id,sev,info,args)  =
+let rec message2str (id,sev,info,args)  =
   match info with
     | Info(filename,l1,c1,l2,c2) ->
 	begin

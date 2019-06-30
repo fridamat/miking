@@ -28,18 +28,20 @@ type intfloatoption =
 (* Evaluation environment *)
 type env = tm list
 
+and tinfo = {ety : ty option; fi : info}
+
 (* Pattern used in match constructs *)
 and pattern =
-| PatIdent      of info * ustring
-| PatChar       of info * int
-| PatUC         of info * pattern list * ucOrder * ucUniqueness
-| PatBool       of info * bool
-| PatInt        of info * int
-| PatConcat     of info * pattern * pattern
+| PatIdent      of tinfo * ustring
+| PatChar       of tinfo * int
+| PatUC         of tinfo * pattern list * ucOrder * ucUniqueness
+| PatBool       of tinfo * bool
+| PatInt        of tinfo * int
+| PatConcat     of tinfo * pattern * pattern
 
 (* One pattern case *)
 and case =
-| Case          of info * pattern * tm
+| Case          of tinfo * pattern * tm
 
 
 (* Tree fore representing universal collection types (UCT) *)
@@ -120,25 +122,25 @@ and sequence =
 
 (* Terms / expressions *)
 and tm =
-| TmVar         of info * ustring * int * pemode    (* Variable *)
-| TmLam         of info * ustring * ty * tm         (* Lambda abstraction *)
-| TmClos        of info * ustring * ty * tm * env * pemode (* Closure *)
-| TmApp         of info * tm * tm                   (* Application *)
-| TmConst       of info * const                     (* Constant *)
-| TmIfexp       of info * tm * tm * tm              (* If expression *)
-| TmFix         of info                             (* Fix point *)
-| TmTyLam       of info * ustring * kind * tm       (* Type abstraction *)
-| TmTyApp       of info * tm * ty                   (* Type application *)
+| TmVar         of tinfo * ustring * int * pemode    (* Variable *)
+| TmLam         of tinfo * ustring * ty * tm         (* Lambda abstraction *)
+| TmClos        of tinfo * ustring * ty * tm * env * pemode (* Closure *)
+| TmApp         of tinfo * tm * tm                   (* Application *)
+| TmConst       of tinfo * const                     (* Constant *)
+| TmIfexp       of tinfo * tm * tm * tm              (* If expression *)
+| TmFix         of tinfo                             (* Fix point *)
+| TmTyLam       of tinfo * ustring * kind * tm       (* Type abstraction *)
+| TmTyApp       of tinfo * tm * ty                   (* Type application *)
 (*TODO: Add ability to create a new seq with a list of elements, that is add '* tm list option' or reference to CList*)
 (*TODO: Make ds_choice:s below optional*)
-| TmSeq         of info * ty_id * ds_choice * tm_list * sequence              (* Sequence constructor *)
-| TmSeqMethod   of info * ds_choice * fun_name * args * arg_index (* Sequence method *)
+| TmSeq         of tinfo * ty_id * ds_choice * tm_list * sequence              (* Sequence constructor *)
+| TmSeqMethod   of tinfo * ds_choice * fun_name * args * arg_index (* Sequence method *)
 
 
-| TmChar        of info * int
-| TmUC          of info * ucTree * ucOrder * ucUniqueness
-| TmUtest       of info * tm * tm * tm
-| TmMatch       of info * tm * case list
+| TmChar        of tinfo * int
+| TmUC          of tinfo * ucTree * ucOrder * ucUniqueness
+| TmUtest       of tinfo * tm * tm * tm
+| TmMatch       of tinfo * tm * case list
 | TmNop
 
 (* Ground types *)
@@ -180,22 +182,22 @@ let envVar tyvar =
 (* Returns the info field from a term *)
 let tm_info t =
   match t with
-  | TmVar(fi,_,_,_) -> fi
-  | TmLam(fi,_,_,_) -> fi
-  | TmClos(fi,_,_,_,_,_) -> fi
-  | TmApp(fi,_,_) -> fi
-  | TmConst(fi,_) -> fi
-  | TmIfexp(fi,_,_,_) -> fi
-  | TmFix(fi) -> fi
-  | TmTyLam(fi,_,_,_) -> fi
-  | TmTyApp(fi,_,_) -> fi
-  | TmSeq(fi,_,_,_,_) -> fi
-  | TmSeqMethod(fi,_,_,_,_) -> fi
+  | TmVar({fi},_,_,_) -> fi
+  | TmLam({fi},_,_,_) -> fi
+  | TmClos({fi},_,_,_,_,_) -> fi
+  | TmApp({fi},_,_) -> fi
+  | TmConst({fi},_) -> fi
+  | TmIfexp({fi},_,_,_) -> fi
+  | TmFix({fi}) -> fi
+  | TmTyLam({fi},_,_,_) -> fi
+  | TmTyApp({fi},_,_) -> fi
+  | TmSeq({fi},_,_,_,_) -> fi
+  | TmSeqMethod({fi},_,_,_,_) -> fi
 
-  | TmChar(fi,_) -> fi
-  | TmUC(fi,_,_,_) -> fi
-  | TmUtest(fi,_,_,_) -> fi
-  | TmMatch(fi,_,_) -> fi
+  | TmChar({fi},_) -> fi
+  | TmUC({fi},_,_,_) -> fi
+  | TmUtest({fi},_,_,_) -> fi
+  | TmMatch({fi},_,_) -> fi
   | TmNop -> NoInfo
 
 
@@ -269,7 +271,7 @@ let arity c =
   | CAtom(_,_)     -> 0
 
 
-type 'a tokendata = {i:info; v:'a}
+type 'a tokendata = {i:tinfo; v:'a}
 
 let get_list_from_tm_list tm_l =
   match tm_l with
@@ -277,5 +279,5 @@ let get_list_from_tm_list tm_l =
 
 
 let ustring2uctm fi str =
-  let lst = List.map (fun x -> TmChar(NoInfo,x)) (ustring2list str) in
+  let lst = List.map (fun x -> TmChar({ety = None; fi = NoInfo},x)) (ustring2list str) in
   TmUC(fi,UCLeaf(lst),UCOrdered,UCMultivalued)
