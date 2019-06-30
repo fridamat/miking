@@ -116,8 +116,6 @@ let rec debruijn env t =
   | TmNop -> t
 
 let compare_tm_terms tm1 tm2 =
-  let s1 = Pprint.pprint false tm1 in
-  let s2 = Pprint.pprint false tm2 in
   match tm1, tm2 with
   | TmConst(_,CInt(n1)), TmConst(_,CInt(n2)) -> (n1 = n2)
   | _ -> false
@@ -177,7 +175,7 @@ let rec val_equal v1 v2 =
       in o1 = o2 && u1 = u2 && eql (uct2revlist t1) (uct2revlist t2)
   | TmNop,TmNop -> true
   | TmSeq(_,_,_,tml1,seq1), TmSeq(_,_,_,tml2,seq2) ->
-    compare_tm_lists tml1 tml2
+    (compare_tm_lists tml1 tml2) && (compare_sequences seq1 seq2)
   | _ -> false
 
 let ustring2uctstring s =
@@ -487,6 +485,11 @@ let optimize_const_app fi v1 v2 =
   | vv1,vv2 -> TmApp(fi,vv1,vv2)
 
 (*eval helper methods*)
+let get_seq_from_list tml seq =
+  match tml, seq with
+  | TmList(l), SeqList(_) -> SeqList(Linkedlist.from_list l)
+  | _ -> failwith "Sequence type not implemented."
+
 let rec add_evaluated_term_to_args args term =
   match args with
   | [] -> term::[]
@@ -573,7 +576,8 @@ let rec eval env t =
   (* Sequence constructor *)
   | TmSeq(fi,ty_id,ds_choice,tmlist,tmseq) ->
     let new_tmlist = TmList(eval_tmlist env tmlist) in
-    TmSeq(fi,ty_id,ds_choice,new_tmlist,tmseq)
+    let new_tmseq = get_seq_from_list new_tmlist tmseq in
+    TmSeq(fi,ty_id,ds_choice,new_tmlist,new_tmseq)
   (* Sequence method*)
   | TmSeqMethod(_,_,_,_,_) -> t
   (* The rest *)
