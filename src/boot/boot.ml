@@ -506,23 +506,23 @@ let get_last_arg_index fun_name =
   (*TODO: Check length of arg types in sequence function table*)
   get_arg_types_length_dummy fun_name
 
-let call_length_method fi args =
+let call_length_method ti args =
   match args with
   | [TmSeq(_,ty_id,ds_choice,clist,cseq)] ->
     (match cseq with
      | SeqList(ll) ->
-       TmConst(fi,CInt(Linkedlist.length ll))
-     | _ -> raise_error fi "No such data structure type.")
-  | _ -> raise_error fi "Sequence method not implemented."
+       TmConst(ti,CInt(Linkedlist.length ll))
+     | _ -> raise_error ti.fi "No such data structure type.")
+  | _ -> raise_error ti.fi "Sequence method not implemented."
 
 
-let call_seq_method fi ds_choice fun_name args =
+let call_seq_method ti ds_choice fun_name args =
   (*TODO: Open ds_choice for method*)
   (*TODO: Check arg types against sequence function table*)
   (*TODO: Check that number of arguments are correct (earlier?)*)
   match Ustring.to_utf8 fun_name with
-  | "length" -> call_length_method fi args
-  | _ -> raise_error fi "Sequence method not implemented."
+  | "length" -> call_length_method ti args
+  | _ -> raise_error ti.fi "Sequence method not implemented."
 
 (* Main evaluation loop of a term. Evaluates using big-step semantics *)
 let rec eval env t =
@@ -554,7 +554,7 @@ let rec eval env t =
          let updated_args = add_evaluated_term_to_args args (eval env t2) in
          let last_arg_index = get_last_arg_index ti.fi fun_name in
          if arg_index == last_arg_index then
-           call_seq_method ti.fi ds_choice fun_name updated_args
+           call_seq_method ti ds_choice fun_name updated_args
          else if arg_index < last_arg_index then
            TmSeqMethod(ti,ds_choice,fun_name,updated_args,(arg_index+1))
          else

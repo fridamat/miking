@@ -331,7 +331,7 @@ let getType t =
   | TmFix({ety}) -> extract ety
   | TmTyLam({ety},_,_,_) -> extract ety
   | TmTyApp({ety},_,_) -> extract ety
-  | TmSeq({ety},_,_) -> extract ety
+  | TmSeq({ety},_,_,_,_) -> extract ety
   | TmSeqMethod({ety},_,_,_,_) -> extract ety
 
   | TmChar({ety},_) -> extract ety
