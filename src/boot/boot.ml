@@ -115,20 +115,36 @@ let rec debruijn env t =
                  Case(fi,pat,debruijn (patvars env pat) tm)) cases)
   | TmNop -> t
 
+let compare_tm_terms tm1 tm2 =
+  let s1 = Pprint.pprint false tm1 in
+  let s2 = Pprint.pprint false tm2 in
+  match tm1, tm2 with
+  | TmConst(_,CInt(n1)), TmConst(_,CInt(n2)) -> (n1 = n2)
+  | _ -> false
+
+let rec compare_linked_lists ll1 ll2 i =
+  if (i = Linkedlist.length ll1) && (i = Linkedlist.length ll2) then
+    true
+  else if (compare_tm_terms (Linkedlist.nth ll1 i) (Linkedlist.nth ll2 i)) then
+    compare_linked_lists ll1 ll2 (i+1)
+  else
+    false
+
+let compare_sequences seq1 seq2 =
+  match seq1, seq2 with
+  | SeqList(ll1), SeqList(ll2) ->
+    compare_linked_lists ll1 ll2 0
+  | SeqNone, SeqNone -> true
+  | _ -> failwith "Sequence not implemented."
+
 let rec compare_int_lists l1 l2 =
   match l1, l2 with
   | [], [] -> true
   | hd1::tl1, hd2::tl2 ->
-    let res = (
-      match hd1, hd2 with
-      | TmConst(_,CInt(n1)), TmConst(_,CInt(n2)) ->
-        if n1 = n2 then
-          compare_int_lists tl1 tl2
-        else
-          false
-      | _ -> false
-    ) in
-    res
+    if compare_tm_terms hd1 hd2 then
+      compare_int_lists tl1 tl2
+    else
+      false
   | _ -> failwith "We expected lists."
 
 let compare_lists l1 l2 =
@@ -147,7 +163,6 @@ let compare_tm_lists tm_l1 tm_l2 =
   match tm_l1, tm_l2 with
   | TmList(l1), TmList(l2) ->
     compare_lists l1 l2
-  | _ -> failwith "We expected TmLists."
 
 (* Check if two value terms are equal *)
 let rec val_equal v1 v2 =
@@ -161,7 +176,7 @@ let rec val_equal v1 v2 =
         | _ -> false
       in o1 = o2 && u1 = u2 && eql (uct2revlist t1) (uct2revlist t2)
   | TmNop,TmNop -> true
-  | TmSeq(_,_,_,tml1,_), TmSeq(_,_,_,tml2,_) ->
+  | TmSeq(_,_,_,tml1,seq1), TmSeq(_,_,_,tml2,seq2) ->
     compare_tm_lists tml1 tml2
   | _ -> false
 
