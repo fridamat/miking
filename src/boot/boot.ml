@@ -115,6 +115,39 @@ let rec debruijn env t =
                  Case(fi,pat,debruijn (patvars env pat) tm)) cases)
   | TmNop -> t
 
+let rec compare_int_lists l1 l2 =
+  match l1, l2 with
+  | [], [] -> true
+  | hd1::tl1, hd2::tl2 ->
+    let res = (
+      match hd1, hd2 with
+      | TmConst(_,CInt(n1)), TmConst(_,CInt(n2)) ->
+        if n1 = n2 then
+          compare_int_lists tl1 tl2
+        else
+          false
+      | _ -> false
+    ) in
+    res
+  | _ -> failwith "We expected lists."
+
+let compare_lists l1 l2 =
+  (*TODO: Add more types of lists*)
+  match l1, l2 with
+  | hd1::_, hd2::_ ->
+    (
+      match hd1, hd2 with
+      | TmConst(_,CInt(_)), TmConst(_,CInt(_)) ->
+        compare_int_lists l1 l2
+      | _ -> failwith "Lists of this type is not allowed."
+    )
+  | _ -> failwith "We expected two lists."
+
+let compare_tm_lists tm_l1 tm_l2 =
+  match tm_l1, tm_l2 with
+  | TmList(l1), TmList(l2) ->
+    compare_lists l1 l2
+  | _ -> failwith "We expected TmLists."
 
 (* Check if two value terms are equal *)
 let rec val_equal v1 v2 =
@@ -128,10 +161,8 @@ let rec val_equal v1 v2 =
         | _ -> false
       in o1 = o2 && u1 = u2 && eql (uct2revlist t1) (uct2revlist t2)
   | TmNop,TmNop -> true
-  | TmSeq(_,_,_,seq1,_), TmSeq(_,_,_,seq2,_) ->
-    (match seq1, seq2 with
-    | TmList(l1), TmList(l2) -> (l1 = l2)
-    | _ -> false)
+  | TmSeq(_,_,_,tml1,_), TmSeq(_,_,_,tml2,_) ->
+    compare_tm_lists tml1 tml2
   | _ -> false
 
 let ustring2uctstring s =
