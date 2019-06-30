@@ -11,6 +11,7 @@
   open Ustring.Op
   open Msg
   open Ast
+  open Linkedlist
 
   (** Create a new info, taking left and right part *)
   let mkinfo fi1 fi2 =
@@ -34,10 +35,7 @@
       | TmTyLam(fi,x,k,t1) -> hasx t1
       | TmTyApp(fi,t1,ty1) -> hasx t1
       | TmIfexp(fi,cnd,thn,els) -> hasx cnd || hasx thn || hasx els
-      | TmSeq(fi,ds_choice,sequence) ->
-      (match sequence with
-        | [] -> false
-        | hd::tl -> hasx hd || hasx (TmSeq(fi,ds_choice,tl)))
+      | TmSeq(_,_,_,_,_) -> false (*TODO: Change if sequence can contain terms*)
       | TmSeqMethod(fi,ds_choice,fun_name,args,arg_index) ->
       (match args with
         | [] -> false
@@ -67,6 +65,12 @@ let mkopkind fi op =
   | None -> KindStar(fi)
   | Some(k) -> k
 
+(*TODO: Remove method from here*)
+let init_seq tm_l =
+  match tm_l with
+  | TmList([]) -> SeqList(Linkedlist.empty)
+  | TmList(l) -> SeqList(Linkedlist.from_list l)
+
 %}
 
 /* Misc tokens */
@@ -82,7 +86,7 @@ let mkopkind fi op =
 %token <unit Ast.tokendata> FUNC
 %token <unit Ast.tokendata> FUNC2
 %token <unit Ast.tokendata> DEF
-%token <unit Ast.tokendata> IN
+%token <unit Ast.tokendata>
 %token <unit Ast.tokendata> IF
 %token <unit Ast.tokendata> IF2           /* Special handling if( */
 %token <unit Ast.tokendata> THEN
@@ -178,6 +182,7 @@ mcore_scope:
         TmUtest(fi,$2,$3,$4) }
   | LET IDENT EQ mc_term mcore_scope
       { let fi = mktinfo $1.i.fi (tm_info $4) in
+        (*TODO: Add ds_choice or connection to var for sequences?*)
         TmApp(fi,TmLam(fi,$2.v,TyDyn,$5),$4) }
 
 mc_term:
@@ -191,19 +196,28 @@ mc_term:
         TmTyLam(fi,$2.v,mkopkind $2.i.fi $3,$5) }
   | LET IDENT EQ mc_term IN mc_term
       { let fi = mktinfo $1.i.fi (tm_info $4) in
+        (*TODO: Add ds_choice or connection to var for sequences?*)
         TmApp(fi,TmLam(fi,$2.v,TyDyn,$6),$4) }
   | IF mc_term THEN mc_term ELSE mc_term
       { let fi = mktinfo $1.i.fi (tm_info $6) in
         TmIfexp(fi, $2, $4, $6) }
-  | SEQ LSQUARE STRING RSQUARE
+  | SEQ LSQUARE IDENT RSQUARE LPAREN mc_list
       { let fi = mktinfo $1.i.fi $4.i.fi in
         (*TODO:Change ds_choice to None?*)
         (*TODO:Collect a list instead of creating an empty OCaml list*)
-        TmSeq(fi, 0, []) }
-  | SEQMETHOD DOT STRING mc_atom
-      { let fi = mktinfo $1.i.fi (tm_info $4) in
-        (*TODO:Change ds_choice to None?*)
-        TmApp(fi,TmSeqMethod(fi, 0, $3.v, [], 0),$4) }
+        (*TODO: Treat as a new variable to keep track of in algorithm?*)
+        (*TODO: Add other types of lists*)
+        (*TODO: Add TmPost in parse step 2*)
+        (*TODO: You should not init_seq here, but later*)
+        TmSeq(fi, 0, 0, $6, (init_seq $6)) }
+
+mc_list:
+  | RPAREN
+      { TmList([]) }
+  | mc_term RPAREN
+      { TmList($1 :: []) }
+  | mc_term COMMA mc_list
+      { TmList($1::(get_list_from_tm_list $3))}
 
 ty_op:
   | COLON ty
@@ -232,6 +246,10 @@ mc_atom:
   | FALSE                { TmConst($1.i,CBool(false)) }
   | NOP                  { TmNop }
   | FIX                  { TmFix($1.i) }
+  | SEQMETHOD DOT IDENT
+      { let fi = mktinfo ($1.i.fi) ($3.i.fi) in
+        (*TODO:Change ds_choice to None?*)
+        TmSeqMethod(fi, 0, $3.v, [], 0) }
 
 
 

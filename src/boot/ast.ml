@@ -8,6 +8,7 @@
 
 open Ustring.Op
 open Msg
+open Linkedlist
 
 
 
@@ -108,7 +109,16 @@ and arg_index = int
 and args = tm list
 and ds_choice = int
 and fun_name = ustring
-and sequence = tm list
+and ty_id = int
+
+and tm_list =
+  | TmList   of tm list
+
+and sequence =
+  | SeqList  of tm Linkedlist.sequence
+  | SeqNone
+
+
 
 (* Terms / expressions *)
 and tm =
@@ -121,9 +131,9 @@ and tm =
 | TmFix         of tinfo                             (* Fix point *)
 | TmTyLam       of tinfo * ustring * kind * tm       (* Type abstraction *)
 | TmTyApp       of tinfo * tm * ty                   (* Type application *)
-(*TODO: Add ability to create a new seq with a list of elements, that is add '* tm list option'*)
+(*TODO: Add ability to create a new seq with a list of elements, that is add '* tm list option' or reference to CList*)
 (*TODO: Make ds_choice:s below optional*)
-| TmSeq         of tinfo * ds_choice * sequence                (* Sequence constructor *)
+| TmSeq         of tinfo * ty_id * ds_choice * tm_list * sequence              (* Sequence constructor *)
 | TmSeqMethod   of tinfo * ds_choice * fun_name * args * arg_index (* Sequence method *)
 
 
@@ -181,7 +191,7 @@ let tm_info t =
   | TmFix({fi}) -> fi
   | TmTyLam({fi},_,_,_) -> fi
   | TmTyApp({fi},_,_) -> fi
-  | TmSeq({fi},_,_) -> fi
+  | TmSeq({fi},_,_,_,_) -> fi
   | TmSeqMethod({fi},_,_,_,_) -> fi
 
   | TmChar({fi},_) -> fi
@@ -262,6 +272,10 @@ let arity c =
 
 
 type 'a tokendata = {i:tinfo; v:'a}
+
+let get_list_from_tm_list tm_l =
+  match tm_l with
+  | TmList(l) -> l
 
 
 let ustring2uctm fi str =

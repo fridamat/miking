@@ -15,6 +15,7 @@ open Printf
 open Ast
 open Msg
 open Pprint
+open Linkedlist
 
 
 let prog_argv = ref []          (* Argv for the program that is executed *)
@@ -101,7 +102,7 @@ let rec debruijn env t =
   | TmTyLam(ti,x,kind,t1) -> TmTyLam(ti,x,kind,debruijn (VarTy(x)::env) t1)
   | TmTyApp(ti,t1,ty1) -> TmTyApp(ti,debruijn env t1, debruijnTy env ty1)
   | TmIfexp(ti,cnd,thn,els) -> TmIfexp(ti, debruijn env cnd, debruijn env thn, debruijn env els)
-  | TmSeq(ti,ds_choice,sequence) -> TmSeq(ti,ds_choice,debruijn_list env sequence)
+  | TmSeq(ti,ty_id,ds_choice,clist,cseq) -> TmSeq(ti,ty_id,ds_choice,TmList(debruijn_list env (get_list_from_tm_list clist)),cseq)
   | TmSeqMethod(ti,ds_choice,fun_name,args,arg_index) ->
     TmSeqMethod(ti,ds_choice,fun_name,(debruijn_list env args),arg_index)
   | TmChar(_,_) -> t
@@ -114,6 +115,52 @@ let rec debruijn env t =
                  Case(fi,pat,debruijn (patvars env pat) tm)) cases)
   | TmNop -> t
 
+let compare_tm_terms tm1 tm2 =
+  match tm1, tm2 with
+  | TmConst(_,CInt(n1)), TmConst(_,CInt(n2)) -> (n1 = n2)
+  | _ -> false
+
+let rec compare_linked_lists ll1 ll2 i =
+  if (i = Linkedlist.length ll1) && (i = Linkedlist.length ll2) then
+    true
+  else if (compare_tm_terms (Linkedlist.nth ll1 i) (Linkedlist.nth ll2 i)) then
+    compare_linked_lists ll1 ll2 (i+1)
+  else
+    false
+
+let compare_sequences seq1 seq2 =
+  match seq1, seq2 with
+  | SeqList(ll1), SeqList(ll2) ->
+    compare_linked_lists ll1 ll2 0
+  | SeqNone, SeqNone -> true
+  | _ -> failwith "Sequence not implemented."
+
+let rec compare_int_lists l1 l2 =
+  match l1, l2 with
+  | [], [] -> true
+  | hd1::tl1, hd2::tl2 ->
+    if compare_tm_terms hd1 hd2 then
+      compare_int_lists tl1 tl2
+    else
+      false
+  | _ -> failwith "We expected lists."
+
+let compare_lists l1 l2 =
+  (*TODO: Add more types of lists*)
+  match l1, l2 with
+  | hd1::_, hd2::_ ->
+    (
+      match hd1, hd2 with
+      | TmConst(_,CInt(_)), TmConst(_,CInt(_)) ->
+        compare_int_lists l1 l2
+      | _ -> failwith "Lists of this type is not allowed."
+    )
+  | _ -> failwith "We expected two lists."
+
+let compare_tm_lists tm_l1 tm_l2 =
+  match tm_l1, tm_l2 with
+  | TmList(l1), TmList(l2) ->
+    compare_lists l1 l2
 
 (* Check if two value terms are equal *)
 let rec val_equal v1 v2 =
@@ -127,6 +174,8 @@ let rec val_equal v1 v2 =
         | _ -> false
       in o1 = o2 && u1 = u2 && eql (uct2revlist t1) (uct2revlist t2)
   | TmNop,TmNop -> true
+  | TmSeq(_,_,_,tml1,seq1), TmSeq(_,_,_,tml2,seq2) ->
+    (compare_tm_lists tml1 tml2) && (compare_sequences seq1 seq2)
   | _ -> false
 
 let ustring2uctstring s =
@@ -436,6 +485,11 @@ let optimize_const_app fi v1 v2 =
   | vv1,vv2 -> TmApp({ety = Some TyDyn; fi},vv1,vv2)
 
 (*eval helper methods*)
+let get_seq_from_list tml seq =
+  match tml, seq with
+  | TmList(l), SeqList(_) -> SeqList(Linkedlist.from_list l)
+  | _ -> failwith "Sequence type not implemented."
+
 let rec add_evaluated_term_to_args args term =
   match args with
   | [] -> term::[]
@@ -444,26 +498,39 @@ let rec add_evaluated_term_to_args args term =
 let get_arg_types_length_dummy fi fun_name =
   match Ustring.to_utf8 fun_name with
   | "length" -> 0
+  | "nth" -> 1
+  | "push" -> 1
   | _ -> raise_error fi "Sequence method not implemented."
 
 let get_last_arg_index fun_name =
   (*TODO: Check length of arg types in sequence function table*)
   get_arg_types_length_dummy fun_name
 
+let call_length_method fi args =
+  match args with
+  | [TmSeq(_,ty_id,ds_choice,clist,cseq)] ->
+    (match cseq with
+     | SeqList(ll) ->
+       TmConst(fi,CInt(Linkedlist.length ll))
+     | _ -> raise_error fi "No such data structure type.")
+  | _ -> raise_error fi "Sequence method not implemented."
+
+
 let call_seq_method fi ds_choice fun_name args =
   (*TODO: Open ds_choice for method*)
   (*TODO: Check arg types against sequence function table*)
+  (*TODO: Check that number of arguments are correct (earlier?)*)
   match Ustring.to_utf8 fun_name with
-  | "length" ->
-    (match (List.nth args 0) with
-    | TmSeq(ti,ds_choice2,sequence) ->
-      let seq_length = List.length sequence in
-      TmConst(ti, CInt(seq_length))
-    | _ -> raise_error fi "Argument has the wrong type.")
+  | "length" -> call_length_method fi args
   | _ -> raise_error fi "Sequence method not implemented."
 
 (* Main evaluation loop of a term. Evaluates using big-step semantics *)
 let rec eval env t =
+  let rec eval_tmlist env tm_l =
+    (match tm_l with
+     | TmList([]) -> []
+     | TmList(hd::tl) -> (eval env hd)::(eval_tmlist env (TmList(tl)))
+    ) in
   debug_eval env t;
   match t with
   (* Variables using debruijn indices. Need to evaluate because fix point. *)
@@ -507,7 +574,10 @@ let rec eval env t =
          eval env els
      | _ -> raise_error ti.fi "Condition in if-expression not a bool.")
   (* Sequence constructor *)
-  | TmSeq(_,_,_) -> t
+  | TmSeq(fi,ty_id,ds_choice,tmlist,tmseq) ->
+    let new_tmlist = TmList(eval_tmlist env tmlist) in
+    let new_tmseq = get_seq_from_list new_tmlist tmseq in
+    TmSeq(fi,ty_id,ds_choice,new_tmlist,new_tmseq)
   (* Sequence method*)
   | TmSeqMethod(_,_,_,_,_) -> t
   (* The rest *)

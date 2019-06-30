@@ -7,6 +7,7 @@
 open Ast
 open Ustring.Op
 open Printf
+open Linkedlist
 
 
 (* Debug options *)
@@ -162,6 +163,11 @@ and pprint_const c =
 (* Pretty print a term. The boolean parameter 'basic' is true when
    the pretty printing should be done in basic form. Use e.g. Set(1,2) instead of {1,2} *)
 and pprint basic t =
+  let rec pprint_tm_list tm_l =
+    (match tm_l with
+     | TmList([]) -> us""
+     | TmList(hd::[]) -> (pprint false hd)
+     | TmList(hd::tl) -> (pprint false hd) ^. us"," ^. (pprint_tm_list (TmList(tl)))) in
   let rec ppt inside t =
   match t with
   | TmVar(_,x,n,_) -> varDebugPrint x n
@@ -180,7 +186,7 @@ and pprint basic t =
   | TmTyApp(_,t1,ty1) ->
       left inside ^. ppt false t1 ^. us" [" ^. pprint_ty ty1 ^. us"]" ^. right inside
   | TmIfexp(_,c,t,e) -> us"if " ^. ppt false c ^. us" then " ^. ppt false t ^. us" else " ^. ppt false e
-  | TmSeq(fi,ds_choice,sequence) -> us"Seq[]" (*TODO:Print the selected data structure type ty*)
+  | TmSeq(fi,ty_id,ds_choice,clist,_) -> us"TmSeq(" ^. (pprint_tm_list clist) ^. us")" (*TODO:Print the selected data structure type ty*) (*TODO:Print the selected data structure type ty*)
   | TmSeqMethod(fi,ds_choice,fun_name,args,arg_index) -> us"Seq." ^. fun_name ^. us"()" (*TODO:Print the selected data structure type ty and the arguments?*)
   | TmChar(fi,c) -> us"'" ^. list2ustring [c] ^. us"'"
   | TmUC(fi,uct,ordered,uniqueness) -> (
