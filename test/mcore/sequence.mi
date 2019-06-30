@@ -3,13 +3,13 @@ lang mcore
 let s_len1 = newseq [ int ] ((addi 1 3))
 utest 1 (seqmethod . length s_len1)
 
-utest (newseq [ int ] ((addi 1 3))) (newseq [ int ] ((addi 1 3)))
+utest (newseq [ int ] ((addi 1 3))) (newseq [ int ] (4))
 
 // Length test 2
-//utest 0 (seqmethod . length (newseq [ int ] ()))
+utest 0 (seqmethod . length (newseq [ int ] ()))
 
 // Length test 3
-//utest 0 (let len = seqmethod . length in len (newseq [ int ] ()))
+utest 0 (let len = seqmethod . length in len (newseq [ int ] ()))
 
 // Push test 1
 //utest (newseq [int] (1)) (seqmethod . push (newseq [ int ] ()) 1)
