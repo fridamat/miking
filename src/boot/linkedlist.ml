@@ -46,7 +46,7 @@ module Linkedlist : Sequence = struct
     | Cons(_, tl) -> 1 + length tl
   let rec nth l n = match (l, n) with (*TODO Check if n <= 0*)
     | (Nil, _) -> raise IndexOutOfBounds
-    | (Cons(hd,_), 1) -> hd (*TODO: Should this be indexed by zero?*)
+    | (Cons(hd,_), 0) -> hd (*TODO: Should this be indexed by zero?*)
     | (Cons(_,tl), _) -> nth tl (n-1)
   let rec append l1 l2 = match l1 with
     | Nil -> l2
