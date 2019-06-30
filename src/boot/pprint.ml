@@ -164,7 +164,6 @@ and pprint_const c =
    the pretty printing should be done in basic form. Use e.g. Set(1,2) instead of {1,2} *)
 and pprint basic t =
   let rec pprint_tm_list tm_l =
-    let _ = Printf.printf "We are calling method: %s\n" "pprint_tm_list" in
     (match tm_l with
      | TmList([]) -> us""
      | TmList(hd::[]) -> (pprint false hd)
