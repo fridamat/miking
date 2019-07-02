@@ -110,6 +110,7 @@ and args = tm list
 and ds_choice = int
 and fun_name = ustring
 and ty_id = int
+and seq_ty = ustring
 
 and tm_list =
   | TmList   of tm list
@@ -133,7 +134,7 @@ and tm =
 | TmTyApp       of tinfo * tm * ty                   (* Type application *)
 (*TODO: Add ability to create a new seq with a list of elements, that is add '* tm list option' or reference to CList*)
 (*TODO: Make ds_choice:s below optional*)
-| TmSeq         of tinfo * ty_id * ds_choice * tm_list * sequence              (* Sequence constructor *)
+| TmSeq         of tinfo * ty_id * seq_ty * ds_choice * tm_list * sequence              (* Sequence constructor *)
 | TmSeqMethod   of tinfo * ds_choice * fun_name * args * arg_index (* Sequence method *)
 
 
@@ -155,7 +156,7 @@ and ty =
 | TyLam         of info * ustring * kind * ty       (* Type-level function *)
 | TyApp         of info * ty * ty                   (* Type-level application *)
 | TyDyn                                             (* Dynamic type *)
-| TySeq                                            (* Sequence type *)
+| TySeq         of ty                                  (* Sequence type *)
 | TySeqMethod   of ty
 
 (* Kinds *)
@@ -193,7 +194,7 @@ let tm_info t =
   | TmFix({fi}) -> fi
   | TmTyLam({fi},_,_,_) -> fi
   | TmTyApp({fi},_,_) -> fi
-  | TmSeq({fi},_,_,_,_) -> fi
+  | TmSeq({fi},_,_,_,_,_) -> fi
   | TmSeqMethod({fi},_,_,_,_) -> fi
 
   | TmChar({fi},_) -> fi
@@ -213,7 +214,7 @@ let ty_info t =
   | TyLam(fi,_,_,_) -> fi
   | TyApp(fi,_,_) -> fi
   | TyDyn -> NoInfo         (* Used when deriving types for let-expressions *)
-  | TySeq -> NoInfo
+  | TySeq(seq_ty) -> NoInfo
   | TySeqMethod(ret_ty) -> NoInfo
 
 

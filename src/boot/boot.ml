@@ -79,7 +79,7 @@ let rec debruijn env t =
     | TyLam(fi,x,kind,ty1) -> TyLam(fi,x,kind, debruijnTy (VarTy(x)::env) ty1)
     | TyApp(fi,ty1,ty2) -> TyApp(fi, debruijnTy env ty1, debruijnTy env ty2)
     | TyDyn -> TyDyn
-    | TySeq -> TySeq
+    | TySeq(seq_ty) -> TySeq(seq_ty)
     | TySeqMethod(ret_ty) -> TySeqMethod(ret_ty)
     )
   in
@@ -104,7 +104,7 @@ let rec debruijn env t =
   | TmTyLam(ti,x,kind,t1) -> TmTyLam(ti,x,kind,debruijn (VarTy(x)::env) t1)
   | TmTyApp(ti,t1,ty1) -> TmTyApp(ti,debruijn env t1, debruijnTy env ty1)
   | TmIfexp(ti,cnd,thn,els) -> TmIfexp(ti, debruijn env cnd, debruijn env thn, debruijn env els)
-  | TmSeq(ti,ty_id,ds_choice,clist,cseq) -> TmSeq(ti,ty_id,ds_choice,TmList(debruijn_list env (get_list_from_tm_list clist)),cseq)
+  | TmSeq(ti,ty_id,seq_ty,ds_choice,clist,cseq) -> TmSeq(ti,ty_id,seq_ty,ds_choice,TmList(debruijn_list env (get_list_from_tm_list clist)),cseq)
   | TmSeqMethod(ti,ds_choice,fun_name,args,arg_index) ->
     TmSeqMethod(ti,ds_choice,fun_name,(debruijn_list env args),arg_index)
   | TmChar(_,_) -> t
@@ -176,7 +176,7 @@ let rec val_equal v1 v2 =
         | _ -> false
       in o1 = o2 && u1 = u2 && eql (uct2revlist t1) (uct2revlist t2)
   | TmNop,TmNop -> true
-  | TmSeq(_,_,_,tml1,seq1), TmSeq(_,_,_,tml2,seq2) ->
+  | TmSeq(_,_,_,_,tml1,seq1), TmSeq(_,_,_,_,tml2,seq2) ->
     (compare_tm_lists tml1 tml2) && (compare_sequences seq1 seq2)
   | _ -> false
 
@@ -510,7 +510,7 @@ let get_last_arg_index fun_name =
 
 let call_length_method ti args =
   match args with
-  | [TmSeq(_,ty_id,ds_choice,clist,cseq)] ->
+  | [TmSeq(_,ty_id,seq_ty,ds_choice,clist,cseq)] ->
     (match cseq with
      | SeqList(ll) ->
        TmConst(ti,CInt(Linkedlist.length ll))
@@ -576,10 +576,10 @@ let rec eval env t =
          eval env els
      | _ -> raise_error ti.fi "Condition in if-expression not a bool.")
   (* Sequence constructor *)
-  | TmSeq(fi,ty_id,ds_choice,tmlist,tmseq) ->
+  | TmSeq(fi,ty_id,seq_ty,ds_choice,tmlist,tmseq) ->
     let new_tmlist = TmList(eval_tmlist env tmlist) in
     let new_tmseq = get_seq_from_list new_tmlist tmseq in
-    TmSeq(fi,ty_id,ds_choice,new_tmlist,new_tmseq)
+    TmSeq(fi,ty_id,seq_ty,ds_choice,new_tmlist,new_tmseq)
   (* Sequence method*)
   | TmSeqMethod(_,_,_,_,_) -> t
   (* The rest *)
