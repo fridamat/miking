@@ -244,7 +244,9 @@ and pprint_ty ty =
          pprint_kind kind ^. us". " ^. ppt false ty1 ^. right inside
   | TyApp(fi,ty1,ty2) ->
     left inside ^. ppt true ty1 ^. us" " ^. ppt true ty2 ^. right inside
- | TyDyn -> us"Dyn"
+  | TyDyn -> us"Dyn"
+  | TySeq -> us"TySeq"
+  | TySeqMethod(ret_ty) -> us"TySeqMethod:" ^. (pprint_ty ret_ty)
   in
     ppt true ty
 

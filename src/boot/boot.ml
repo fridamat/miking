@@ -79,6 +79,8 @@ let rec debruijn env t =
     | TyLam(fi,x,kind,ty1) -> TyLam(fi,x,kind, debruijnTy (VarTy(x)::env) ty1)
     | TyApp(fi,ty1,ty2) -> TyApp(fi, debruijnTy env ty1, debruijnTy env ty2)
     | TyDyn -> TyDyn
+    | TySeq -> TySeq
+    | TySeqMethod(ret_ty) -> TySeqMethod(ret_ty)
     )
   in
   let rec debruijn_list env l =
@@ -607,6 +609,8 @@ let rec eval env t =
       appcases cases)
   | TmNop -> t
 
+let eval_test env t =
+  eval env t
 
 (* Main function for evaluation a function. Performs lexing, parsing
    and evaluation. Does not perform any type checking *)
@@ -625,7 +629,7 @@ let evalprog filename typecheck =
         (*TODO: Data structure selection*)
         |> Typesys.erase |> debug_after_erase
         (* TODO: Give the right types to built-ins *)
-        |> eval (builtin |> List.split |> snd |> List.map (fun x -> TmConst({ety = None; fi = NoInfo},x)))
+        |> eval_test (builtin |> List.split |> snd |> List.map (fun x -> TmConst({ety = None; fi = NoInfo},x)))
         |> fun _ -> ()
 
     with

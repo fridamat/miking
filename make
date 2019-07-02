@@ -26,7 +26,7 @@ case $1 in
     test)
         buildboot
         cd test
-        ../build/boot test mcore && ../build/boot tytest tymcore
+        ../build/boot test mcore/bool.mi && ../build/boot test mcore/control.mi && ../build/boot test mcore/float.mi && ../build/boot test mcore/int.mi && ../build/boot tytest mcore/sequence.mi &&../build/boot tytest tymcore
         ;;
     # Clean up the project
     clean)

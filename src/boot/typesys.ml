@@ -41,6 +41,8 @@ let rec tyShift d c ty =
   | TyLam(fi,x,kind,ty1) -> TyLam(fi,x,kind, tyShift d (c+1) ty1)
   | TyApp(fi,ty1,ty2) -> TyApp(fi, tyShift d c ty1, tyShift d c ty2)
   | TyDyn -> TyDyn
+  | TySeq -> TySeq
+  | TySeqMethod(ret_ty) -> TySeqMethod(ret_ty)
 
 
 (* Substitutes type [tys] in ty *)
@@ -53,7 +55,9 @@ let tySubst tys ty =
     | TyAll(fi,x,kind,ty2) -> TyAll(fi,x,kind, subst (j+1) (tyShift 1 0 s) ty2)
     | TyLam(fi,x,kind,ty1) -> TyLam(fi,x,kind, subst (j+1) (tyShift 1 0 s) ty1)
     | TyApp(fi,ty1,ty2) -> TyApp(fi, subst j s ty1, subst j s ty2)
-    | TyDyn -> TyDyn)
+    | TyDyn -> TyDyn
+    | TySeq -> TySeq
+    | TySeqMethod(ret_ty) -> TySeqMethod(ret_ty))
   in
     subst 0 tys ty
 
@@ -85,6 +89,8 @@ let normTy ty =
        | TyLam(fi3,x,ki3,ty3),ty4 -> reduce (tySubstTop ty4 ty3)
        | ty1',ty2' -> TyApp(fi,ty1',ty2'))
     | TyDyn -> TyDyn
+    | TySeq -> TySeq
+    | TySeqMethod(ret_ty) -> TySeqMethod(ret_ty)
   in
     reduce ty
 
@@ -103,12 +109,22 @@ let tyequal ty1 ty2 =
     | TyApp(fi1,ty11,ty12), TyApp(fi2,ty21,ty22)->
       tyrec ty11 ty21 && tyrec ty12 ty22
     | TyDyn,TyDyn -> true
+    | TySeq,TySeq -> true
+    | TySeqMethod(ret_ty1),TySeqMethod(ret_ty2) ->
+      tyrec ret_ty1 ret_ty2
+    | TySeqMethod(ret_ty1),b ->
+      let _ = Printf.printf "Comparing %s and %s\n" (Ustring.to_utf8 (Pprint.pprint_ty ret_ty1)) (Ustring.to_utf8 (Pprint.pprint_ty b)) in
+      tyrec ret_ty1 b
+    | b,TySeqMethod(ret_ty1) ->
+      let _ = Printf.printf "Comparing %s and %s\n" (Ustring.to_utf8 (Pprint.pprint_ty ret_ty1)) (Ustring.to_utf8 (Pprint.pprint_ty b)) in
+      tyrec b ret_ty1
     | TyGround(_,_), _ | _,TyGround(_,_) -> false
     | TyArrow(_,_,_), _ | _,TyArrow(_,_,_) -> false
     | TyVar(_,_,_), _ | _,TyVar(_,_,_) -> false
     | TyAll(_,_,_,_), _ | _,TyAll(_,_,_,_) -> false
     | TyLam(fi,x,kind,ty1),_ | _,TyLam(fi,x,kind,ty1) -> false
     | TyApp(fi,ty1,ty2),_ | _,TyApp(fi,ty1,ty2)-> false
+    | TySeq,_ | _,TySeq -> false
   in
     tyrec ty1 ty2
 
@@ -192,6 +208,8 @@ let rec kindof env ty =
        | k1,_ -> error (ty_info ty1) (us"Incorrect type-level application. " ^.
            us"Kind " ^. pprint_kind k1 ^.us" is not a kind of a type-level function"))
   | TyDyn -> KindStar(NoInfo)
+  | TySeq -> KindStar(NoInfo)
+  | TySeqMethod(_) -> KindStar(NoInfo)
 
 
 (* Returns true of the type contains at least one TyDyn *)
@@ -204,6 +222,8 @@ let rec containsTyDyn ty =
   | TyLam(fi,x,ki1,ty1) -> containsTyDyn ty1
   | TyApp(fi,ty1,ty2) -> containsTyDyn ty1 || containsTyDyn ty2
   | TyDyn -> true
+  | TySeq -> false
+  | TySeqMethod(_) -> false
 
 
 (* Returns true of the type contains at least one TyVar *)
@@ -217,6 +237,8 @@ let containsFreeTyVar ty =
   | TyLam(fi,x,ki1,ty1) -> work (c+1) ty1
   | TyApp(fi,ty1,ty2) -> work c ty1 || work c ty2
   | TyDyn -> false
+  | TySeq -> false
+  | TySeqMethod(_) -> false
   in work 0 ty
 
 
@@ -231,6 +253,8 @@ let isTyVarFree ty =
   | TyLam(fi,x,ki1,ty1) -> work (d+1) ty1
   | TyApp(fi,ty1,ty2) -> work d ty1 || work d ty2
   | TyDyn -> false
+  | TySeq -> false
+  | TySeqMethod(_) -> false
   in work 0 ty
 
 
@@ -247,6 +271,8 @@ let rec substAll env ty =
   | TyLam(fi,x,kind,ty1) -> TyLam(fi,x,kind, substAll (None::env) ty1)
   | TyApp(fi,ty1,ty2) -> TyApp(fi, substAll env ty1, substAll env ty2)
   | TyDyn -> TyDyn
+  | TySeq -> TySeq
+  | TySeqMethod(ret_ty) -> TySeqMethod(ret_ty)
 
 
 
@@ -292,7 +318,21 @@ let tyMerge ty1 ty2 =
      | TyArrow(_,_,_), _ | _,TyArrow(_,_,_) -> raise Not_found
      | TyAll(_,_,_,_), _ | _,TyAll(_,_,_,_) -> raise Not_found
      | TyLam(fi,x,kind,ty1),_ | _,TyLam(fi,x,kind,ty1) -> failwith "TODO TyLam"
-     | TyApp(fi,ty1,ty2),_ | _,TyApp(fi,ty1,ty2)-> failwith "TODO TyApp")
+     | TyApp(fi,ty1,ty2),_ | _,TyApp(fi,ty1,ty2)-> failwith "TODO TyApp"
+     | TySeq,TySeq -> (TySeq,env)
+     | TySeq,TyDyn -> (TySeq,env)
+     | TyDyn,TySeq -> (TySeq,env)
+     | TySeq,TyGround(_,_) -> failwith "TODO TySeq,TyGround"
+     | TyGround(_,_),TySeq -> failwith "TODO TyGround,TySeq"
+     | TySeqMethod(ret_ty1),TySeqMethod(ret_ty2) ->
+       (TySeqMethod(ret_ty1),env) (*TODO:???*)
+     | TySeqMethod(ret_ty),TyDyn -> (TySeqMethod(ret_ty),env)
+     | TyDyn,TySeqMethod(ret_ty) -> (TySeqMethod(ret_ty),env)
+     | TySeqMethod(_),TyGround(_,_) -> failwith "TODO TySeqMethod,TyGround"
+     | TyGround(_,_),TySeqMethod(_) -> failwith "TODO TyGround,TySeqMethod"
+     | TySeq,TySeqMethod(_) | TySeqMethod(_),TySeq -> failwith "TODO TySeq,TySeqMethod"
+
+    )
   in
   try Some(tyRec ty1 ty2 [])
   with _ -> None
@@ -308,8 +348,8 @@ let setType ty = function
   | TmFix(ti) -> TmFix({ti with ety = Some ty})
   | TmTyLam(ti,x,kind,t1) -> TmTyLam({ti with ety = Some ty},x,kind,t1)
   | TmTyApp(ti,t1,ty2) -> TmTyApp({ti with ety = Some ty},t1,ty2)
-  | TmSeq _ -> failwith "TODO: setType TmSeq"
-  | TmSeqMethod _ -> failwith "TODO: setType TmSeq"
+  | TmSeq(ti,ty_id,ds_choice,tmlist,tmseq) -> TmSeq({ti with ety = Some ty},ty_id,ds_choice,tmlist,tmseq)
+  | TmSeqMethod(ti,ds_choice,fun_name,args,arg_index) -> TmSeqMethod({ti with ety = Some ty},ds_choice,fun_name,args,arg_index)
   | TmChar(ti,x) -> TmChar({ti with ety = Some ty},x)
   | TmUC(ti,tree,ord,unique) -> TmUC({ti with ety = Some ty},tree,ord,unique)
   | TmUtest(ti,t1,t2,t3) -> TmUtest({ti with ety = Some ty},t1,t2,t3)
@@ -340,6 +380,11 @@ let getType t =
   | TmMatch({ety},_,_) -> extract ety
   | TmNop -> TyGround(NoInfo,GVoid)
 
+  let get_seq_fun_type fun_name =
+    match Ustring.to_utf8 fun_name with
+    | "length" -> TyGround(NoInfo,GInt)
+    | _ -> failwith "We don't have type of this function"
+
 (* Bidirectional type checking where type variable application is not needed.
    Main idea: propagate both types and type environment (filled will
      bindings of type vars) in both directions, merging partially filled in
@@ -350,6 +395,11 @@ let getType t =
      type checking. Should in such case mark code as gradually typed, that
      allows TyDyn to be left, but still generates System F code. *)
 let rec tc env ty t =
+  let rec tc_list tm_l = (
+    match tm_l with
+    | [] -> []
+    | hd::tl -> (tc env TyDyn hd)::(tc_list tl)
+  ) in
   match t with
   | TmVar(ti,x,n,pe) ->
     (match List.nth_opt env n with
@@ -397,13 +447,24 @@ let rec tc env ty t =
         | TyAll(fi,x,ki,ty4) ->
           let ty' = dive ty4 ty2' env (s+1) in
           if isTyVarFree ty' then TyAll(fi,x,ki,ty') else ty'
+        | TySeqMethod(ret_ty) -> (*TODO: Is this correct*)
+          TySeqMethod(ret_ty)
         | _ -> errorNotFunctionType (tm_info t1) ty1')
       in
       let resTy = dive ty1' ty2' env 0 in
       setType resTy (TmApp(ti, t1', t2'))
   | TmConst(ti,c) -> setType (type_const c) t
-  | TmIfexp(ti,cnd,thn,els) -> failwith "TODO TmIfexp (later)"
-  (*TODO:Add sequences here perhaps like if above*)
+  | TmIfexp(ti,cnd,thn,els) ->
+    let updated_cnd = tc env TyDyn cnd in
+    let updated_thn = tc env TyDyn thn in
+    let updated_els = tc env TyDyn els in
+    let _ = (match getType updated_cnd with
+    | TyGround(_,GBool) -> true
+    | _ -> failwith "Condition has to be of type boolean") in
+    let _ = (match tyequal (getType updated_thn) (getType updated_els) with
+    | true -> true
+    | _ -> failwith "Then and else has to be of the same type") in
+    setType (getType updated_thn) (TmIfexp(ti,updated_cnd,updated_thn,updated_els))
   | TmFix(ti) -> failwith "TODO TmFix (later)"
   | TmTyLam(ti,x,kind,t1) ->
     let t1' = tc (TyenvTyvar(x,kind)::env) TyDyn t1 in
@@ -420,8 +481,12 @@ let rec tc env ty t =
                   else errorKindMismatch  (ty_info ty2) ki11 ki12 in
       setType resTy (TmTyApp(ti,t1',ty2))
     | ty -> errorExpectsUniversal (tm_info t1) ty)
-  | TmSeq _ -> failwith "TODO: tc TmSeq"
-  | TmSeqMethod _ -> failwith "TODO: tc TmSeqMethod"
+  | TmSeq(ti,ty_id,ds_choice,tmlist,tmseq) ->
+    let updated_tmlist = tc_list (Ast.get_list_from_tm_list tmlist) in
+    setType TySeq (TmSeq(ti,ty_id,ds_choice,TmList(updated_tmlist),tmseq))
+  | TmSeqMethod(ti,ds_choice,fun_name,args,arg_index) ->
+    let updated_args = tc_list args in
+    setType (TySeqMethod(get_seq_fun_type fun_name)) (TmSeqMethod(ti,ds_choice,fun_name,updated_args,arg_index))
   | TmChar(ti,x) -> failwith "TODO TmChar (later)"
   | TmUC(ti,tree,ord,unique) -> failwith "TmUC (later)"
   | TmUtest(ti,t1,t2,t3) ->
@@ -446,8 +511,8 @@ let rec erase t =
   | TmApp(ti,t1,t2) -> TmApp(ti, erase t1, erase t2)
   | TmConst(ti,c) -> t
   | TmIfexp(ti,cnd,thn,els) -> TmIfexp(ti, cnd, erase thn, erase els)
-  | TmSeq(_,_,_,_,_) -> t
-  | TmSeqMethod(_,_,_,_,_) -> t
+  | TmSeq(_,_,_,_,_) -> t (*TODO: Check in list*)
+  | TmSeqMethod(_,_,_,_,_) -> t (*TODO: Check in arg list*)
   | TmFix(ti) -> t
   | TmTyLam(ti,x,kind,t1) -> erase t1
   | TmTyApp(ti,t1,ty1) -> erase t1
