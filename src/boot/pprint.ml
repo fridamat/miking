@@ -163,6 +163,17 @@ and pprint_const c =
 (* Pretty print a term. The boolean parameter 'basic' is true when
    the pretty printing should be done in basic form. Use e.g. Set(1,2) instead of {1,2} *)
 and pprint basic t =
+  let rec pprint_linkedlist ll i =
+    (if i = (Linkedlist.length ll) then
+      us""
+    else
+      (pprint false (Linkedlist.nth ll i)) ^. us"," ^. (pprint_linkedlist ll (i+1))) in
+  let pprint_sequence seq =
+    (match seq with
+    | SeqList(s) ->
+      let s_string = pprint_linkedlist s 0 in
+      s_string
+    | _ -> us"") in
   let rec pprint_tm_list tm_l =
     (match tm_l with
      | TmList([]) -> us""
@@ -186,7 +197,7 @@ and pprint basic t =
   | TmTyApp(_,t1,ty1) ->
       left inside ^. ppt false t1 ^. us" [" ^. pprint_ty ty1 ^. us"]" ^. right inside
   | TmIfexp(_,c,t,e) -> us"if " ^. ppt false c ^. us" then " ^. ppt false t ^. us" else " ^. ppt false e
-  | TmSeq(fi,ty_id,seq_ty,ds_choice,clist,tmseq) -> us"TmSeq(" ^. (pprint_tm_list clist) ^. us")" (*TODO:Print the selected data structure type ty*) (*TODO:Print the selected data structure type ty*)
+  | TmSeq(fi,ty_id,seq_ty,ds_choice,clist,tmseq) -> us"TmSeq(" ^. (pprint_sequence tmseq) ^. us")" (*TODO:Print the selected data structure type ty*) (*TODO:Print the selected data structure type ty*)
   | TmSeqMethod(fi,ds_choice,fun_name,args,arg_index) -> us"Seq." ^. fun_name ^. us"()" (*TODO:Print the selected data structure type ty and the arguments?*)
   | TmChar(fi,c) -> us"'" ^. list2ustring [c] ^. us"'"
   | TmUC(fi,uct,ordered,uniqueness) -> (

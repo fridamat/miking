@@ -125,6 +125,8 @@ let compare_tm_terms tm1 tm2 =
 let rec compare_linked_lists ll1 ll2 i =
   if (i = Linkedlist.length ll1) && (i = Linkedlist.length ll2) then
     true
+  else if (i = Linkedlist.length ll1) || (i = Linkedlist.length ll2) then
+    false
   else if (compare_tm_terms (Linkedlist.nth ll1 i) (Linkedlist.nth ll2 i)) then
     compare_linked_lists ll1 ll2 (i+1)
   else
@@ -177,7 +179,7 @@ let rec val_equal v1 v2 =
       in o1 = o2 && u1 = u2 && eql (uct2revlist t1) (uct2revlist t2)
   | TmNop,TmNop -> true
   | TmSeq(_,_,_,_,tml1,seq1), TmSeq(_,_,_,_,tml2,seq2) ->
-    (compare_tm_lists tml1 tml2) && (compare_sequences seq1 seq2)
+    compare_sequences seq1 seq2
   | _ -> false
 
 let ustring2uctstring s =
@@ -500,6 +502,8 @@ let rec add_evaluated_term_to_args args term =
 let get_arg_types_length_dummy fi fun_name =
   match Ustring.to_utf8 fun_name with
   | "length" -> 0
+  | "append" -> 1
+  | "add" -> 1
   | "nth" -> 1
   | "push" -> 1
   | _ -> raise_error fi "Sequence method not implemented."
@@ -517,6 +521,17 @@ let call_length_method ti args =
      | _ -> raise_error ti.fi "No such data structure type.")
   | _ -> raise_error ti.fi "Sequence method not implemented."
 
+let call_append_method ti args =
+  match args with
+  | [TmSeq(ti1,ty_id1,seq_ty1,ds_choice1,tmlist1,tmseq1); TmSeq(ti2,ty_id2,seq_ty2,ds_choice2,tmlist2,tmseq2)] ->
+    (match tmseq1,tmseq2 with
+     | SeqList(ll1), SeqList(ll2) ->
+       let new_sequence = Linkedlist.append ll1 ll2 in
+       let res = TmSeq(ti1,ty_id1,seq_ty1,ds_choice1,TmList([]),SeqList(new_sequence)) in
+       res
+     | _ -> raise_error ti.fi "No such data structure type.")
+  | _ -> raise_error ti.fi "Sequence method2 not implemented."
+
 
 let call_seq_method ti ds_choice fun_name args =
   (*TODO: Open ds_choice for method*)
@@ -524,7 +539,10 @@ let call_seq_method ti ds_choice fun_name args =
   (*TODO: Check that number of arguments are correct (earlier?)*)
   match Ustring.to_utf8 fun_name with
   | "length" -> call_length_method ti args
-  | _ -> raise_error ti.fi "Sequence method not implemented."
+  | "append" ->
+    let res = call_append_method ti args in
+    res
+  | _ -> raise_error ti.fi "Sequence method3 not implemented."
 
 (* Main evaluation loop of a term. Evaluates using big-step semantics *)
 let rec eval env t =
@@ -544,7 +562,9 @@ let rec eval env t =
   | TmApp(ti,t1,t2) ->
       (match eval env t1 with
        (* Closure application *)
-       | TmClos(ti,x,_,t3,env2,_) -> eval ((eval env t2)::env2) t3
+        | TmClos(ti,x,_,t3,env2,_) ->
+          let new_env = ((eval env t2)::env2) in
+          eval ((eval env t2)::env2) t3
        (* Constant application using the delta function *)
        | TmConst(ti,c) -> delta c (eval env t2)
        (* Fix *)
@@ -556,7 +576,8 @@ let rec eval env t =
          let updated_args = add_evaluated_term_to_args args (eval env t2) in
          let last_arg_index = get_last_arg_index ti.fi fun_name in
          if arg_index == last_arg_index then
-           call_seq_method ti ds_choice fun_name updated_args
+           let res = call_seq_method ti ds_choice fun_name updated_args in
+           res
          else if arg_index < last_arg_index then
            TmSeqMethod(ti,ds_choice,fun_name,updated_args,(arg_index+1))
          else
@@ -577,9 +598,12 @@ let rec eval env t =
      | _ -> raise_error ti.fi "Condition in if-expression not a bool.")
   (* Sequence constructor *)
   | TmSeq(fi,ty_id,seq_ty,ds_choice,tmlist,tmseq) ->
-    let new_tmlist = TmList(eval_tmlist env tmlist) in
-    let new_tmseq = get_seq_from_list new_tmlist tmseq in
-    TmSeq(fi,ty_id,seq_ty,ds_choice,new_tmlist,new_tmseq)
+    (match tmseq with
+    | SeqNone ->
+      let new_tmlist = TmList(eval_tmlist env tmlist) in
+      let new_tmseq = get_seq_from_list new_tmlist tmseq in
+      TmSeq(fi,ty_id,seq_ty,ds_choice,new_tmlist,new_tmseq)
+    | _ -> t)
   (* Sequence method*)
   | TmSeqMethod(_,_,_,_,_) -> t
   (* The rest *)
@@ -609,8 +633,133 @@ let rec eval env t =
       appcases cases)
   | TmNop -> t
 
-let eval_test env t =
-  eval env t
+let check_if_seq ti =
+  match Typesys.getType ti with
+  | TySeq _ -> true
+  | TySeqMethod(TySeq _) -> true
+  | _ -> false
+
+let rec traverse_AST_to_find_sequences env t =
+  let rec traverse_list env l =
+    (match l with
+    | [] -> []
+    | hd::tl -> (traverse_AST_to_find_sequences env hd)::(traverse_list env tl)) in
+  match t with
+  | TmVar _ ->
+    if check_if_seq t then
+      let _ = Printf.printf "We have a %s of type Seq\n" "TmVar" in
+      true
+    else
+      false
+  | TmLam(ti,_,_,tm) ->
+    if check_if_seq t then
+      let _ = Printf.printf "We have a %s of type Seq\n" "TmLam" in
+      traverse_AST_to_find_sequences env tm
+    else
+      traverse_AST_to_find_sequences env tm
+  | TmClos(ti,_,_,tm,_,_) ->
+    if check_if_seq t then
+      let _ = Printf.printf "We have a %s of type Seq\n" "TmClos" in
+      traverse_AST_to_find_sequences env tm
+    else
+      traverse_AST_to_find_sequences env tm
+  | TmApp(_,tm1,tm2) ->
+    if check_if_seq t then
+      let _ = Printf.printf "We have a %s of type Seq\n" "TmApp" in
+      let _ = traverse_AST_to_find_sequences env tm1 in
+      traverse_AST_to_find_sequences env tm2
+    else
+    let _ = traverse_AST_to_find_sequences env tm1 in
+    traverse_AST_to_find_sequences env tm2
+  | TmConst _ ->
+    if check_if_seq t then
+      let _ = Printf.printf "We have a %s of type Seq\n" "TmConst" in
+      true
+    else
+      false
+  | TmIfexp(_,tm1,tm2,tm3) ->
+    if check_if_seq t then
+      let _ = Printf.printf "We have a %s of type Seq\n" "TmIfexp" in
+      let _ = traverse_AST_to_find_sequences env tm1 in
+      let _ = traverse_AST_to_find_sequences env tm2 in
+      traverse_AST_to_find_sequences env tm3
+    else
+      let _ = traverse_AST_to_find_sequences env tm1 in
+      let _ = traverse_AST_to_find_sequences env tm2 in
+      traverse_AST_to_find_sequences env tm3
+  | TmFix _ ->
+    if check_if_seq t then
+      let _ = Printf.printf "We have a %s of type Seq\n" "TmFix" in
+      true
+    else
+      false
+  | TmTyLam(_,_,_,tm) ->
+    if check_if_seq t then
+      let _ = Printf.printf "We have a %s of type Seq\n" "TmTyLam" in
+      traverse_AST_to_find_sequences env tm
+    else
+      traverse_AST_to_find_sequences env tm
+  | TmTyApp(_,tm,_) ->
+    if check_if_seq t then
+      let _ = Printf.printf "We have a %s of type Seq\n" "TmTyApp" in
+      traverse_AST_to_find_sequences env tm
+    else
+      traverse_AST_to_find_sequences env tm
+  | TmSeq(ti,_,_,_,tm_l,_) ->
+    let _ = Printf.printf "2.We have a sequence constructor with %s\n" (Ustring.to_utf8 (Pprint.pprint false t)) in
+    if check_if_seq t then
+      let _ = Printf.printf "We have a %s of type Seq\n" "TmSeq" in
+      let _ = traverse_list env (get_list_from_tm_list tm_l) in
+      true
+    else
+      let _ = traverse_list env (get_list_from_tm_list tm_l) in
+      true
+  | TmSeqMethod _ ->
+    if check_if_seq t then
+      let _ = Printf.printf "We have a %s of type Seq\n" "TmSeqMethod" in
+      true
+    else
+      let _ = Printf.printf "We do NOT have a %s of type Seq\n" "TmSeqMethod" in
+      false
+  | TmNop ->
+    if check_if_seq t then
+      let _ = Printf.printf "We have a %s of type Seq\n" "TmNop" in
+      true
+    else
+      false
+  | TmChar _ ->
+    if check_if_seq t then
+      let _ = Printf.printf "We have a %s of type Seq\n" "TmChar" in
+      true
+    else
+      false
+  | TmUC _ ->
+    if check_if_seq t then
+      let _ = Printf.printf "We have a %s of type Seq\n" "TmUC" in
+      true
+    else
+      false
+  | TmUtest(ti,tm1,tm2,tm3) ->
+    if check_if_seq t then
+      let _ = Printf.printf "We have a %s of type Seq\n" "TmUtest" in
+      let _ = traverse_AST_to_find_sequences env tm2 in
+      traverse_AST_to_find_sequences env tm3
+    else
+      let _ = traverse_AST_to_find_sequences env tm2 in
+      traverse_AST_to_find_sequences env tm3
+  | TmMatch _ ->
+    if check_if_seq t then
+      let _ = Printf.printf "We have a %s of type Seq\n" "TmMatch" in
+      true
+    else
+      false
+
+let eval_test typecheck env t =
+  if typecheck then
+    let _ = traverse_AST_to_find_sequences env t in
+    eval env t
+  else
+    eval env t
 
 (* Main function for evaluation a function. Performs lexing, parsing
    and evaluation. Does not perform any type checking *)
@@ -629,7 +778,7 @@ let evalprog filename typecheck =
         (*TODO: Data structure selection*)
         |> Typesys.erase |> debug_after_erase
         (* TODO: Give the right types to built-ins *)
-        |> eval_test (builtin |> List.split |> snd |> List.map (fun x -> TmConst({ety = None; fi = NoInfo},x)))
+        |> eval_test typecheck (builtin |> List.split |> snd |> List.map (fun x -> TmConst({ety = None; fi = NoInfo},x)))
         |> fun _ -> ()
 
     with
