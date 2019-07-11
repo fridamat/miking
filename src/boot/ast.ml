@@ -156,7 +156,7 @@ and ty =
 | TyLam         of info * ustring * kind * ty       (* Type-level function *)
 | TyApp         of info * ty * ty                   (* Type-level application *)
 | TyDyn                                             (* Dynamic type *)
-| TySeq         of ty                                  (* Sequence type *)
+| TySeq         of ty * int                                  (* Sequence type *)
 | TySeqMethod   of ty
 
 (* Kinds *)
@@ -214,8 +214,8 @@ let ty_info t =
   | TyLam(fi,_,_,_) -> fi
   | TyApp(fi,_,_) -> fi
   | TyDyn -> NoInfo         (* Used when deriving types for let-expressions *)
-  | TySeq(seq_ty) -> NoInfo
-  | TySeqMethod(ret_ty) -> NoInfo
+  | TySeq _ -> NoInfo
+  | TySeqMethod _ -> NoInfo
 
 
 

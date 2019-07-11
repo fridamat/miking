@@ -41,7 +41,7 @@ let rec tyShift d c ty =
   | TyLam(fi,x,kind,ty1) -> TyLam(fi,x,kind, tyShift d (c+1) ty1)
   | TyApp(fi,ty1,ty2) -> TyApp(fi, tyShift d c ty1, tyShift d c ty2)
   | TyDyn -> TyDyn
-  | TySeq(seq_ty) -> TySeq(seq_ty)
+  | TySeq(seq_ty,id) -> TySeq(seq_ty,id)
   | TySeqMethod(ret_ty) -> TySeqMethod(ret_ty)
 
 
@@ -56,7 +56,7 @@ let tySubst tys ty =
     | TyLam(fi,x,kind,ty1) -> TyLam(fi,x,kind, subst (j+1) (tyShift 1 0 s) ty1)
     | TyApp(fi,ty1,ty2) -> TyApp(fi, subst j s ty1, subst j s ty2)
     | TyDyn -> TyDyn
-    | TySeq(seq_ty) -> TySeq(seq_ty)
+    | TySeq(seq_ty,id) -> TySeq(seq_ty,id)
     | TySeqMethod(ret_ty) -> TySeqMethod(ret_ty))
   in
     subst 0 tys ty
@@ -89,7 +89,7 @@ let normTy ty =
        | TyLam(fi3,x,ki3,ty3),ty4 -> reduce (tySubstTop ty4 ty3)
        | ty1',ty2' -> TyApp(fi,ty1',ty2'))
     | TyDyn -> TyDyn
-    | TySeq(seq_ty) -> TySeq(seq_ty)
+    | TySeq(seq_ty,id) -> TySeq(seq_ty,id)
     | TySeqMethod(ret_ty) -> TySeqMethod(ret_ty)
   in
     reduce ty
@@ -109,7 +109,7 @@ let tyequal ty1 ty2 =
     | TyApp(fi1,ty11,ty12), TyApp(fi2,ty21,ty22)->
       tyrec ty11 ty21 && tyrec ty12 ty22
     | TyDyn,TyDyn -> true
-    | TySeq(seq_ty1),TySeq(seq_ty2) ->
+    | TySeq(seq_ty1,id1),TySeq(seq_ty2,id2) ->
       tyrec seq_ty1 seq_ty2
     | TySeqMethod(ret_ty1),TySeqMethod(ret_ty2) ->
       tyrec ret_ty1 ret_ty2
@@ -123,7 +123,7 @@ let tyequal ty1 ty2 =
     | TyAll(_,_,_,_), _ | _,TyAll(_,_,_,_) -> false
     | TyLam(fi,x,kind,ty1),_ | _,TyLam(fi,x,kind,ty1) -> false
     | TyApp(fi,ty1,ty2),_ | _,TyApp(fi,ty1,ty2)-> false
-    | TySeq(seq_ty),_ | _,TySeq(seq_ty) -> false
+    | TySeq(seq_ty,id),_ | _,TySeq(seq_ty,id) -> false
   in
     tyrec ty1 ty2
 
@@ -221,7 +221,7 @@ let rec containsTyDyn ty =
   | TyLam(fi,x,ki1,ty1) -> containsTyDyn ty1
   | TyApp(fi,ty1,ty2) -> containsTyDyn ty1 || containsTyDyn ty2
   | TyDyn -> true
-  | TySeq(seq_ty) -> false
+  | TySeq(seq_ty,id) -> false
   | TySeqMethod(ret_ty) -> false
 
 
@@ -236,7 +236,7 @@ let containsFreeTyVar ty =
   | TyLam(fi,x,ki1,ty1) -> work (c+1) ty1
   | TyApp(fi,ty1,ty2) -> work c ty1 || work c ty2
   | TyDyn -> false
-  | TySeq(seq_ty) -> false
+  | TySeq(seq_ty,id) -> false
   | TySeqMethod(ret_ty) -> false
   in work 0 ty
 
@@ -252,7 +252,7 @@ let isTyVarFree ty =
   | TyLam(fi,x,ki1,ty1) -> work (d+1) ty1
   | TyApp(fi,ty1,ty2) -> work d ty1 || work d ty2
   | TyDyn -> false
-  | TySeq(seq_ty) -> false
+  | TySeq(seq_ty,id) -> false
   | TySeqMethod(ret_ty) -> false
   in work 0 ty
 
@@ -270,7 +270,7 @@ let rec substAll env ty =
   | TyLam(fi,x,kind,ty1) -> TyLam(fi,x,kind, substAll (None::env) ty1)
   | TyApp(fi,ty1,ty2) -> TyApp(fi, substAll env ty1, substAll env ty2)
   | TyDyn -> TyDyn
-  | TySeq(seq_ty) -> TySeq(seq_ty)
+  | TySeq(seq_ty,id) -> TySeq(seq_ty,id)
   | TySeqMethod(ret_ty) -> TySeqMethod(ret_ty)
 
 
@@ -318,18 +318,18 @@ let tyMerge ty1 ty2 =
      | TyAll(_,_,_,_), _ | _,TyAll(_,_,_,_) -> raise Not_found
      | TyLam(fi,x,kind,ty1),_ | _,TyLam(fi,x,kind,ty1) -> failwith "TODO TyLam"
      | TyApp(fi,ty1,ty2),_ | _,TyApp(fi,ty1,ty2)-> failwith "TODO TyApp"
-     | TySeq(seq_ty1),TySeq(seq_ty2) -> (TySeq(seq_ty1),env) (*TODO*)
-     | TySeq(seq_ty),TyDyn -> (TySeq(seq_ty),env)
-     | TyDyn,TySeq(seq_ty) -> (TySeq(seq_ty),env)
-     | TySeq(seq_ty),TyGround(_,_) -> failwith "TODO TySeq,TyGround"
-     | TyGround(_,_),TySeq(seq_ty) -> failwith "TODO TyGround,TySeq"
+     | TySeq(seq_ty1,id1),TySeq(seq_ty2,id2) -> (TySeq(seq_ty1,id1),env) (*TODO*)
+     | TySeq(seq_ty,id),TyDyn -> (TySeq(seq_ty,id),env)
+     | TyDyn,TySeq(seq_ty,id) -> (TySeq(seq_ty,id),env)
+     | TySeq(seq_ty,id),TyGround(_,_) -> failwith "TODO TySeq,TyGround"
+     | TyGround(_,_),TySeq(seq_ty,id) -> failwith "TODO TyGround,TySeq"
      | TySeqMethod(ret_ty1),TySeqMethod(ret_ty2) ->
        (TySeqMethod(ret_ty1),env) (*TODO:???*)
      | TySeqMethod(ret_ty),TyDyn -> (TySeqMethod(ret_ty),env)
      | TyDyn,TySeqMethod(ret_ty) -> (TySeqMethod(ret_ty),env)
      | TySeqMethod(_),TyGround(_,_) -> failwith "TODO TySeqMethod,TyGround"
      | TyGround(_,_),TySeqMethod(_) -> failwith "TODO TyGround,TySeqMethod"
-     | TySeq(seq_ty),TySeqMethod(_) | TySeqMethod(_),TySeq(seq_ty) -> failwith "TODO TySeq,TySeqMethod"
+     | TySeq(seq_ty,id),TySeqMethod(_) | TySeqMethod(_),TySeq(seq_ty,id) -> failwith "TODO TySeq,TySeqMethod"
 
     )
   in
@@ -383,7 +383,7 @@ let getType t =
   let get_seq_fun_type fun_name =
     match Ustring.to_utf8 fun_name with
     | "length" -> TyGround(NoInfo,GInt)
-    | "append" -> TySeq(TyGround(NoInfo,GInt))
+    | "append" -> TySeq(TyGround(NoInfo,GInt),0)
     | _ -> failwith "We don't have type of this function"
 
 let rec check_types_of_list tm_l seq_ty =
@@ -458,6 +458,8 @@ let rec tc env ty t =
         | TyAll(fi,x,ki,ty4) ->
           let ty' = dive ty4 ty2' env (s+1) in
           if isTyVarFree ty' then TyAll(fi,x,ki,ty') else ty'
+        | TySeq(seq_ty,nr) -> (*TODO: Is this correct*)
+          TySeq(seq_ty,nr)
         | TySeqMethod(ret_ty) -> (*TODO: Is this correct*)
           TySeqMethod(ret_ty)
         | _ -> errorNotFunctionType (tm_info t1) ty1')
@@ -494,7 +496,7 @@ let rec tc env ty t =
     | ty -> errorExpectsUniversal (tm_info t1) ty)
   | TmSeq(ti,ty_id,seq_ty,ds_choice,tmlist,tmseq) ->
     let updated_tmlist = tc_list (Ast.get_list_from_tm_list tmlist) in
-    let _ = check_types_of_list updated_tmlist (TyGround(NoInfo,GInt)) in setType (TySeq(TyGround(NoInfo,GInt))) (TmSeq(ti,ty_id,seq_ty,ds_choice,TmList(updated_tmlist),tmseq))
+    let _ = check_types_of_list updated_tmlist (TyGround(NoInfo,GInt)) in setType (TySeq(TyGround(NoInfo,GInt),0)) (TmSeq(ti,ty_id,seq_ty,ds_choice,TmList(updated_tmlist),tmseq))
   | TmSeqMethod(ti,ds_choice,fun_name,args,arg_index) ->
     let updated_args = tc_list args in
     let new_seqmethod = setType (TySeqMethod(get_seq_fun_type fun_name)) (TmSeqMethod(ti,ds_choice,fun_name,updated_args,arg_index)) in
