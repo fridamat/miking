@@ -68,6 +68,12 @@ let info2str_startline fi =
     | Info(filename,l1,c1,l2,c2) -> l1
     | NoInfo -> assert false
 
+let info2str fi =
+  match fi with
+  | Info(filename,l1,c1,l2,c2) ->
+    filename ^. us(string_of_int l1) ^. us(string_of_int c1) ^. us(string_of_int l2) ^. us(string_of_int c2)
+  | NoInfo -> assert false
+
 (** [message2str m] returns a string representation of message [m].
     Is message is not intended to be read by humans. *)
 let rec message2str (id,sev,info,args)  =

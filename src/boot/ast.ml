@@ -203,6 +203,27 @@ let tm_info t =
   | TmMatch({fi},_,_) -> fi
   | TmNop -> NoInfo
 
+  (* Returns the info field from a term *)
+let tm_tinfo t =
+  match t with
+  | TmVar(ti,_,_,_) -> ti
+  | TmLam(ti,_,_,_) -> ti
+  | TmClos(ti,_,_,_,_,_) -> ti
+  | TmApp(ti,_,_) -> ti
+  | TmConst(ti,_) -> ti
+  | TmIfexp(ti,_,_,_) -> ti
+  | TmFix(ti) -> ti
+  | TmTyLam(ti,_,_,_) -> ti
+  | TmTyApp(ti,_,_) -> ti
+  | TmSeq(ti,_,_,_,_,_) -> ti
+  | TmSeqMethod(ti,_,_,_,_) -> ti
+
+  | TmChar(ti,_) -> ti
+  | TmUC(ti,_,_,_) -> ti
+  | TmUtest(ti,_,_,_) -> ti
+  | TmMatch(ti,_,_) -> ti
+  | TmNop -> failwith "No ti"
+
 
 (* Returns the info field from a type *)
 let ty_info t =
