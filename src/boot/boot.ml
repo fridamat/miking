@@ -637,7 +637,7 @@ let check_if_seq ti =
   | TySeq _ -> true
   | TySeqMethod(TySeq _,_) -> true
   | TyArrow(_,TySeq _, _) -> true
-  | TyArrow(_,TySeqMethod (TySeq _,_), _) -> true
+  | TyArrow(_,TySeqMethod(_,TySeq _), _) -> true
   | _ -> false
 
 let rec traverse_AST_to_find_sequences env t tis rels =
