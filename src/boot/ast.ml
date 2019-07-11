@@ -156,8 +156,8 @@ and ty =
 | TyLam         of info * ustring * kind * ty       (* Type-level function *)
 | TyApp         of info * ty * ty                   (* Type-level application *)
 | TyDyn                                             (* Dynamic type *)
-| TySeq         of ty * int                                  (* Sequence type *)
-| TySeqMethod   of ty
+| TySeq         of ty (*element type*) * int (*id*)
+| TySeqMethod   of ty (*input type*) * ty (*return type*)
 
 (* Kinds *)
 and kind =

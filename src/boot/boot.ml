@@ -80,7 +80,7 @@ let rec debruijn env t =
     | TyApp(fi,ty1,ty2) -> TyApp(fi, debruijnTy env ty1, debruijnTy env ty2)
     | TyDyn -> TyDyn
     | TySeq(seq_ty,id) -> TySeq(seq_ty,id)
-    | TySeqMethod(ret_ty) -> TySeqMethod(ret_ty)
+    | TySeqMethod(i_ty,r_ty) -> TySeqMethod(i_ty,r_ty)
     )
   in
   let rec debruijn_list env l =
@@ -563,7 +563,6 @@ let rec eval env t =
       (match eval env t1 with
        (* Closure application *)
         | TmClos(ti,x,_,t3,env2,_) ->
-          let new_env = ((eval env t2)::env2) in
           eval ((eval env t2)::env2) t3
        (* Constant application using the delta function *)
        | TmConst(ti,c) -> delta c (eval env t2)
@@ -636,9 +635,9 @@ let rec eval env t =
 let check_if_seq ti =
   match Typesys.getType ti with
   | TySeq _ -> true
-  | TySeqMethod(TySeq _) -> true
+  | TySeqMethod(TySeq _,_) -> true
   | TyArrow(_,TySeq _, _) -> true
-  | TyArrow(_,TySeqMethod (TySeq _), _) -> true
+  | TyArrow(_,TySeqMethod (TySeq _,_), _) -> true
   | _ -> false
 
 let rec traverse_AST_to_find_sequences env t tis rels =
@@ -689,12 +688,12 @@ let rec traverse_AST_to_find_sequences env t tis rels =
           rels
       ) in
     let _ = (match tm1, Typesys.getType tm1, check_if_seq tm2, tm2 with
-    | TmSeqMethod _, TySeqMethod(TySeq _), true, TmSeq _ ->
+    | TmSeqMethod _, TySeqMethod(TySeq _,_), true, TmSeq _ ->
       let _ = Printf.printf "Rel: return type of %s = %s\n" (Ustring.to_utf8 (Pprint.pprint false tm1)) (Ustring.to_utf8 (Pprint.pprint false tm2)) in
       let _ = Printf.printf "Rel: input type of %s = %s\n" (Ustring.to_utf8 (Pprint.pprint false tm1)) (Ustring.to_utf8 (Pprint.pprint false tm2)) in
       let _ = Printf.printf "Rel: %s is a new seq\n" (Ustring.to_utf8 (Pprint.pprint false tm2)) in
       true
-    | TmSeqMethod _, TySeqMethod(TySeq _), true, _ ->
+    | TmSeqMethod _, TySeqMethod(TySeq _,_), true, _ ->
       let _ = Printf.printf "Rel: return type of %s = %s\n" (Ustring.to_utf8 (Pprint.pprint false tm1)) (Ustring.to_utf8 (Pprint.pprint false tm2)) in
       let _ = Printf.printf "Rel: input type of %s = %s\n" (Ustring.to_utf8 (Pprint.pprint false tm1)) (Ustring.to_utf8 (Pprint.pprint false tm2)) in
       true
