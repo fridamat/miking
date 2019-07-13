@@ -643,176 +643,103 @@ let check_if_seq ti =
 let get_fi_string_from_ti ti =
   match ti with
   | {fi} -> (Ustring.to_utf8 (info2str fi))
-  | _ -> "" (*TODO: Raise error instead*)
 
-let rec traverse_AST_to_find_sequences env t tis rels =
-  let rec traverse_list env2 l2 tis2 rels2 =
-    (match l2 with
-    | [] -> tis2
-    | hd::tl ->
-      let new_tis = traverse_AST_to_find_sequences env2 hd tis2 rels2 in
-      traverse_list env2 tl new_tis rels2) in
+let find_rels_in_tmapp tm1 tm2 rels =
+  (*TODO: Some cases below are duplicates if we don't want to distinguish between input and return types of methods*)
+  match tm1, tm2, (check_if_seq tm1), (check_if_seq tm2), Typesys.getType tm1 with
+  | TmLam(lam_ti,_,_,_), TmSeq(seq_ti,_,_,_,_,_), true, true, _ (*"let x = new sequence"*) ->
+    (*Rel: s1 = s2*)
+    let new_rel = (tm1,tm2) in
+    new_rel::rels
+  | TmLam(lam_ti,_,_,_), TmApp(app_ti,_,_), true, true, _ (*"let x = a1 a2" where application (a1 a2) is of type sequence*) ->
+    (*Rel: s1 = s2*)
+    let new_rel = (tm1,tm2) in
+    new_rel::rels
+  | TmLam(lam_ti,_,_,_), TmVar(var_ti,_,_,_), true, true, _ (*"let x = y" where y is of type sequence*) ->
+    (*Rel: s1 = s2*)
+    let new_rel = (tm1,tm2) in
+    new_rel::rels
+  | TmSeqMethod(seqm_ti,_,_,_,_), TmSeq(seq_ti,_,_,_,_,_), _, true, TySeqMethod(_,TySeq _) (*"seqmethod sequence" where the sequence is the first sequence argument to the method and hence the sequence decides the method's sequence INPUT and RETURN type*) ->
+    (*Rel: return and input type of s1 = s2*)
+    let new_rel = (tm1,tm2) in
+    new_rel::rels
+  | TmSeqMethod(seqm_ti,_,_,_,_), _, _, true, TySeqMethod(_,TySeq _) (*"seqmethod a" where a is the first argument of type sequence to the method and hence a decides the method's sequence INPUT and RETURN type*) ->
+    (*Rel: return and input type of s1 = s2*)
+    let new_rel = (tm1,tm2) in
+    new_rel::rels
+  | TmSeqMethod(seqm_ti,_,_,_,_), TmSeq(seq_ti,_,_,_,_,_), _, true, TySeqMethod _ (*"seqmethod sequence" where the sequence is the first sequence argument to the method and hence the sequence decides the method's sequence INPUT type, but not the return type since the return type of the method is not a sequence*) ->
+    (*Rel: input type of s1 = s2*)
+    let new_rel = (tm1,tm2) in
+    new_rel::rels
+  | TmSeqMethod(seqm_ti,_,_,_,_), _, _, true, TySeqMethod _ (*"seqmethod a" where a is the first argument of type sequence to the method and hence a decides the method's sequence INPUT type, but not the return type since the return type of the method is not a sequence*) ->
+    (*Rel: input type of s1 = s2*)
+    let new_rel = (tm1,tm2) in
+    new_rel::rels
+  | TmApp(app_ti,_,_), TmSeq(seq_ti,_,_,_,_,_), _, true, TySeqMethod _ (*"a1 sequence" where a1 is of type sequence method and sequence is an argument (but not the first) to it. The method will already have the sequence type set from its first argument, so its sequence type will decide the sequence type of the sequence.*) ->
+    (*Rel: s2 = input type of s1*)
+    let new_rel = (tm2,tm1) in
+    new_rel::rels
+  | TmApp(app_ti,_,_), _, _, true, TySeqMethod _ (*"a1 a2" where a1 is of type sequence method and a2 is of type sequence. The method will already have the sequence type set from its first argument, so its sequence type will decide the sequence type of a2.*) ->
+    (*Rel: s2 = input type of s1*)
+    let new_rel = (tm2,tm1) in
+    new_rel::rels
+  | _ -> rels
+
+let rec traverse_AST_to_find_sequences t env rels seqs =
+  let rec traverse_AST_list l l_env l_rels l_seqs =
+    (match l with
+     | [] -> (l_rels,l_seqs)
+     | hd::tl ->
+       let (l_rels1,l_seqs1) = traverse_AST_to_find_sequences hd l_env l_rels l_seqs in
+       traverse_AST_list tl l_env l_rels1 l_seqs1
+    ) in
   match t with
-  | TmVar(ti,_,_,_) ->
-    if check_if_seq t then
-      t::tis
-    else
-      tis
-  | TmLam(ti,_,_,tm) ->
-    let new_tis = (
-      if check_if_seq t then
-        t::tis
-      else
-        tis
-    ) in
-    traverse_AST_to_find_sequences env tm new_tis rels
-  | TmClos(ti,_,_,tm,_,_) ->
-    let new_tis = (
-      if check_if_seq t then
-        t::tis
-      else
-        tis
-    ) in
-    traverse_AST_to_find_sequences env tm new_tis rels
-  | TmApp(ti,tm1,tm2) ->
-    (*TODO:Seq.length should not be a seq*)
-    let rels2 = (match tm1, tm2, check_if_seq tm1, check_if_seq tm2 with
-        | TmLam(lam_ti,x,x_ty,lam_tm), TmSeq(seq_ti,_,_,_,_,_), true, true ->
-          let rel = (tm1, tm2) in
-          let _ = Printf.printf "Rel: %s (%s) = %s (%s)\n" (Ustring.to_utf8 x) (get_fi_string_from_ti lam_ti) (Ustring.to_utf8 (Pprint.pprint false tm2)) (get_fi_string_from_ti seq_ti) in
-          let _ = Printf.printf "Rel: %s (%s) is a new seq\n" (Ustring.to_utf8 (Pprint.pprint false tm2)) (get_fi_string_from_ti seq_ti) in
-          rel::rels
-        | TmLam(lam_ti,x,x_ty,lam_tm), TmApp(app_ti,_,_), true, true ->
-          let rel = (tm1, tm2) in
-          let _ = Printf.printf "Rel: %s (%s) = %s (%s)\n" (Ustring.to_utf8 x) (get_fi_string_from_ti lam_ti) (Ustring.to_utf8 (Pprint.pprint false tm2)) (get_fi_string_from_ti app_ti) in
-          rel::rels
-        | TmLam(lam_ti,x,x_ty,lam_tm), TmVar(var_ti,_,_,_), true, true ->
-          let rel = (tm1, tm2) in
-          let _ = Printf.printf "Rel: %s (%s) = %s (%s)\n" (Ustring.to_utf8 x) (get_fi_string_from_ti lam_ti) (Ustring.to_utf8 (Pprint.pprint false tm2)) (get_fi_string_from_ti var_ti) in
-          rel::rels
-        | _ ->
-          rels
-      ) in
-    let _ =
-      (match tm1, Typesys.getType tm1, check_if_seq tm2, tm2 with
-       | TmSeqMethod(seqm_ti,_,_,_,_), TySeqMethod(TySeq _,_), true, TmSeq(seq_ti,_,_,_,_,_) ->
-         let _ = Printf.printf "Rel: return type of %s (%s) = %s (%s)\n" (Ustring.to_utf8 (Pprint.pprint false tm1)) (get_fi_string_from_ti seqm_ti) (Ustring.to_utf8 (Pprint.pprint false tm2)) (get_fi_string_from_ti seq_ti) in
-         let _ = Printf.printf "Rel: input type of %s (%s) = %s (%s)\n" (Ustring.to_utf8 (Pprint.pprint false tm1)) (get_fi_string_from_ti seqm_ti) (Ustring.to_utf8 (Pprint.pprint false tm2)) (get_fi_string_from_ti seq_ti) in
-         let _ = Printf.printf "Rel: %s (%s) is a new seq\n" (Ustring.to_utf8 (Pprint.pprint false tm2)) (get_fi_string_from_ti seq_ti) in
-         true
-       | TmSeqMethod(seqm_ti,_,_,_,_), TySeqMethod(TySeq _,_), true, _ ->
-         let ti_2 = Ast.tm_tinfo tm2 in
-         let _ = Printf.printf "Rel: return type of %s (%s) = %s (%s)\n" (Ustring.to_utf8 (Pprint.pprint false tm1)) (get_fi_string_from_ti seqm_ti) (Ustring.to_utf8 (Pprint.pprint false tm2)) (get_fi_string_from_ti ti_2) in
-         let _ = Printf.printf "Rel: input type of %s (%s) = %s (%s)\n" (Ustring.to_utf8 (Pprint.pprint false tm1)) (get_fi_string_from_ti seqm_ti) (Ustring.to_utf8 (Pprint.pprint false tm2)) (get_fi_string_from_ti ti_2) in
-         true
-       | TmSeqMethod(seqm_ti,_,_,_,_), TySeqMethod _, true, TmSeq(seq_ti,_,_,_,_,_) ->
-         let _ = Printf.printf "Rel: input type of %s (%s) = %s (%s)\n" (Ustring.to_utf8 (Pprint.pprint false tm1)) (get_fi_string_from_ti seqm_ti) (Ustring.to_utf8 (Pprint.pprint false tm2)) (get_fi_string_from_ti seq_ti) in
-         let _ = Printf.printf "Rel: %s (%s) is a new seq\n" (Ustring.to_utf8 (Pprint.pprint false tm2)) (get_fi_string_from_ti seq_ti) in
-         true
-       | TmSeqMethod(seqm_ti,_,_,_,_), TySeqMethod _, true, _ ->
-         let ti2 = Ast.tm_tinfo tm2 in
-         let _ = Printf.printf "Rel: input type of %s (%s) = %s (%s)\n" (Ustring.to_utf8 (Pprint.pprint false tm1)) (get_fi_string_from_ti seqm_ti) (Ustring.to_utf8 (Pprint.pprint false tm2)) (get_fi_string_from_ti ti2) in
-         true
-       | TmApp(app_ti,_,_), TySeqMethod _, true, TmSeq(seq_ti,_,_,_,_,_) ->
-         let _ = Printf.printf "Rel: first seq of %s (%s) = %s (%s)\n" (Ustring.to_utf8 (Pprint.pprint false tm1)) (get_fi_string_from_ti app_ti) (Ustring.to_utf8 (Pprint.pprint false tm2)) (get_fi_string_from_ti seq_ti) in
-         let _ = Printf.printf "Rel: %s (%s) is a new seq\n" (Ustring.to_utf8 (Pprint.pprint false tm2)) (get_fi_string_from_ti seq_ti) in
-         true
-       | TmApp(app_ti,_,_), TySeqMethod _, true, _ ->
-         let ti2 = Ast.tm_tinfo tm2 in
-         let _ = Printf.printf "Rel: first seq of %s (%s) = %s (%s)\n" (Ustring.to_utf8 (Pprint.pprint false tm1)) (get_fi_string_from_ti app_ti) (Ustring.to_utf8 (Pprint.pprint false tm2)) (get_fi_string_from_ti ti2) in
-         true
-       | _ -> false) in
-    let new_tis1 = tis in
-    let new_tis2 = traverse_AST_to_find_sequences env tm1 new_tis1 rels in
-    let new_tis3 = traverse_AST_to_find_sequences env tm2 new_tis2 rels in
-    new_tis3
-  | TmConst(ti,_) ->
-    if check_if_seq t then
-      t::tis
-    else
-      tis
-  | TmIfexp(ti,tm1,tm2,tm3) ->
-    let new_tis1 = (
-      if check_if_seq t then
-        t::tis
-      else
-        tis
-    ) in
-    let new_tis2 = traverse_AST_to_find_sequences env tm1 new_tis1 rels in
-    let new_tis3 = traverse_AST_to_find_sequences env tm2 new_tis2 rels in
-    let new_tis4 = traverse_AST_to_find_sequences env tm3 new_tis3 rels in
-    new_tis4
-  | TmFix(ti) ->
-    if check_if_seq t then
-      t::tis
-    else
-      tis
-  | TmTyLam(ti,_,_,tm) ->
-    let new_tis = (
-      if check_if_seq t then
-        t::tis
-      else
-        tis
-    ) in
-    traverse_AST_to_find_sequences env tm new_tis rels
-  | TmTyApp(ti,tm,_) ->
-    let new_tis = (
-      if check_if_seq t then
-        t::tis
-      else
-        tis
-    ) in
-    traverse_AST_to_find_sequences env tm new_tis rels
   | TmSeq(ti,_,_,_,tm_l,_) ->
-    let new_tis = t::tis in
-    let new_tis'' = traverse_list env (get_list_from_tm_list tm_l) new_tis rels in
-    new_tis''
-  | TmSeqMethod(ti,_,_,_,_) ->
+    let seqs1 = t::seqs in
+    traverse_AST_list (get_list_from_tm_list tm_l) env rels seqs1
+  | TmNop -> (rels,seqs)
+  | TmVar _ | TmChar _ | TmSeqMethod _ | TmFix _ | TmConst _ ->
     if check_if_seq t then
-      t::tis
+      (rels,t::seqs)
     else
-      tis
-  | TmNop ->
-    tis
-  | TmChar(ti,_) ->
-    if check_if_seq t then
-      t::tis
-    else
-      tis
-  | TmUC(ti,_,_,_) ->
-    if check_if_seq t then
-      t::tis
-    else
-      tis
-  | TmUtest(ti,tm1,tm2,tm3) ->
-    let new_tis1 = (
-      if check_if_seq t then
-        t::tis
-      else
-        tis
-    ) in
-    let new_tis2 = traverse_AST_to_find_sequences env tm1 new_tis1 rels in
-    let new_tis3 = traverse_AST_to_find_sequences env tm2 new_tis2 rels in
-    let new_tis4 = traverse_AST_to_find_sequences env tm3 new_tis3 rels in
-    new_tis4
-  | TmMatch(ti,_,_) ->
-    if check_if_seq t then
-      t::tis
-    else
-      tis
+      (rels,seqs)
+  | TmLam(ti,_,_,tm) | TmClos(ti,_,_,tm,_,_) ->
+    let (rels1,seqs1) =
+      (if check_if_seq t then
+         (rels,t::seqs)
+       else
+         (rels,seqs)
+      ) in
+    traverse_AST_to_find_sequences tm env rels1 seqs1
+  | TmApp(ti,tm1,tm2) ->
+    let rels1 = find_rels_in_tmapp tm1 tm2 rels in
+    let (rels2,seqs1) = traverse_AST_to_find_sequences tm1 env rels1 seqs in
+    traverse_AST_to_find_sequences tm2 env rels2 seqs1
+  | TmUtest(ti,tm1,tm2,tm3) | TmIfexp(ti,tm1,tm2,tm3) ->
+    let (rels1,seqs1) =
+      (if check_if_seq t then
+         (rels,t::seqs)
+       else
+         (rels,seqs)
+      ) in
+    let (rels2,seqs2) = traverse_AST_to_find_sequences tm1 env rels1 seqs1 in
+    let (rels3,seqs3) = traverse_AST_to_find_sequences tm2 env rels2 seqs2 in
+    traverse_AST_to_find_sequences tm3 env rels3 seqs3
+  | TmMatch _ | TmUC _ | TmTyApp _ | TmTyLam _ ->
+    failwith "Not implemented"
 
 let rec print_seq_tis seq_tis =
   match seq_tis with
   | [] -> us""
   | hd::tl ->
-    (Pprint.pprint false hd) ^. us", " ^. (print_seq_tis tl)
+    us"- " ^. (Pprint.pprint false hd) ^. us",\n" ^. (print_seq_tis tl)
 
 let eval_test typecheck env t =
   let _ = Printf.printf "The complete program is: %s \n" (Ustring.to_utf8 (Pprint.pprint false t)) in
   if typecheck then
-    let seq_tis = traverse_AST_to_find_sequences env t [] [] in
-    let seq_string = print_seq_tis seq_tis in
-    let _ = Printf.printf "The program points that are seqs are: %s of length %d\n" (Ustring.to_utf8 seq_string) (List.length seq_tis) in
+    let (rels,seqs) = traverse_AST_to_find_sequences t env [] [] in
+    let seq_string = print_seq_tis seqs in
+    let _ = Printf.printf "The program points that are seqs are: \n%s of length %d\n" (Ustring.to_utf8 seq_string) (List.length seqs) in
     eval env t
   else
     eval env t
