@@ -166,6 +166,37 @@ let compare_tm_lists tm_l1 tm_l2 =
   | TmList(l1), TmList(l2) ->
     compare_lists l1 l2
 
+let rec compare_term_lists l1 l2 =
+  let rec compare_terms t1 t2 =
+    (match t1, t2 with
+     | TmChar(_,n1),TmChar(_,n2) -> n1 = n2
+     | TmConst(_,c1),TmConst(_,c2) -> c1 = c2
+     | TmNop, TmNop -> true
+     | TmVar(_,id1,_,_), TmVar(_,id2,_,_) -> id1 = id2
+     | TmLam(_,var1,ty1,tm1), TmLam(_,var2,ty2,tm2) ->
+       (var1=var2) && (ty1=ty2) && (compare_terms tm1 tm2)
+     | TmClos(_,var1,ty1,tm1,_,_), TmClos(_,var2,ty2,tm2,_,_) ->
+       (var1=var2) && (ty1=ty2) && (compare_terms tm1 tm2)
+     | TmApp(_,tm11,tm12), TmApp(_,tm21,tm22) ->
+       (compare_terms tm11 tm21) && (compare_terms tm12 tm22)
+     | TmIfexp(_,tm11,tm12,tm13), TmIfexp(_,tm21,tm22,tm23) ->
+       (compare_terms tm11 tm21) && (compare_terms tm12 tm22) && (compare_terms tm13 tm23)
+     | TmFix _, TmFix _ -> true
+     | TmSeq(_,_,_,_,tm_l1,_), TmSeq(_,_,_,_,tm_l2,_) ->
+       (*TODO: Is it enough to compare the tmls?*)
+       compare_term_lists (get_list_from_tm_list tm_l1) (get_list_from_tm_list tm_l2)
+     | TmSeqMethod(_,_,fun_name1,_,_), TmSeqMethod(_,_,fun_name2,_,_) ->
+       fun_name1 = fun_name2
+     | _ -> false) in
+  match l1, l2 with
+  | [], [] -> true
+  | hd1::tl1, hd2::tl2 ->
+    if compare_terms hd1 hd2 then
+      compare_term_lists tl1 tl2
+    else
+      false
+  | _ -> false
+
 (* Check if two value terms are equal *)
 let rec val_equal v1 v2 =
   match v1,v2 with
@@ -728,18 +759,26 @@ let rec traverse_AST_to_find_sequences t env rels seqs =
   | TmMatch _ | TmUC _ | TmTyApp _ | TmTyLam _ ->
     failwith "Not implemented"
 
-let rec print_seq_tis seq_tis =
-  match seq_tis with
-  | [] -> us""
+let rec print_seqs seqs =
+  match seqs with
+  | [] -> us"\n"
   | hd::tl ->
-    us"- " ^. (Pprint.pprint false hd) ^. us",\n" ^. (print_seq_tis tl)
+    us"\n- " ^. (Pprint.pprint false hd) ^. us"," ^. (print_seqs tl)
+
+let rec print_rels rels =
+  match rels with
+  | [] -> us"\n"
+  | (hd1,hd2)::tl ->
+    us"\n- " ^. (Pprint.pprint false hd1) ^. us" = " ^. (Pprint.pprint false hd2) ^. us"," ^. (print_rels tl)
 
 let eval_test typecheck env t =
   let _ = Printf.printf "The complete program is: %s \n" (Ustring.to_utf8 (Pprint.pprint false t)) in
   if typecheck then
     let (rels,seqs) = traverse_AST_to_find_sequences t env [] [] in
-    let seq_string = print_seq_tis seqs in
-    let _ = Printf.printf "The program points that are seqs are: \n%s of length %d\n" (Ustring.to_utf8 seq_string) (List.length seqs) in
+    let seqs_string = print_seqs seqs in
+    let _ = Printf.printf "\nThe program points that are seqs are: %s of length %d" (Ustring.to_utf8 seqs_string) (List.length seqs) in
+    let rels_string = print_rels rels in
+    let _ = Printf.printf "\nThe relationships between seqs are: %s of length %d" (Ustring.to_utf8 rels_string) (List.length rels) in
     eval env t
   else
     eval env t
