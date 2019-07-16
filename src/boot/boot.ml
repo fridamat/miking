@@ -902,6 +902,9 @@ let eval_test typecheck env t =
     let _ = Printf.printf "\nThe program points that are seqs are: %s of length %d" (Ustring.to_utf8 seqs_string) (List.length seqs) in
     let rels_string = print_rels rels in
     let _ = Printf.printf "\nThe relationships between seqs are: %s of length %d" (Ustring.to_utf8 rels_string) (List.length rels) in
+    (*TODO: Reducera relationerna*)
+    (*TODO: Kalla på algoritmen med relationerna*)
+    (*TODO: Ändra i AST med resultat*)
     eval env t
   else
     eval env t
