@@ -703,6 +703,9 @@ let find_rels_in_tmapp tm1 tm2 rels =
     (*Rel: s1 = s2*)
     let new_rel = (tm1,tm2) in
     new_rel::rels
+  | TmVar(var_ti,_,_,_), TmSeq(seq_ti,_,_,_,_,_), _, true, TySeqMethod(TySeq(_,_),_) (*"var sequence" where var is a seqmethod and the sequence is the first sequence argument to the method and hence the sequence decides the method's sequence INPUT - and maybe RETURN - type*) ->
+    let new_rel = (tm1,tm2) in
+    new_rel::rels
   | TmSeqMethod(seqm_ti,_,_,_,_), TmSeq(seq_ti,_,_,_,_,_), _, true, TySeqMethod(_,TySeq _) (*"seqmethod sequence" where the sequence is the first sequence argument to the method and hence the sequence decides the method's sequence INPUT and RETURN type*) ->
     (*Rel: return and input type of s1 = s2*)
     let new_rel = (tm1,tm2) in
@@ -898,7 +901,7 @@ let eval_test typecheck env t =
     let seqs_string = print_seqs seqs in
     let _ = Printf.printf "\nThe program points that are seqs are: %s of length %d" (Ustring.to_utf8 seqs_string) (List.length seqs) in
     let rels_string = print_rels rels in
-      let _ = Printf.printf "\nThe relationships between seqs are: %s of length %d" (Ustring.to_utf8 rels_string) (List.length rels) in
+    let _ = Printf.printf "\nThe relationships between seqs are: %s of length %d" (Ustring.to_utf8 rels_string) (List.length rels) in
     eval env t
   else
     eval env t
