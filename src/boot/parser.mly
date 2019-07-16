@@ -184,6 +184,10 @@ mcore_scope:
       { let fi = mktinfo $1.i.fi (tm_info $4) in
         (*TODO: Add ds_choice or connection to var for sequences?*)
         TmApp(fi,TmLam(fi,$2.v,TyDyn,$5),$4) }
+  | LET IDENT EQ mc_term IN mc_term
+      { let fi = mktinfo $1.i.fi (tm_info $4) in
+        (*TODO: Add ds_choice or connection to var for sequences?*)
+        TmApp(fi,TmLam(fi,$2.v,TyDyn,$6),$4) }
 
 mc_term:
   | mc_left
@@ -250,7 +254,6 @@ mc_atom:
       { let fi = mktinfo ($1.i.fi) ($3.i.fi) in
         (*TODO:Change ds_choice to None?*)
         TmSeqMethod(fi, 0, $3.v, [], 0) }
-
 
 
 ty:
