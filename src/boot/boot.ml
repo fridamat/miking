@@ -716,46 +716,53 @@ let find_rels_in_tmapp tm1 tm2 rels =
     new_rel::rels
   | _ -> rels
 
-let rec traverse_AST_to_find_sequences t env rels seqs =
-  let rec traverse_AST_list l l_env l_rels l_seqs =
+let rec traverse_AST_to_find_sequences t rels seqs =
+  let rec traverse_AST_list l l_rels l_seqs =
     (match l with
      | [] -> (l_rels,l_seqs)
      | hd::tl ->
-       let (l_rels1,l_seqs1) = traverse_AST_to_find_sequences hd l_env l_rels l_seqs in
-       traverse_AST_list tl l_env l_rels1 l_seqs1
+       let (l_rels1,l_seqs1) = traverse_AST_to_find_sequences hd l_rels l_seqs in
+       traverse_AST_list tl l_rels1 l_seqs1
     ) in
   match t with
   | TmSeq(ti,_,_,_,tm_l,_) ->
+    let _ = Printf.printf "Term %s of type %s\n" (Ustring.to_utf8 (Pprint.pprint false t)) (Ustring.to_utf8 (Pprint.pprint_ty (Typesys.getType t))) in
     let seqs1 = t::seqs in
-    traverse_AST_list (get_list_from_tm_list tm_l) env rels seqs1
-  | TmNop -> (rels,seqs)
+    traverse_AST_list (get_list_from_tm_list tm_l) rels seqs1
+  | TmNop ->
+    let _ = Printf.printf "Term %s of type %s\n" (Ustring.to_utf8 (Pprint.pprint false t)) (Ustring.to_utf8 (Pprint.pprint_ty (Typesys.getType t))) in
+    (rels,seqs)
   | TmVar _ | TmChar _ | TmSeqMethod _ | TmFix _ | TmConst _ ->
+    let _ = Printf.printf "Term %s of type %s\n" (Ustring.to_utf8 (Pprint.pprint false t)) (Ustring.to_utf8 (Pprint.pprint_ty (Typesys.getType t))) in
     if check_if_seq t then
-      (rels,t::seqs)
-    else
-      (rels,seqs)
+        (rels,t::seqs)
+      else
+        (rels,seqs)
   | TmLam(ti,_,_,tm) | TmClos(ti,_,_,tm,_,_) ->
+    let _ = Printf.printf "Term %s of type %s\n" (Ustring.to_utf8 (Pprint.pprint false t)) (Ustring.to_utf8 (Pprint.pprint_ty (Typesys.getType t))) in
     let (rels1,seqs1) =
       (if check_if_seq t then
          (rels,t::seqs)
        else
          (rels,seqs)
       ) in
-    traverse_AST_to_find_sequences tm env rels1 seqs1
+    traverse_AST_to_find_sequences tm rels1 seqs1
   | TmApp(ti,tm1,tm2) ->
+    let _ = Printf.printf "Term %s of type %s\n" (Ustring.to_utf8 (Pprint.pprint false t)) (Ustring.to_utf8 (Pprint.pprint_ty (Typesys.getType t))) in
     let rels1 = find_rels_in_tmapp tm1 tm2 rels in
-    let (rels2,seqs1) = traverse_AST_to_find_sequences tm1 env rels1 seqs in
-    traverse_AST_to_find_sequences tm2 env rels2 seqs1
+    let (rels2,seqs1) = traverse_AST_to_find_sequences tm1 rels1 seqs in
+    traverse_AST_to_find_sequences tm2 rels2 seqs1
   | TmUtest(ti,tm1,tm2,tm3) | TmIfexp(ti,tm1,tm2,tm3) ->
+    let _ = Printf.printf "Term %s of type %s\n" (Ustring.to_utf8 (Pprint.pprint false t)) (Ustring.to_utf8 (Pprint.pprint_ty (Typesys.getType t))) in
     let (rels1,seqs1) =
       (if check_if_seq t then
          (rels,t::seqs)
        else
          (rels,seqs)
       ) in
-    let (rels2,seqs2) = traverse_AST_to_find_sequences tm1 env rels1 seqs1 in
-    let (rels3,seqs3) = traverse_AST_to_find_sequences tm2 env rels2 seqs2 in
-    traverse_AST_to_find_sequences tm3 env rels3 seqs3
+    let (rels2,seqs2) = traverse_AST_to_find_sequences tm1 rels1 seqs1 in
+    let (rels3,seqs3) = traverse_AST_to_find_sequences tm2 rels2 seqs2 in
+    traverse_AST_to_find_sequences tm3 rels3 seqs3
   | TmMatch _ | TmUC _ | TmTyApp _ | TmTyLam _ ->
     failwith "Not implemented"
 
@@ -771,14 +778,106 @@ let rec print_rels rels =
   | (hd1,hd2)::tl ->
     us"\n- " ^. (Pprint.pprint false hd1) ^. us" = " ^. (Pprint.pprint false hd2) ^. us"," ^. (print_rels tl)
 
+let print_test_res res res_name =
+  if res then
+    Printf.printf "%s PASSED!!!\n" res_name
+  else
+    Printf.printf "%s FAILED :(\n" res_name
+
+let test_preprocessing =
+  let seq_ty = TySeq(TyGround(NoInfo,GInt),0) in
+  let default_ti =
+    {ety=Some(TyDyn); fi=NoInfo} in
+  let seq_ti =
+    {ety=Some(seq_ty); fi=NoInfo} in
+  let seqm_ti1 (*seqmethod with _ -> seq*) =
+    {ety=Some(TySeqMethod(TyDyn,seq_ty)); fi=NoInfo} in
+  let seqm_ti2 (*seqmethod with seq -> seq*) =
+    {ety=Some(TySeqMethod(seq_ty,seq_ty)); fi=NoInfo} in
+  let arrow_seq_ti (*seq -> _*) =
+    {ety=Some(TyArrow(NoInfo,seq_ty,TyDyn)); fi=NoInfo} in
+  let arrow_seqm_ti1 (*(seqmethod with _ -> seq) -> _*) =
+    {ety=Some(TyArrow(NoInfo,TySeqMethod(TyDyn,seq_ty),TyDyn)); fi=NoInfo} in
+  let arrow_seqm_ti2 (*(seqmethod with seq -> seq) -> _*) =
+    {ety=Some(TyArrow(NoInfo,TySeqMethod(seq_ty,seq_ty),TyDyn)); fi=NoInfo} in
+  let int_ti =
+    {ety=Some(TyGround(NoInfo,GInt)); fi=NoInfo} in
+  (*TEST 1*)
+  (*
+    AST:
+      TmApp((lam s1:Dyn. Nop), TmSeq(1,2))
+  *)
+  (*
+    Program:
+      let s1 = newseq [int] (1,2)
+  *)
+  let t1_e1 = TmConst(int_ti,CInt(1)) in
+  let t1_e2 = TmConst(int_ti,CInt(2)) in
+  let t1_seq1 = TmSeq(seq_ti,0,us"none",0,TmList([t1_e1;t1_e2]),SeqNone) in
+  let t1_lam1 = TmLam(arrow_seq_ti,us"s1",TyDyn,TmNop) in
+  let t1_app1 = TmApp(default_ti,t1_lam1,t1_seq1) in
+  let t1_ast = t1_app1 in
+  let (t1_rels,t1_seqs) = traverse_AST_to_find_sequences t1_ast [] [] in
+  let t1_exp_seqs = [t1_seq1;t1_lam1] in
+  let t1_res = compare_term_lists t1_seqs t1_exp_seqs in
+  let _ = print_test_res t1_res "Test 1" in
+  (*TEST 2*)
+  (*
+    AST:
+      TmApp((lam s1:Dyn. TmApp((lam s2:Dyn. Nop), s1'0)), TmSeq(1))
+  *)
+  (*
+    Program:
+      let s1 = newseq [int] (1)
+      let s2 = s1
+  *)
+  let t2_e1 = TmConst(int_ti,CInt(1)) in
+  let t2_seq1 = TmSeq(seq_ti,0,us"none",0,TmList([t2_e1]),SeqNone) in
+  let t2_var1 = TmVar(seq_ti,us"s1",0,false) in
+  let t2_lam1 = TmLam(arrow_seq_ti,us"s2",TyDyn,TmNop) in
+  let t2_app1 = TmApp(default_ti,t2_lam1,t2_var1) in
+  let t2_lam2 = TmLam(arrow_seq_ti,us"s1",TyDyn,t2_app1) in
+  let t2_app2 = TmApp(default_ti,t2_lam2,t2_seq1) in
+  let t2_ast = t2_app2 in
+  let (t2_rels,t2_seqs) = traverse_AST_to_find_sequences t2_ast [] [] in
+  let t2_exp_seqs = [t2_seq1;t2_var1;t2_lam1;t2_lam2] in
+  let t2_res = compare_term_lists t2_seqs t2_exp_seqs in
+  let _ = print_test_res t2_res "Test 2" in
+  (*TEST 3*)
+  (*
+    AST:
+      TmApp((lam s4:Dyn. Nop), TmApp((TmApp((Seq.append(), TmSeq(1))), TmSeq(2)))
+  *)
+  (*
+    Program:
+      let s4 = seqmethod.append (newseq [int] (1)) (newseq [int] (2))
+  *)
+  let t3_e1 = TmConst(int_ti,CInt(2)) in
+  let t3_seq1 = TmSeq(seq_ti,0,us"none",0,TmList([t3_e1]),SeqNone) in
+  let t3_e2 = TmConst(int_ti,CInt(1)) in
+  let t3_seq2 = TmSeq(seq_ti,0,us"none",0,TmList([t3_e2]),SeqNone) in
+  let t3_seqm1 = TmSeqMethod(seqm_ti2,0,us"append",[],0) in
+  let t3_app1 = TmApp(seqm_ti2,t3_seqm1,t3_seq2) in
+  let t3_app2 = TmApp(seqm_ti2,t3_app1,t3_seq1) in
+  let t3_lam1 = TmLam(arrow_seqm_ti2,us"s4",TyDyn,TmNop) in
+  let t3_app3 = TmApp(default_ti,t3_lam1,t3_app2) in
+  let t3_ast = t3_app3 in
+  let (t3_rels,t3_seqs) = traverse_AST_to_find_sequences t3_ast [] []  in
+  let t3_exp_seqs = [t3_seq1;t3_seq2;t3_seqm1;t3_lam1] in
+  let t3_res = compare_term_lists t3_seqs t3_exp_seqs in
+  let _ = print_test_res t3_res "Test 3" in
+  int_ti
+
+
 let eval_test typecheck env t =
   let _ = Printf.printf "The complete program is: %s \n" (Ustring.to_utf8 (Pprint.pprint false t)) in
   if typecheck then
-    let (rels,seqs) = traverse_AST_to_find_sequences t env [] [] in
+    let _ = test_preprocessing in
+    let (rels,seqs) = traverse_AST_to_find_sequences t [] [] in
     let seqs_string = print_seqs seqs in
     let _ = Printf.printf "\nThe program points that are seqs are: %s of length %d" (Ustring.to_utf8 seqs_string) (List.length seqs) in
     let rels_string = print_rels rels in
-    let _ = Printf.printf "\nThe relationships between seqs are: %s of length %d" (Ustring.to_utf8 rels_string) (List.length rels) in
+      let _ = Printf.printf "\nThe relationships between seqs are: %s of length %d" (Ustring.to_utf8 rels_string) (List.length rels) in
     eval env t
   else
     eval env t
