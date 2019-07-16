@@ -197,6 +197,19 @@ let rec compare_term_lists l1 l2 =
       false
   | _ -> false
 
+let rec split_pair_list l lhs_l rhs_l=
+  match l with
+  | [] -> (lhs_l,rhs_l)
+  | (hd1,hd2)::tl ->
+    let lhs_l' = hd1::lhs_l in
+    let rhs_l' = hd2::rhs_l in
+    split_pair_list tl lhs_l' rhs_l'
+
+let compare_term_pair_lists l1 l2 =
+  let (l11,l12) = split_pair_list l1 [] [] in
+  let (l21,l22) = split_pair_list l2 [] [] in
+  (compare_term_lists l11 l21) && (compare_term_lists l12 l22)
+
 (* Check if two value terms are equal *)
 let rec val_equal v1 v2 =
   match v1,v2 with
@@ -819,8 +832,10 @@ let test_preprocessing =
   let t1_ast = t1_app1 in
   let (t1_rels,t1_seqs) = traverse_AST_to_find_sequences t1_ast [] [] in
   let t1_exp_seqs = [t1_seq1;t1_lam1] in
-  let t1_res = compare_term_lists t1_seqs t1_exp_seqs in
-  let _ = print_test_res t1_res "Test 1" in
+  let t1_seqs_res = compare_term_lists t1_seqs t1_exp_seqs in
+  let t1_exp_rels = [(t1_lam1,t1_seq1)] in
+  let t1_rels_res = compare_term_pair_lists t1_rels t1_exp_rels in
+  let _ = print_test_res (t1_seqs_res && t1_rels_res) "Test 1" in
   (*TEST 2*)
   (*
     AST:
@@ -841,8 +856,10 @@ let test_preprocessing =
   let t2_ast = t2_app2 in
   let (t2_rels,t2_seqs) = traverse_AST_to_find_sequences t2_ast [] [] in
   let t2_exp_seqs = [t2_seq1;t2_var1;t2_lam1;t2_lam2] in
-  let t2_res = compare_term_lists t2_seqs t2_exp_seqs in
-  let _ = print_test_res t2_res "Test 2" in
+  let t2_seqs_res = compare_term_lists t2_seqs t2_exp_seqs in
+  let t2_exp_rels = [(t2_lam1,t2_var1);(t2_lam2,t2_seq1)] in
+  let t2_rels_res = compare_term_pair_lists t2_rels t2_exp_rels in
+  let _ = print_test_res (t2_seqs_res && t2_rels_res) "Test 2" in
   (*TEST 3*)
   (*
     AST:
@@ -863,16 +880,20 @@ let test_preprocessing =
   let t3_app3 = TmApp(default_ti,t3_lam1,t3_app2) in
   let t3_ast = t3_app3 in
   let (t3_rels,t3_seqs) = traverse_AST_to_find_sequences t3_ast [] []  in
+  let rels_string = print_rels t3_rels in
+  let _ = Printf.printf "The rels are: %s\n" (Ustring.to_utf8 rels_string) in
   let t3_exp_seqs = [t3_seq1;t3_seq2;t3_seqm1;t3_lam1] in
-  let t3_res = compare_term_lists t3_seqs t3_exp_seqs in
-  let _ = print_test_res t3_res "Test 3" in
+  let t3_seqs_res = compare_term_lists t3_seqs t3_exp_seqs in
+  let t3_exp_rels = [(t3_seqm1,t3_seq2);(t3_seq1,t3_app1);(t3_lam1,t3_app2)] in
+  let t3_rels_res = compare_term_pair_lists t3_rels t3_exp_rels in
+  let _ = print_test_res (t3_seqs_res && t3_rels_res) "Test 3" in
   int_ti
 
 
 let eval_test typecheck env t =
   let _ = Printf.printf "The complete program is: %s \n" (Ustring.to_utf8 (Pprint.pprint false t)) in
   if typecheck then
-    let _ = test_preprocessing in
+    (*let _ = test_preprocessing in*)
     let (rels,seqs) = traverse_AST_to_find_sequences t [] [] in
     let seqs_string = print_seqs seqs in
     let _ = Printf.printf "\nThe program points that are seqs are: %s of length %d" (Ustring.to_utf8 seqs_string) (List.length seqs) in
