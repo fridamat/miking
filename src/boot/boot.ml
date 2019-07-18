@@ -16,7 +16,8 @@ open Ast
 open Msg
 open Pprint
 open Linkedlist
-
+open Frequencies
+open Dssa
 
 let prog_argv = ref []          (* Argv for the program that is executed *)
 
@@ -742,20 +743,20 @@ let rec traverse_AST_to_find_sequences t rels seqs =
     ) in
   match t with
   | TmSeq(ti,_,_,_,tm_l,_) ->
-    let _ = Printf.printf "Term %s of type %s\n" (Ustring.to_utf8 (Pprint.pprint false t)) (Ustring.to_utf8 (Pprint.pprint_ty (Typesys.getType t))) in
+    (*let _ = Printf.printf "Term %s of type %s\n" (Ustring.to_utf8 (Pprint.pprint false t)) (Ustring.to_utf8 (Pprint.pprint_ty (Typesys.getType t))) in*)
     let seqs1 = t::seqs in
     traverse_AST_list (get_list_from_tm_list tm_l) rels seqs1
   | TmNop ->
-    let _ = Printf.printf "Term %s of type %s\n" (Ustring.to_utf8 (Pprint.pprint false t)) (Ustring.to_utf8 (Pprint.pprint_ty (Typesys.getType t))) in
+    (*let _ = Printf.printf "Term %s of type %s\n" (Ustring.to_utf8 (Pprint.pprint false t)) (Ustring.to_utf8 (Pprint.pprint_ty (Typesys.getType t))) in*)
     (rels,seqs)
   | TmVar _ | TmChar _ | TmSeqMethod _ | TmFix _ | TmConst _ ->
-    let _ = Printf.printf "Term %s of type %s\n" (Ustring.to_utf8 (Pprint.pprint false t)) (Ustring.to_utf8 (Pprint.pprint_ty (Typesys.getType t))) in
+    (*let _ = Printf.printf "Term %s of type %s\n" (Ustring.to_utf8 (Pprint.pprint false t)) (Ustring.to_utf8 (Pprint.pprint_ty (Typesys.getType t))) in*)
     if check_if_seq t then
         (rels,t::seqs)
       else
         (rels,seqs)
   | TmLam(ti,_,_,tm) | TmClos(ti,_,_,tm,_,_) ->
-    let _ = Printf.printf "Term %s of type %s\n" (Ustring.to_utf8 (Pprint.pprint false t)) (Ustring.to_utf8 (Pprint.pprint_ty (Typesys.getType t))) in
+    (*let _ = Printf.printf "Term %s of type %s\n" (Ustring.to_utf8 (Pprint.pprint false t)) (Ustring.to_utf8 (Pprint.pprint_ty (Typesys.getType t))) in*)
     let (rels1,seqs1) =
       (if check_if_seq t then
          (rels,t::seqs)
@@ -764,12 +765,12 @@ let rec traverse_AST_to_find_sequences t rels seqs =
       ) in
     traverse_AST_to_find_sequences tm rels1 seqs1
   | TmApp(ti,tm1,tm2) ->
-    let _ = Printf.printf "Term %s of type %s\n" (Ustring.to_utf8 (Pprint.pprint false t)) (Ustring.to_utf8 (Pprint.pprint_ty (Typesys.getType t))) in
+    (*let _ = Printf.printf "Term %s of type %s\n" (Ustring.to_utf8 (Pprint.pprint false t)) (Ustring.to_utf8 (Pprint.pprint_ty (Typesys.getType t))) in*)
     let rels1 = find_rels_in_tmapp tm1 tm2 rels in
     let (rels2,seqs1) = traverse_AST_to_find_sequences tm1 rels1 seqs in
     traverse_AST_to_find_sequences tm2 rels2 seqs1
   | TmUtest(ti,tm1,tm2,tm3) | TmIfexp(ti,tm1,tm2,tm3) ->
-    let _ = Printf.printf "Term %s of type %s\n" (Ustring.to_utf8 (Pprint.pprint false t)) (Ustring.to_utf8 (Pprint.pprint_ty (Typesys.getType t))) in
+    (*let _ = Printf.printf "Term %s of type %s\n" (Ustring.to_utf8 (Pprint.pprint false t)) (Ustring.to_utf8 (Pprint.pprint_ty (Typesys.getType t))) in*)
     let (rels1,seqs1) =
       (if check_if_seq t then
          (rels,t::seqs)
@@ -796,9 +797,11 @@ let rec print_rels rels =
 
 let print_test_res res res_name =
   if res then
-    Printf.printf "%s PASSED!!!\n" res_name
+    let _ = Printf.printf "%s PASSED!!!\n" res_name in
+    true
   else
-    Printf.printf "%s FAILED :(\n" res_name
+    let _ = Printf.printf "%s FAILED :(\n" res_name in
+    false
 
 let test_preprocessing =
   let seq_ty = TySeq(TyGround(NoInfo,GInt),0) in
@@ -892,6 +895,314 @@ let test_preprocessing =
   let _ = print_test_res (t3_seqs_res && t3_rels_res) "Test 3" in
   int_ti
 
+let rec find_sequence_constructors seqs =
+  match seqs with
+  | [] -> []
+  | hd::tl ->
+    (match hd with
+     | TmSeq _ -> hd::(find_sequence_constructors tl)
+     | _ -> find_sequence_constructors tl
+    )
+
+let rec init_assoc_list l =
+  match l with
+  | [] -> []
+  | hd::tl ->
+    (hd,[])::(init_assoc_list tl)
+
+let check_if_key_exists key assoc_list =
+  if List.mem_assoc key assoc_list then
+    assoc_list
+  else
+    (key,[])::assoc_list
+
+let update_assoc_list_entry key assoc_list new_val =
+  let upd_assoc_list1 = check_if_key_exists key assoc_list in
+  let curr_entry = List.assoc key upd_assoc_list1 in
+  let upd_entry = new_val::curr_entry in
+  let upd_assoc_list2 = List.remove_assoc key upd_assoc_list1 in
+  (key,upd_entry)::upd_assoc_list2
+
+let rec reduce_relationships rels rels_assoc_list =
+  match rels with
+  | [] -> rels_assoc_list
+  | (hd1,hd2)::tl ->
+    let _ = Printf.printf "\nThe length of the assoc list in the method is: %d" (List.length rels_assoc_list) in
+    let upd_rels_assoc_list1 = check_if_key_exists hd1 rels_assoc_list in
+    let upd_rels_assoc_list2 = update_assoc_list_entry hd2 upd_rels_assoc_list1 hd1 in
+    reduce_relationships tl upd_rels_assoc_list2
+
+let rec print_assoc_list_list l =
+  match l with
+  | [] -> us""
+  | hd::tl ->
+    us"\n- " ^. (Pprint.pprint false hd) ^. (print_assoc_list_list tl)
+
+let rec print_assoc_list l =
+  match l with
+  | [] -> us""
+  | (hd,hdl)::tl ->
+    if List.length hdl > 0 then
+      us"\nThe children of " ^. (Pprint.pprint false hd) ^. us" are: " ^. (print_assoc_list_list hdl) ^. (print_assoc_list tl)
+    else
+      print_assoc_list tl
+
+let rec find_all_related seqs rels_assoc_list new_rels =
+  match seqs, new_rels with
+  | [], [] -> []
+  | [], _ -> find_all_related new_rels rels_assoc_list []
+  | (hd::tl), _ ->
+    let hd_rels = List.assoc hd rels_assoc_list in
+    let upd_new_rels = List.append hd_rels new_rels in
+    hd::(find_all_related tl rels_assoc_list upd_new_rels)
+
+let rec further_reduce_relationships_helper seq_cons rels_assoc_list new_rels_assoc_list =
+  match seq_cons with
+  | [] -> new_rels_assoc_list
+  | hd::tl ->
+    let hd_rels = List.assoc hd rels_assoc_list in
+    let hd_all_rels = find_all_related hd_rels rels_assoc_list [] in
+    let upd_new_rels_assoc_list = (hd,hd_all_rels)::new_rels_assoc_list in
+    further_reduce_relationships_helper tl rels_assoc_list upd_new_rels_assoc_list
+
+let further_reduce_relationships seq_cons rels_assoc_list =
+  further_reduce_relationships_helper seq_cons rels_assoc_list []
+
+  let rec init_seqmethod_assoc_list_helper fun_names =
+    match fun_names with
+    | [] -> []
+    | hd::tl ->
+      (hd,0)::(init_seqmethod_assoc_list_helper tl)
+
+  let init_seqmethod_assoc_list =
+    (*TODO: Collect this from file*)
+    let fun_names = ["length";"append"] in
+    init_seqmethod_assoc_list_helper fun_names
+
+let rec find_sequence_methods_helper seqs =
+  match seqs with
+  | [] -> []
+  | hd::tl ->
+    (match hd with
+     | TmSeqMethod _ ->
+       hd::(find_sequence_methods_helper tl)
+     | _ -> find_sequence_methods_helper tl
+    )
+
+let get_fun_name_from_seqmethod seqm =
+  match seqm with
+  | TmSeqMethod(_,_,fun_name,_,_) -> (Ustring.to_utf8 fun_name)
+  | _ -> failwith "We cannot get a fun name from this term type"
+
+let rec print_mf_matrix_row mf_matrix_row =
+  match mf_matrix_row with
+  | [] -> ""
+  | (fun_name,fun_count)::tl ->
+    "\n" ^ fun_name ^ " with count " ^ (string_of_int fun_count) ^ (print_mf_matrix_row tl)
+
+let rec create_mf_matrix_row seqm_assoc_list seqmethods =
+  match seqmethods with
+  | [] -> seqm_assoc_list
+  | hd::tl ->
+    let fun_name = get_fun_name_from_seqmethod hd in
+    let curr_fun_count = List.assoc fun_name seqm_assoc_list in
+    let upd_seqm_assoc_list1 = List.remove_assoc fun_name seqm_assoc_list in
+    let upd_seqm_assoc_list2 = (fun_name,(curr_fun_count+1))::upd_seqm_assoc_list1 in
+    create_mf_matrix_row upd_seqm_assoc_list2 tl
+
+let rec find_sequence_methods rels_assoc_list =
+  match rels_assoc_list with
+  | [] -> []
+  | (hd,hdl)::tl ->
+    let seqmethod_assoc_list = init_seqmethod_assoc_list in
+    let hd_seqmethods = find_sequence_methods_helper hdl in
+    let mf_matrix_row = create_mf_matrix_row seqmethod_assoc_list hd_seqmethods in
+    let _ = Printf.printf "\nThe methods for %s are: %s\n" (Ustring.to_utf8 (Pprint.pprint false hd)) (Ustring.to_utf8 (print_assoc_list_list hd_seqmethods)) in
+    let mf_matrix_row_string = print_mf_matrix_row mf_matrix_row in
+    let _ = Printf.printf "\nThe MF is: %s\n" (mf_matrix_row_string) in
+    mf_matrix_row::(find_sequence_methods tl)
+
+let rec print_mf_matrix_row mf_matrix_row =
+  match mf_matrix_row with
+  | [] -> ""
+  | hd::tl ->
+    (Frequencies.to_string hd) ^ " " ^ (print_mf_matrix_row tl)
+
+let rec print_mf_matrix mf_matrix =
+  match mf_matrix with
+  | [] -> "\n"
+  | hd::tl ->
+    (print_mf_matrix_row hd) ^ "\n" ^ (print_mf_matrix tl)
+
+let rec print_selected_list_assoc selected_ds_list_assoc =
+  match selected_ds_list_assoc with
+  | [] -> ""
+  | (hd,ds)::tl ->
+    (Ustring.to_utf8 (Pprint.pprint false hd)) ^ " has selected ds: " ^ (string_of_int ds) ^ "\n" ^ (print_selected_list_assoc tl)
+
+let rec init_selected_list_assoc list_assoc =
+  match list_assoc with
+  | [] -> []
+  | (hd1,_)::tl ->
+    (hd1,0)::(init_selected_list_assoc tl)
+
+let rec print_assoc_list2 assoc_list =
+  match assoc_list with
+  | [] -> ""
+  | (hd,nr)::tl ->
+    (Ustring.to_utf8 (Pprint.pprint false hd)) ^ " with frequency " ^ (string_of_int nr) ^ "\n" ^(print_assoc_list2 tl)
+
+let rec set_seq_choices ds_assoc_list seqs ds_choice =
+  match seqs with
+  | [] -> ds_assoc_list
+  | hd::tl ->
+    let ds_assoc_list' = List.remove_assoc hd ds_assoc_list in
+    let ds_assoc_list'' = (hd,ds_choice)::ds_assoc_list' in
+    set_seq_choices ds_assoc_list'' tl ds_choice
+
+let update_ti ti ds_choice =
+  let fi' =
+    (match ti with
+     | {fi} -> fi
+    ) in
+  let ty' =
+    (match ti with
+     | {ety} ->
+       (match ety with
+        | Some(TySeq(ty,ds_choice1)) (*TODO: dschoice in ty?*) ->
+          Some(TySeq(ty,ds_choice))
+        | Some(TySeqMethod(TySeq(ty1,ds_choice1),TySeq(ty2,ds_choice2))) ->
+          Some(TySeqMethod(TySeq(ty1,ds_choice),TySeq(ty2,ds_choice)))
+        | Some(TySeqMethod(TySeq(ty1,ds_choice1),ret_ty)) ->
+          Some(TySeqMethod(TySeq(ty1,ds_choice),ret_ty))
+        | Some(TySeqMethod(ret_ty,TySeq(ty2,ds_choice2))) ->
+          Some(TySeqMethod(ret_ty,TySeq(ty2,ds_choice)))
+        | Some(TyArrow(fi,TySeq(ty,ds_choice1), b_ty)) ->
+          Some(TyArrow(fi,TySeq(ty,ds_choice), b_ty))
+        | Some(TyArrow(fi,TySeqMethod(TySeq(ty1,ds_choice1),TySeq(ty2,ds_choice2)), b_ty)) ->
+          Some(TyArrow(fi,TySeqMethod(TySeq(ty1,ds_choice),TySeq(ty2,ds_choice)), b_ty))
+        | Some(TyArrow(fi,TySeqMethod(TySeq(ty1,ds_choice1),ret_ty), b_ty)) ->
+          Some(TyArrow(fi,TySeqMethod(TySeq(ty1,ds_choice),ret_ty), b_ty))
+        | Some(TyArrow(fi,TySeqMethod(inp_ty, TySeq(ty1,ds_choice1)), b_ty)) ->
+          Some(TyArrow(fi,TySeqMethod(inp_ty,TySeq(ty1,ds_choice)), b_ty))
+        | _ -> failwith "It is not of the right type"
+       )
+    ) in
+  {ety=ty';fi=fi'}
+
+let rec give_all_selected_ds rels_assoc_list selected_data_structures selected_ds_assoc_list =
+  let st = print_assoc_list2 selected_ds_assoc_list in
+  let _ = Printf.printf "\n***** %s\n" st in
+  match rels_assoc_list, selected_data_structures with
+  | [], [] -> selected_ds_assoc_list
+  | [], _ | _, [] -> failwith "The lists should have the same length"
+  | (hd1,hdl1)::tl1, hd2::tl2 ->
+    let top_choice =
+      (match hd2 with
+       | [] -> failwith "We have no data structure choices"
+       | hd3::tl3 -> hd3
+      ) in
+    let new_list = hd1::hdl1 in
+    let selected_ds_assoc_list' = set_seq_choices selected_ds_assoc_list new_list top_choice in
+    give_all_selected_ds tl1 tl2 selected_ds_assoc_list'
+
+    let rec update_ast_with_choices t ds_choices_assoc_list =
+      let rec update_ast_list_with_choices l ds_choices_assoc_list1 =
+        (match l with
+         | [] -> []
+         | hd::tl ->
+           (update_ast_with_choices hd ds_choices_assoc_list1)::(update_ast_list_with_choices tl ds_choices_assoc_list1)
+        ) in
+      match t with
+      | TmSeq(ti,tyid,seqty,ds_choice,tm_l,seq) ->
+        let tm_l' = update_ast_list_with_choices (get_list_from_tm_list tm_l) ds_choices_assoc_list in
+        let ds_choice' = List.assoc t ds_choices_assoc_list in
+        let ti' = update_ti ti ds_choice' in
+        TmSeq(ti',tyid,seqty,ds_choice,TmList(tm_l'),seq)
+      | TmNop ->
+        t
+      | TmVar(ti,a,b,c) ->
+        if check_if_seq t then
+          let ds_choice' = List.assoc t ds_choices_assoc_list in
+          let ti' = update_ti ti ds_choice' in
+          TmVar(ti',a,b,c)
+        else
+          t
+      | TmChar(ti,a) ->
+        if check_if_seq t then
+          let ds_choice' = List.assoc t ds_choices_assoc_list in
+          let ti' = update_ti ti ds_choice' in
+          TmChar(ti',a)
+        else
+          t
+      | TmSeqMethod(ti,a,b,c,d) ->
+        if check_if_seq t then
+          let ds_choice' = List.assoc t ds_choices_assoc_list in
+          let ti' = update_ti ti ds_choice' in
+          TmSeqMethod(ti',a,b,c,d)
+        else
+          t
+      | TmFix(ti) ->
+        if check_if_seq t then
+          let ds_choice' = List.assoc t ds_choices_assoc_list in
+          let ti' = update_ti ti ds_choice' in
+          TmFix(ti')
+        else
+          t
+      | TmConst(ti,a) ->
+        if check_if_seq t then
+          let ds_choice' = List.assoc t ds_choices_assoc_list in
+          let ti' = update_ti ti ds_choice' in
+          TmConst(ti',a)
+        else
+          t
+      | TmLam(ti,a,b,tm) ->
+        let tm' = update_ast_with_choices tm ds_choices_assoc_list in
+        if check_if_seq t then
+          let ds_choice' = List.assoc t ds_choices_assoc_list in
+          let ti' = update_ti ti ds_choice' in
+          TmLam(ti',a,b,tm')
+        else
+          TmLam(ti,a,b,tm')
+      | TmClos(ti,a,b,tm,c,d) ->
+        let tm' = update_ast_with_choices tm ds_choices_assoc_list in
+        if check_if_seq t then
+          let ds_choice' = List.assoc t ds_choices_assoc_list in
+          let ti' = update_ti ti ds_choice' in
+          TmClos(ti',a,b,tm',c,d)
+        else
+          TmClos(ti,a,b,tm',c,d)
+      | TmApp(ti,tm1,tm2) ->
+        let tm1' = update_ast_with_choices tm1 ds_choices_assoc_list in
+        let tm2' = update_ast_with_choices tm2 ds_choices_assoc_list in
+        if check_if_seq t then
+          let ds_choice' = List.assoc t ds_choices_assoc_list in
+          let ti' = update_ti ti ds_choice' in
+          TmApp(ti',tm1',tm2')
+        else
+          TmApp(ti,tm1',tm2')
+      | TmUtest(ti,tm1,tm2,tm3) ->
+        let tm1' = update_ast_with_choices tm1 ds_choices_assoc_list in
+        let tm2' = update_ast_with_choices tm2 ds_choices_assoc_list in
+        let tm3' = update_ast_with_choices tm3 ds_choices_assoc_list in
+        if check_if_seq t then
+          let ds_choice' = List.assoc t ds_choices_assoc_list in
+          let ti' = update_ti ti ds_choice' in
+          TmUtest(ti',tm1',tm2',tm3')
+        else
+          TmUtest(ti,tm1',tm2',tm3')
+      | TmIfexp(ti,tm1,tm2,tm3) ->
+        let tm1' = update_ast_with_choices tm1 ds_choices_assoc_list in
+        let tm2' = update_ast_with_choices tm2 ds_choices_assoc_list in
+        let tm3' = update_ast_with_choices tm3 ds_choices_assoc_list in
+        if check_if_seq t then
+          let ds_choice' = List.assoc t ds_choices_assoc_list in
+          let ti' = update_ti ti ds_choice' in
+          TmIfexp(ti',tm1',tm2',tm3')
+        else
+          TmIfexp(ti,tm1',tm2',tm3')
+      | TmMatch _ | TmUC _ | TmTyApp _ | TmTyLam _ ->
+        failwith "Not implemented"
 
 let eval_test typecheck env t =
   let _ = Printf.printf "The complete program is: %s \n" (Ustring.to_utf8 (Pprint.pprint false t)) in
@@ -903,8 +1214,40 @@ let eval_test typecheck env t =
     let rels_string = print_rels rels in
     let _ = Printf.printf "\nThe relationships between seqs are: %s of length %d" (Ustring.to_utf8 rels_string) (List.length rels) in
     (*TODO: Reducera relationerna*)
-    (*TODO: Kalla på algoritmen med relationerna*)
+    (*Find all new sequences (sequence constructors)*)
+    let seq_cons = find_sequence_constructors seqs in
+    let seq_cons_string = print_seqs seq_cons in
+    let _ = Printf.printf "\nThe sequence constructors are: %s" (Ustring.to_utf8 seq_cons_string) in
+    (*Initialization of association list*)
+    let rels_assoc_list1 = init_assoc_list seqs in
+    let _ = Printf.printf "\nThe length of the assoc list after being initialized is: %d" (List.length rels_assoc_list1) in
+    (**)
+    let rels_assoc_list2 = reduce_relationships rels rels_assoc_list1 in
+    let rels_assoc_list2_string = print_assoc_list rels_assoc_list2 in
+    let _ = Printf.printf "\nThe length of the assoc list after the first round of reductions is: %d" (List.length rels_assoc_list2) in
+    let _ = Printf.printf "\nThe assoc list after the first round of reductions is: %s" (Ustring.to_utf8 rels_assoc_list2_string) in
+    (*Now create a assoc list based only on necessary new seqs*)
+    let rels_assoc_list3 = further_reduce_relationships seq_cons rels_assoc_list2 in
+    let rels_assoc_list3_string = print_assoc_list rels_assoc_list3 in
+    let _ = Printf.printf "\nThe assoc list after the second round of reductions is: %s" (Ustring.to_utf8 rels_assoc_list3_string) in
+    (*Create the method frequency matrix from the second assoc list*)
+    let mf_matrix1 = find_sequence_methods rels_assoc_list3 in
+    (*Translate matrix to frequencies*)
+    let mf_matrix2 = Frequencies.translate_mf_assoc_list mf_matrix1 in
+    let mf_matrix2string = print_mf_matrix mf_matrix2 in
+    let _ = Printf.printf "\nThe MF matrix with frequencies set is: %s\n" mf_matrix2string in
+    let selected_data_structures = Dssa.main mf_matrix2 in
+    let _ = Printf.printf "The length of the results is: %d\n" (List.length selected_data_structures) in
+    let selected_list_assoc1 = init_selected_list_assoc rels_assoc_list2 in
+    let selected_list_assoc_string = print_assoc_list2 selected_list_assoc1 in
+    let _ = Printf.printf "%s\n" selected_list_assoc_string in
+    let selected_list_assoc2 = give_all_selected_ds rels_assoc_list3 selected_data_structures selected_list_assoc1 in
+    let selected_list_assoc_string2 = print_assoc_list2 selected_list_assoc2 in
+    let _ = Printf.printf "%s" "****************************\n" in
+    let _ = Printf.printf "%s\n" selected_list_assoc_string2 in
     (*TODO: Ändra i AST med resultat*)
+    let t' = update_ast_with_choices t selected_list_assoc2 in
+    (*TODO: Use t' instead of t*)
     eval env t
   else
     eval env t
