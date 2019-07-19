@@ -589,6 +589,35 @@ let call_seq_method ti ds_choice fun_name args =
     res
   | _ -> raise_error ti.fi "Sequence method3 not implemented."
 
+let get_ds_choice ti =
+  let ds_choice =
+    (match ti with
+     | {ety} ->
+       (match ety with
+        | Some(TySeq(ty,ds_choice1)) (*TODO: dschoice in ty?*) ->
+          ds_choice1
+        |
+          Some(TySeqMethod(TySeq(ty1,ds_choice1),TySeq(ty2,ds_choice2))) ->
+          ds_choice1
+        | Some(TySeqMethod(TySeq(ty1,ds_choice1),ret_ty)) ->
+          ds_choice1
+        | Some(TySeqMethod(ret_ty,TySeq(ty2,ds_choice2))) ->
+          ds_choice2
+        | Some(TyArrow(fi,TySeq(ty,ds_choice1), b_ty)) ->
+          ds_choice1
+        |
+          Some(TyArrow(fi,TySeqMethod(TySeq(ty1,ds_choice1),TySeq(ty2,ds_choice2)), b_ty)) ->
+          ds_choice1
+        |
+          Some(TyArrow(fi,TySeqMethod(TySeq(ty1,ds_choice1),ret_ty), b_ty)) ->
+          ds_choice1
+        | Some(TyArrow(fi,TySeqMethod(inp_ty, TySeq(ty1,ds_choice1)), b_ty)) ->
+          ds_choice1
+        | _ -> failwith "It is not of the right type"
+       )
+    ) in
+  ds_choice
+
 (* Main evaluation loop of a term. Evaluates using big-step semantics *)
 let rec eval env t =
   let rec eval_tmlist env tm_l =
@@ -620,7 +649,7 @@ let rec eval env t =
          let updated_args = add_evaluated_term_to_args args (eval env t2) in
          let last_arg_index = get_last_arg_index ti.fi fun_name in
          if arg_index == last_arg_index then
-           let ds_choice = 0 in (*TODO: Collect dschoice from ti*)
+           let ds_choice = get_ds_choice ti in
            let res = call_seq_method ti ds_choice fun_name updated_args in
            res
          else if arg_index < last_arg_index then
@@ -1090,32 +1119,6 @@ let update_ti ti ds_choice =
        )
     ) in
   {ety=ty';fi=fi'}
-
-let get_ds_choice ti =
-  let ds_choice =
-    (match ti with
-     | {ety} ->
-       (match ety with
-        | Some(TySeq(ty,ds_choice1)) (*TODO: dschoice in ty?*) ->
-          ds_choice1
-        | Some(TySeqMethod(TySeq(ty1,ds_choice1),TySeq(ty2,ds_choice2))) ->
-          ds_choice1
-        | Some(TySeqMethod(TySeq(ty1,ds_choice1),ret_ty)) ->
-          ds_choice1
-        | Some(TySeqMethod(ret_ty,TySeq(ty2,ds_choice2))) ->
-          ds_choice2
-        | Some(TyArrow(fi,TySeq(ty,ds_choice1), b_ty)) ->
-          ds_choice1
-        | Some(TyArrow(fi,TySeqMethod(TySeq(ty1,ds_choice1),TySeq(ty2,ds_choice2)), b_ty)) ->
-          ds_choice1
-        | Some(TyArrow(fi,TySeqMethod(TySeq(ty1,ds_choice1),ret_ty), b_ty)) ->
-          ds_choice1
-        | Some(TyArrow(fi,TySeqMethod(inp_ty, TySeq(ty1,ds_choice1)), b_ty)) ->
-          ds_choice1
-        | _ -> failwith "It is not of the right type"
-       )
-    ) in
-  ds_choice
 
 let rec give_all_selected_ds rels_assoc_list selected_data_structures selected_ds_assoc_list =
   let st = print_assoc_list2 selected_ds_assoc_list in

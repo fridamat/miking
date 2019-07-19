@@ -347,9 +347,9 @@ let setType ty = function
   | TmFix(ti) -> TmFix({ti with ety = Some ty})
   | TmTyLam(ti,x,kind,t1) -> TmTyLam({ti with ety = Some ty},x,kind,t1)
   | TmTyApp(ti,t1,ty2) -> TmTyApp({ti with ety = Some ty},t1,ty2)
-  | TmSeq(ti,ty_id,seq_ty,ds_choice,tmlist,tmseq) -> TmSeq({ti with ety = Some ty},ty_id,seq_ty,ds_choice,tmlist,tmseq)
-  | TmSeqMethod(ti,ds_choice,fun_name,args,arg_index) ->
-    TmSeqMethod({ti with ety = Some ty},ds_choice,fun_name,args,arg_index)
+  | TmSeq(ti,seq_ty,tmlist,tmseq) -> TmSeq({ti with ety = Some ty},seq_ty,tmlist,tmseq)
+  | TmSeqMethod(ti,fun_name,args,arg_index) ->
+    TmSeqMethod({ti with ety = Some ty},fun_name,args,arg_index)
   | TmChar(ti,x) -> TmChar({ti with ety = Some ty},x)
   | TmUC(ti,tree,ord,unique) -> TmUC({ti with ety = Some ty},tree,ord,unique)
   | TmUtest(ti,t1,t2,t3) -> TmUtest({ti with ety = Some ty},t1,t2,t3)
@@ -371,8 +371,8 @@ let getType t =
   | TmFix({ety}) -> extract ety
   | TmTyLam({ety},_,_,_) -> extract ety
   | TmTyApp({ety},_,_) -> extract ety
-  | TmSeq({ety},_,_,_,_,_) -> extract ety
-  | TmSeqMethod({ety},_,_,_,_) -> extract ety
+  | TmSeq({ety},_,_,_) -> extract ety
+  | TmSeqMethod({ety},_,_,_) -> extract ety
 
   | TmChar({ety},_) -> extract ety
   | TmUC({ety},_,_,_) -> extract ety
@@ -494,12 +494,12 @@ let rec tc env ty t =
                   else errorKindMismatch  (ty_info ty2) ki11 ki12 in
       setType resTy (TmTyApp(ti,t1',ty2))
     | ty -> errorExpectsUniversal (tm_info t1) ty)
-  | TmSeq(ti,ty_id,seq_ty,ds_choice,tmlist,tmseq) ->
+  | TmSeq(ti,seq_ty,tmlist,tmseq) ->
     let updated_tmlist = tc_list (Ast.get_list_from_tm_list tmlist) in
-    let _ = check_types_of_list updated_tmlist (TyGround(NoInfo,GInt)) in setType (TySeq(TyGround(NoInfo,GInt),0)) (TmSeq(ti,ty_id,seq_ty,ds_choice,TmList(updated_tmlist),tmseq))
-  | TmSeqMethod(ti,ds_choice,fun_name,args,arg_index) ->
+    let _ = check_types_of_list updated_tmlist (TyGround(NoInfo,GInt)) in setType (TySeq(TyGround(NoInfo,GInt),0)) (TmSeq(ti,seq_ty,TmList(updated_tmlist),tmseq))
+  | TmSeqMethod(ti,fun_name,args,arg_index) ->
     let updated_args = tc_list args in
-    let new_seqmethod = setType (TySeqMethod((TySeq(TyGround(NoInfo,GInt),0)),get_seq_fun_type fun_name)) (TmSeqMethod(ti,ds_choice,fun_name,updated_args,arg_index)) in
+    let new_seqmethod = setType (TySeqMethod((TySeq(TyGround(NoInfo,GInt),0)),get_seq_fun_type fun_name)) (TmSeqMethod(ti,fun_name,updated_args,arg_index)) in
     new_seqmethod
   | TmChar(ti,x) -> failwith "TODO TmChar (later)"
   | TmUC(ti,tree,ord,unique) -> failwith "TmUC (later)"
@@ -525,8 +525,8 @@ let rec erase t =
   | TmApp(ti,t1,t2) -> TmApp(ti, erase t1, erase t2)
   | TmConst(ti,c) -> t
   | TmIfexp(ti,cnd,thn,els) -> TmIfexp(ti, cnd, erase thn, erase els)
-  | TmSeq(_,_,_,_,_,_) -> t (*TODO: Check in list*)
-  | TmSeqMethod(_,_,_,_,_) -> t (*TODO: Check in arg list*)
+  | TmSeq(_,_,_,_) -> t (*TODO: Check in list*)
+  | TmSeqMethod(_,_,_,_) -> t (*TODO: Check in arg list*)
   | TmFix(ti) -> t
   | TmTyLam(ti,x,kind,t1) -> erase t1
   | TmTyApp(ti,t1,ty1) -> erase t1
