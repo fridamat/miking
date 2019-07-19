@@ -119,7 +119,9 @@ and sequence =
   | SeqList  of tm Linkedlist.sequence
   | SeqNone
 
-
+and actual_fun =
+  | SeqFun1 of (sequence -> sequence -> sequence)
+  | SeqFunNone
 
 (* Terms / expressions *)
 and tm =
@@ -135,7 +137,7 @@ and tm =
 (*TODO: Add ability to create a new seq with a list of elements, that is add '* tm list option' or reference to CList*)
 (*TODO: Make ds_choice:s below optional*)
 | TmSeq         of tinfo * tm_list * sequence              (* Sequence constructor *)
-| TmSeqMethod   of tinfo * fun_name * args * arg_index (* Sequence method *)
+| TmSeqMethod   of tinfo * fun_name * actual_fun * args * arg_index (* Sequence method *)
 
 
 | TmChar        of tinfo * int
@@ -195,7 +197,7 @@ let tm_info t =
   | TmTyLam({fi},_,_,_) -> fi
   | TmTyApp({fi},_,_) -> fi
   | TmSeq({fi},_,_) -> fi
-  | TmSeqMethod({fi},_,_,_) -> fi
+  | TmSeqMethod({fi},_,_,_,_) -> fi
 
   | TmChar({fi},_) -> fi
   | TmUC({fi},_,_,_) -> fi
@@ -216,7 +218,7 @@ let tm_tinfo t =
   | TmTyLam(ti,_,_,_) -> ti
   | TmTyApp(ti,_,_) -> ti
   | TmSeq(ti,_,_) -> ti
-  | TmSeqMethod(ti,_,_,_) -> ti
+  | TmSeqMethod(ti,_,_,_,_) -> ti
 
   | TmChar(ti,_) -> ti
   | TmUC(ti,_,_,_) -> ti

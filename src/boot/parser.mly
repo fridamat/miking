@@ -36,10 +36,10 @@
       | TmTyApp(fi,t1,ty1) -> hasx t1
       | TmIfexp(fi,cnd,thn,els) -> hasx cnd || hasx thn || hasx els
       | TmSeq(_,_,_) -> false (*TODO: Change if sequence can contain terms*)
-      | TmSeqMethod(fi,fun_name,args,arg_index) ->
+      | TmSeqMethod(fi,fun_name,actual_fun,args,arg_index) ->
       (match args with
         | [] -> false
-        | hd::tl -> hasx hd || hasx (TmSeqMethod(fi,fun_name,tl,arg_index)))
+        | hd::tl -> hasx hd || hasx (TmSeqMethod(fi,fun_name,actual_fun,tl,arg_index)))
       | TmChar(_,_) -> false
       | TmUC(fi,uct,ordered,uniqueness) ->
           let rec work uc = match uc with
@@ -253,7 +253,7 @@ mc_atom:
   | SEQMETHOD DOT IDENT
       { let fi = mktinfo ($1.i.fi) ($3.i.fi) in
         (*TODO:Change ds_choice to None?*)
-        TmSeqMethod(fi, $3.v, [], 0) }
+        TmSeqMethod(fi, $3.v, SeqFunNone, [], 0) }
 
 
 ty:

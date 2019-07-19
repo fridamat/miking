@@ -106,8 +106,8 @@ let rec debruijn env t =
   | TmTyApp(ti,t1,ty1) -> TmTyApp(ti,debruijn env t1, debruijnTy env ty1)
   | TmIfexp(ti,cnd,thn,els) -> TmIfexp(ti, debruijn env cnd, debruijn env thn, debruijn env els)
   | TmSeq(ti,clist,cseq) -> TmSeq(ti,TmList(debruijn_list env (get_list_from_tm_list clist)),cseq)
-  | TmSeqMethod(ti,fun_name,args,arg_index) ->
-    TmSeqMethod(ti,fun_name,(debruijn_list env args),arg_index)
+  | TmSeqMethod(ti,fun_name,actual_fun,args,arg_index) ->
+    TmSeqMethod(ti,fun_name,actual_fun,(debruijn_list env args),arg_index)
   | TmChar(_,_) -> t
   | TmUC(ti,uct,o,u) -> TmUC(ti, UCLeaf(List.map (debruijn env) (uct2list uct)),o,u)
   | TmUtest(ti,t1,t2,tnext)
@@ -186,7 +186,7 @@ let rec compare_term_lists l1 l2 =
      | TmSeq(_,tm_l1,_), TmSeq(_,tm_l2,_) ->
        (*TODO: Is it enough to compare the tmls?*)
        compare_term_lists (get_list_from_tm_list tm_l1) (get_list_from_tm_list tm_l2)
-     | TmSeqMethod(_,fun_name1,_,_), TmSeqMethod(_,fun_name2,_,_) ->
+     | TmSeqMethod(_,fun_name1,_,_,_), TmSeqMethod(_,fun_name2,_,_,_) ->
        fun_name1 = fun_name2
      | _ -> false) in
   match l1, l2 with
@@ -645,7 +645,7 @@ let rec eval env t =
          (match eval env t2 with
          | TmClos(fi,x,_,t3,env2,_) as tt -> eval ((TmApp(ti,TmFix(ti),tt))::env2) t3
          | _ -> failwith "Incorrect CFix")
-       | TmSeqMethod(ti,fun_name,args,arg_index) ->
+       | TmSeqMethod(ti,fun_name,actual_fun,args,arg_index) ->
          let updated_args = add_evaluated_term_to_args args (eval env t2) in
          let last_arg_index = get_last_arg_index ti.fi fun_name in
          if arg_index == last_arg_index then
@@ -653,7 +653,7 @@ let rec eval env t =
            let res = call_seq_method ti ds_choice fun_name updated_args in
            res
          else if arg_index < last_arg_index then
-           TmSeqMethod(ti,fun_name,updated_args,(arg_index+1))
+           TmSeqMethod(ti,fun_name,actual_fun,updated_args,(arg_index+1))
          else
            raise_error ti.fi "Argument index is out of bounds."
        | _ -> raise_error ti.fi "Application to a non closure value.")
@@ -679,7 +679,7 @@ let rec eval env t =
       TmSeq(fi,new_tmlist,new_tmseq)
     | _ -> t)
   (* Sequence method*)
-  | TmSeqMethod(_,_,_,_) -> t
+  | TmSeqMethod(_,_,_,_,_) -> t
   (* The rest *)
   | TmChar(_,_) -> t
   | TmUC(ti,uct,o,u) -> TmUC(ti,ucmap (eval env) uct,o,u)
@@ -737,19 +737,19 @@ let find_rels_in_tmapp tm1 tm2 rels =
   | TmVar(var_ti,_,_,_), TmSeq(seq_ti,_,_), _, true, TySeqMethod(TySeq(_,_),_) (*"var sequence" where var is a seqmethod and the sequence is the first sequence argument to the method and hence the sequence decides the method's sequence INPUT - and maybe RETURN - type*) ->
     let new_rel = (tm1,tm2) in
     new_rel::rels
-  | TmSeqMethod(seqm_ti,_,_,_), TmSeq(seq_ti,_,_), _, true, TySeqMethod(_,TySeq _) (*"seqmethod sequence" where the sequence is the first sequence argument to the method and hence the sequence decides the method's sequence INPUT and RETURN type*) ->
+  | TmSeqMethod(seqm_ti,_,_,_,_), TmSeq(seq_ti,_,_), _, true, TySeqMethod(_,TySeq _) (*"seqmethod sequence" where the sequence is the first sequence argument to the method and hence the sequence decides the method's sequence INPUT and RETURN type*) ->
     (*Rel: return and input type of s1 = s2*)
     let new_rel = (tm1,tm2) in
     new_rel::rels
-  | TmSeqMethod(seqm_ti,_,_,_), _, _, true, TySeqMethod(_,TySeq _) (*"seqmethod a" where a is the first argument of type sequence to the method and hence a decides the method's sequence INPUT and RETURN type*) ->
+  | TmSeqMethod(seqm_ti,_,_,_,_), _, _, true, TySeqMethod(_,TySeq _) (*"seqmethod a" where a is the first argument of type sequence to the method and hence a decides the method's sequence INPUT and RETURN type*) ->
     (*Rel: return and input type of s1 = s2*)
     let new_rel = (tm1,tm2) in
     new_rel::rels
-  | TmSeqMethod(seqm_ti,_,_,_), TmSeq(seq_ti,_,_), _, true, TySeqMethod _ (*"seqmethod sequence" where the sequence is the first sequence argument to the method and hence the sequence decides the method's sequence INPUT type, but not the return type since the return type of the method is not a sequence*) ->
+  | TmSeqMethod(seqm_ti,_,_,_,_), TmSeq(seq_ti,_,_), _, true, TySeqMethod _ (*"seqmethod sequence" where the sequence is the first sequence argument to the method and hence the sequence decides the method's sequence INPUT type, but not the return type since the return type of the method is not a sequence*) ->
     (*Rel: input type of s1 = s2*)
     let new_rel = (tm1,tm2) in
     new_rel::rels
-  | TmSeqMethod(seqm_ti,_,_,_), _, _, true, TySeqMethod _ (*"seqmethod a" where a is the first argument of type sequence to the method and hence a decides the method's sequence INPUT type, but not the return type since the return type of the method is not a sequence*) ->
+  | TmSeqMethod(seqm_ti,_,_,_,_), _, _, true, TySeqMethod _ (*"seqmethod a" where a is the first argument of type sequence to the method and hence a decides the method's sequence INPUT type, but not the return type since the return type of the method is not a sequence*) ->
     (*Rel: input type of s1 = s2*)
     let new_rel = (tm1,tm2) in
     new_rel::rels
@@ -833,6 +833,12 @@ let print_test_res res res_name =
     let _ = Printf.printf "%s FAILED :(\n" res_name in
     false
 
+let general_append a b =
+  match a, b with
+  | SeqList(l1), SeqList(l2) ->
+    SeqList(Linkedlist.append l1 l2)
+  | _ -> failwith "We don't have this implemented"
+
 let test_preprocessing =
   let seq_ty = TySeq(TyGround(NoInfo,GInt),0) in
   let default_ti =
@@ -909,14 +915,13 @@ let test_preprocessing =
   let t3_seq1 = TmSeq(seq_ti,TmList([t3_e1]),SeqNone) in
   let t3_e2 = TmConst(int_ti,CInt(1)) in
   let t3_seq2 = TmSeq(seq_ti,TmList([t3_e2]),SeqNone) in
-  let t3_seqm1 = TmSeqMethod(seqm_ti2,us"append",[],0) in
+  let t3_seqm1 = TmSeqMethod(seqm_ti2,us"append",SeqFunNone,[],0) in
   let t3_app1 = TmApp(seqm_ti2,t3_seqm1,t3_seq2) in
   let t3_app2 = TmApp(seqm_ti2,t3_app1,t3_seq1) in
   let t3_lam1 = TmLam(arrow_seqm_ti2,us"s4",TyDyn,TmNop) in
   let t3_app3 = TmApp(default_ti,t3_lam1,t3_app2) in
   let t3_ast = t3_app3 in
   let (t3_rels,t3_seqs) = traverse_AST_to_find_sequences t3_ast [] []  in
-  let rels_string = print_rels t3_rels in
   (*let _ = Printf.printf "The rels are: %s\n" (Ustring.to_utf8 rels_string) in*)
   let t3_exp_seqs = [t3_seq1;t3_seq2;t3_seqm1;t3_lam1] in
   let t3_seqs_res = compare_term_lists t3_seqs t3_exp_seqs in
@@ -1020,7 +1025,7 @@ let rec find_sequence_methods_helper seqs =
 
 let get_fun_name_from_seqmethod seqm =
   match seqm with
-  | TmSeqMethod(_,fun_name,_,_) -> (Ustring.to_utf8 fun_name)
+  | TmSeqMethod(_,fun_name,_,_,_) -> (Ustring.to_utf8 fun_name)
   | _ -> failwith "We cannot get a fun name from this term type"
 
 let rec print_mf_matrix_row mf_matrix_row =
@@ -1130,6 +1135,11 @@ let rec give_all_selected_ds rels_assoc_list selected_data_structures selected_d
     let selected_ds_assoc_list' = set_seq_choices selected_ds_assoc_list new_list top_choice in
     give_all_selected_ds tl1 tl2 selected_ds_assoc_list'
 
+let get_actual_fun ds_choice fun_name =
+  match ds_choice, (Ustring.to_utf8 fun_name) with
+  | 0, "append" -> SeqFun1(general_append)
+  | _ -> failwith "Method not yet implemented"
+
     let rec update_ast_with_choices t ds_choices_assoc_list =
       let rec update_ast_list_with_choices l ds_choices_assoc_list1 =
         (match l with
@@ -1159,13 +1169,11 @@ let rec give_all_selected_ds rels_assoc_list selected_data_structures selected_d
           TmChar(ti',a)
         else
           t
-      | TmSeqMethod(ti,b,c,d) ->
-        if check_if_seq t then
-          let ds_choice' = List.assoc t ds_choices_assoc_list in
-          let ti' = update_ti ti ds_choice' in
-          TmSeqMethod(ti',b,c,d)
-        else
-          t
+      | TmSeqMethod(ti,fun_name,actual_fun,c,d) ->
+        let ds_choice' = List.assoc t ds_choices_assoc_list in
+        let ti' = update_ti ti ds_choice' in
+        let actual_fun' = get_actual_fun ds_choice' fun_name in
+        TmSeqMethod(ti',fun_name,actual_fun',c,d)
       | TmFix(ti) ->
         if check_if_seq t then
           let ds_choice' = List.assoc t ds_choices_assoc_list in
@@ -1256,7 +1264,7 @@ let rec print_ast_with_choices t  =
       true
     else
       false
-  | TmSeqMethod(ti,b,c,d) ->
+  | TmSeqMethod(ti,a,b,c,d) ->
     if check_if_seq t then
       let _ = Printf.printf "- %s has ds choice: %d\n" (Ustring.to_utf8 (Pprint.pprint false t)) (get_ds_choice ti) in
       true
