@@ -134,7 +134,7 @@ and tm =
 | TmTyApp       of tinfo * tm * ty                   (* Type application *)
 (*TODO: Add ability to create a new seq with a list of elements, that is add '* tm list option' or reference to CList*)
 (*TODO: Make ds_choice:s below optional*)
-| TmSeq         of tinfo * ty_id * seq_ty * ds_choice * tm_list * sequence              (* Sequence constructor *)
+| TmSeq         of tinfo * seq_ty * tm_list * sequence              (* Sequence constructor *)
 | TmSeqMethod   of tinfo * ds_choice * fun_name * args * arg_index (* Sequence method *)
 
 
@@ -194,7 +194,7 @@ let tm_info t =
   | TmFix({fi}) -> fi
   | TmTyLam({fi},_,_,_) -> fi
   | TmTyApp({fi},_,_) -> fi
-  | TmSeq({fi},_,_,_,_,_) -> fi
+  | TmSeq({fi},_,_,_) -> fi
   | TmSeqMethod({fi},_,_,_,_) -> fi
 
   | TmChar({fi},_) -> fi
@@ -215,7 +215,7 @@ let tm_tinfo t =
   | TmFix(ti) -> ti
   | TmTyLam(ti,_,_,_) -> ti
   | TmTyApp(ti,_,_) -> ti
-  | TmSeq(ti,_,_,_,_,_) -> ti
+  | TmSeq(ti,_,_,_) -> ti
   | TmSeqMethod(ti,_,_,_,_) -> ti
 
   | TmChar(ti,_) -> ti

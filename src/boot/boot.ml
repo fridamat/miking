@@ -105,7 +105,7 @@ let rec debruijn env t =
   | TmTyLam(ti,x,kind,t1) -> TmTyLam(ti,x,kind,debruijn (VarTy(x)::env) t1)
   | TmTyApp(ti,t1,ty1) -> TmTyApp(ti,debruijn env t1, debruijnTy env ty1)
   | TmIfexp(ti,cnd,thn,els) -> TmIfexp(ti, debruijn env cnd, debruijn env thn, debruijn env els)
-  | TmSeq(ti,ty_id,seq_ty,ds_choice,clist,cseq) -> TmSeq(ti,ty_id,seq_ty,ds_choice,TmList(debruijn_list env (get_list_from_tm_list clist)),cseq)
+  | TmSeq(ti,seq_ty,clist,cseq) -> TmSeq(ti,seq_ty,TmList(debruijn_list env (get_list_from_tm_list clist)),cseq)
   | TmSeqMethod(ti,ds_choice,fun_name,args,arg_index) ->
     TmSeqMethod(ti,ds_choice,fun_name,(debruijn_list env args),arg_index)
   | TmChar(_,_) -> t
@@ -183,7 +183,7 @@ let rec compare_term_lists l1 l2 =
      | TmIfexp(_,tm11,tm12,tm13), TmIfexp(_,tm21,tm22,tm23) ->
        (compare_terms tm11 tm21) && (compare_terms tm12 tm22) && (compare_terms tm13 tm23)
      | TmFix _, TmFix _ -> true
-     | TmSeq(_,_,_,_,tm_l1,_), TmSeq(_,_,_,_,tm_l2,_) ->
+     | TmSeq(_,_,tm_l1,_), TmSeq(_,_,tm_l2,_) ->
        (*TODO: Is it enough to compare the tmls?*)
        compare_term_lists (get_list_from_tm_list tm_l1) (get_list_from_tm_list tm_l2)
      | TmSeqMethod(_,_,fun_name1,_,_), TmSeqMethod(_,_,fun_name2,_,_) ->
@@ -223,7 +223,7 @@ let rec val_equal v1 v2 =
         | _ -> false
       in o1 = o2 && u1 = u2 && eql (uct2revlist t1) (uct2revlist t2)
   | TmNop,TmNop -> true
-  | TmSeq(_,_,_,_,tml1,seq1), TmSeq(_,_,_,_,tml2,seq2) ->
+  | TmSeq(_,_,tml1,seq1), TmSeq(_,_,tml2,seq2) ->
     compare_sequences seq1 seq2
   | _ -> false
 
@@ -559,7 +559,7 @@ let get_last_arg_index fun_name =
 
 let call_length_method ti args =
   match args with
-  | [TmSeq(_,ty_id,seq_ty,ds_choice,clist,cseq)] ->
+  | [TmSeq(ti,seq_ty,clist,cseq)] ->
     (match cseq with
      | SeqList(ll) ->
        TmConst(ti,CInt(Linkedlist.length ll))
@@ -568,11 +568,11 @@ let call_length_method ti args =
 
 let call_append_method ti args =
   match args with
-  | [TmSeq(ti1,ty_id1,seq_ty1,ds_choice1,tmlist1,tmseq1); TmSeq(ti2,ty_id2,seq_ty2,ds_choice2,tmlist2,tmseq2)] ->
+  | [TmSeq(ti1,seq_ty1,tmlist1,tmseq1); TmSeq(ti2,seq_ty2,tmlist2,tmseq2)] ->
     (match tmseq1,tmseq2 with
      | SeqList(ll1), SeqList(ll2) ->
        let new_sequence = Linkedlist.append ll1 ll2 in
-       let res = TmSeq(ti1,ty_id1,seq_ty1,ds_choice1,TmList([]),SeqList(new_sequence)) in
+       let res = TmSeq(ti1,seq_ty1,TmList([]),SeqList(new_sequence)) in
        res
      | _ -> raise_error ti.fi "No such data structure type.")
   | _ -> raise_error ti.fi "Sequence method2 not implemented."
@@ -641,12 +641,12 @@ let rec eval env t =
          eval env els
      | _ -> raise_error ti.fi "Condition in if-expression not a bool.")
   (* Sequence constructor *)
-  | TmSeq(fi,ty_id,seq_ty,ds_choice,tmlist,tmseq) ->
+  | TmSeq(fi,seq_ty,tmlist,tmseq) ->
     (match tmseq with
     | SeqNone ->
       let new_tmlist = TmList(eval_tmlist env tmlist) in
       let new_tmseq = get_seq_from_list new_tmlist tmseq in
-      TmSeq(fi,ty_id,seq_ty,ds_choice,new_tmlist,new_tmseq)
+      TmSeq(fi,seq_ty,new_tmlist,new_tmseq)
     | _ -> t)
   (* Sequence method*)
   | TmSeqMethod(_,_,_,_,_) -> t
@@ -692,7 +692,7 @@ let get_fi_string_from_ti ti =
 let find_rels_in_tmapp tm1 tm2 rels =
   (*TODO: Some cases below are duplicates if we don't want to distinguish between input and return types of methods*)
   match tm1, tm2, (check_if_seq tm1), (check_if_seq tm2), Typesys.getType tm1 with
-  | TmLam(lam_ti,_,_,_), TmSeq(seq_ti,_,_,_,_,_), true, true, _ (*"let x = new sequence"*) ->
+  | TmLam(lam_ti,_,_,_), TmSeq(seq_ti,_,_,_), true, true, _ (*"let x = new sequence"*) ->
     (*Rel: s1 = s2*)
     let new_rel = (tm1,tm2) in
     new_rel::rels
@@ -704,10 +704,10 @@ let find_rels_in_tmapp tm1 tm2 rels =
     (*Rel: s1 = s2*)
     let new_rel = (tm1,tm2) in
     new_rel::rels
-  | TmVar(var_ti,_,_,_), TmSeq(seq_ti,_,_,_,_,_), _, true, TySeqMethod(TySeq(_,_),_) (*"var sequence" where var is a seqmethod and the sequence is the first sequence argument to the method and hence the sequence decides the method's sequence INPUT - and maybe RETURN - type*) ->
+  | TmVar(var_ti,_,_,_), TmSeq(seq_ti,_,_,_), _, true, TySeqMethod(TySeq(_,_),_) (*"var sequence" where var is a seqmethod and the sequence is the first sequence argument to the method and hence the sequence decides the method's sequence INPUT - and maybe RETURN - type*) ->
     let new_rel = (tm1,tm2) in
     new_rel::rels
-  | TmSeqMethod(seqm_ti,_,_,_,_), TmSeq(seq_ti,_,_,_,_,_), _, true, TySeqMethod(_,TySeq _) (*"seqmethod sequence" where the sequence is the first sequence argument to the method and hence the sequence decides the method's sequence INPUT and RETURN type*) ->
+  | TmSeqMethod(seqm_ti,_,_,_,_), TmSeq(seq_ti,_,_,_), _, true, TySeqMethod(_,TySeq _) (*"seqmethod sequence" where the sequence is the first sequence argument to the method and hence the sequence decides the method's sequence INPUT and RETURN type*) ->
     (*Rel: return and input type of s1 = s2*)
     let new_rel = (tm1,tm2) in
     new_rel::rels
@@ -715,7 +715,7 @@ let find_rels_in_tmapp tm1 tm2 rels =
     (*Rel: return and input type of s1 = s2*)
     let new_rel = (tm1,tm2) in
     new_rel::rels
-  | TmSeqMethod(seqm_ti,_,_,_,_), TmSeq(seq_ti,_,_,_,_,_), _, true, TySeqMethod _ (*"seqmethod sequence" where the sequence is the first sequence argument to the method and hence the sequence decides the method's sequence INPUT type, but not the return type since the return type of the method is not a sequence*) ->
+  | TmSeqMethod(seqm_ti,_,_,_,_), TmSeq(seq_ti,_,_,_), _, true, TySeqMethod _ (*"seqmethod sequence" where the sequence is the first sequence argument to the method and hence the sequence decides the method's sequence INPUT type, but not the return type since the return type of the method is not a sequence*) ->
     (*Rel: input type of s1 = s2*)
     let new_rel = (tm1,tm2) in
     new_rel::rels
@@ -723,7 +723,7 @@ let find_rels_in_tmapp tm1 tm2 rels =
     (*Rel: input type of s1 = s2*)
     let new_rel = (tm1,tm2) in
     new_rel::rels
-  | TmApp(app_ti,_,_), TmSeq(seq_ti,_,_,_,_,_), _, true, TySeqMethod _ (*"a1 sequence" where a1 is of type sequence method and sequence is an argument (but not the first) to it. The method will already have the sequence type set from its first argument, so its sequence type will decide the sequence type of the sequence.*) ->
+  | TmApp(app_ti,_,_), TmSeq(seq_ti,_,_,_), _, true, TySeqMethod _ (*"a1 sequence" where a1 is of type sequence method and sequence is an argument (but not the first) to it. The method will already have the sequence type set from its first argument, so its sequence type will decide the sequence type of the sequence.*) ->
     (*Rel: s2 = input type of s1*)
     let new_rel = (tm2,tm1) in
     new_rel::rels
@@ -742,7 +742,7 @@ let rec traverse_AST_to_find_sequences t rels seqs =
        traverse_AST_list tl l_rels1 l_seqs1
     ) in
   match t with
-  | TmSeq(ti,_,_,_,tm_l,_) ->
+  | TmSeq(ti,_,tm_l,_) ->
     (*let _ = Printf.printf "Term %s of type %s\n" (Ustring.to_utf8 (Pprint.pprint false t)) (Ustring.to_utf8 (Pprint.pprint_ty (Typesys.getType t))) in*)
     let seqs1 = t::seqs in
     traverse_AST_list (get_list_from_tm_list tm_l) rels seqs1
@@ -832,7 +832,7 @@ let test_preprocessing =
   *)
   let t1_e1 = TmConst(int_ti,CInt(1)) in
   let t1_e2 = TmConst(int_ti,CInt(2)) in
-  let t1_seq1 = TmSeq(seq_ti,0,us"none",0,TmList([t1_e1;t1_e2]),SeqNone) in
+  let t1_seq1 = TmSeq(seq_ti,us"none",TmList([t1_e1;t1_e2]),SeqNone) in
   let t1_lam1 = TmLam(arrow_seq_ti,us"s1",TyDyn,TmNop) in
   let t1_app1 = TmApp(default_ti,t1_lam1,t1_seq1) in
   let t1_ast = t1_app1 in
@@ -853,7 +853,7 @@ let test_preprocessing =
       let s2 = s1
   *)
   let t2_e1 = TmConst(int_ti,CInt(1)) in
-  let t2_seq1 = TmSeq(seq_ti,0,us"none",0,TmList([t2_e1]),SeqNone) in
+  let t2_seq1 = TmSeq(seq_ti,us"none",TmList([t2_e1]),SeqNone) in
   let t2_var1 = TmVar(seq_ti,us"s1",0,false) in
   let t2_lam1 = TmLam(arrow_seq_ti,us"s2",TyDyn,TmNop) in
   let t2_app1 = TmApp(default_ti,t2_lam1,t2_var1) in
@@ -876,9 +876,9 @@ let test_preprocessing =
       let s4 = seqmethod.append (newseq [int] (1)) (newseq [int] (2))
   *)
   let t3_e1 = TmConst(int_ti,CInt(2)) in
-  let t3_seq1 = TmSeq(seq_ti,0,us"none",0,TmList([t3_e1]),SeqNone) in
+  let t3_seq1 = TmSeq(seq_ti,us"none",TmList([t3_e1]),SeqNone) in
   let t3_e2 = TmConst(int_ti,CInt(1)) in
-  let t3_seq2 = TmSeq(seq_ti,0,us"none",0,TmList([t3_e2]),SeqNone) in
+  let t3_seq2 = TmSeq(seq_ti,us"none",TmList([t3_e2]),SeqNone) in
   let t3_seqm1 = TmSeqMethod(seqm_ti2,0,us"append",[],0) in
   let t3_app1 = TmApp(seqm_ti2,t3_seqm1,t3_seq2) in
   let t3_app2 = TmApp(seqm_ti2,t3_app1,t3_seq1) in
@@ -1140,11 +1140,11 @@ let rec give_all_selected_ds rels_assoc_list selected_data_structures selected_d
            (update_ast_with_choices hd ds_choices_assoc_list1)::(update_ast_list_with_choices tl ds_choices_assoc_list1)
         ) in
       match t with
-      | TmSeq(ti,tyid,seqty,ds_choice,tm_l,seq) ->
+      | TmSeq(ti,seqty,tm_l,seq) ->
         let tm_l' = update_ast_list_with_choices (get_list_from_tm_list tm_l) ds_choices_assoc_list in
         let ds_choice' = List.assoc t ds_choices_assoc_list in
         let ti' = update_ti ti ds_choice' in
-        TmSeq(ti',tyid,seqty,ds_choice,TmList(tm_l'),seq)
+        TmSeq(ti',seqty,TmList(tm_l'),seq)
       | TmNop ->
         t
       | TmVar(ti,a,b,c) ->
@@ -1240,7 +1240,7 @@ let rec print_ast_with_choices t  =
        let _ = print_ast_with_choices hd in
        print_ast_list_with_choices tl) in
   match t with
-  | TmSeq(ti,tyid,seqty,ds_choice,tm_l,seq) ->
+  | TmSeq(ti,seqty,tm_l,seq) ->
     let _ = print_ast_list_with_choices (get_list_from_tm_list tm_l) in
     let _ = Printf.printf "- %s has ds choice: %d\n" (Ustring.to_utf8 (Pprint.pprint false t)) (get_ds_choice ti) in
     true
