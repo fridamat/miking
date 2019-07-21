@@ -1,5 +1,4 @@
 open Sequence
-open Test
 
 exception Empty
 exception IndexOutOfBounds
@@ -98,4 +97,3 @@ module Linkedlist : Sequence = struct
 end
 
 open Linkedlist
-module LinkedlistTester = SeqTest(Linkedlist)
