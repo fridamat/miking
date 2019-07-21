@@ -80,7 +80,7 @@ let rec debruijn env t =
     | TyLam(fi,x,kind,ty1) -> TyLam(fi,x,kind, debruijnTy (VarTy(x)::env) ty1)
     | TyApp(fi,ty1,ty2) -> TyApp(fi, debruijnTy env ty1, debruijnTy env ty2)
     | TyDyn -> TyDyn
-    | TySeq(seq_ty,id) -> TySeq(seq_ty,id)
+    | TySeq(seq_ty,ds_choice) -> TySeq(seq_ty,ds_choice)
     | TySeqMethod(i_ty,r_ty) -> TySeqMethod(i_ty,r_ty)
     )
   in
