@@ -109,8 +109,12 @@ let tyequal ty1 ty2 =
     | TyApp(fi1,ty11,ty12), TyApp(fi2,ty21,ty22)->
       tyrec ty11 ty21 && tyrec ty12 ty22
     | TyDyn,TyDyn -> true
+    | TySeq(TyDyn,_), TySeq(_,_) | TySeq(_,_), TySeq(TyDyn,_) ->
+      true
     | TySeq(seq_ty1,ds_choice1),TySeq(seq_ty2,ds_choice2) ->
       tyrec seq_ty1 seq_ty2
+    | TySeq(seq_ty,_), TySeqMethod(i_ty,r_ty) ->
+      tyrec ty1 r_ty
     | TySeqMethod(i_ty1,r_ty1),TySeqMethod(i_ty2,r_ty2) ->
       tyrec r_ty1 r_ty2 (*TODO: Check input type as well?*)
     | TySeqMethod(i_ty,r_ty),b ->

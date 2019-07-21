@@ -833,12 +833,6 @@ let print_test_res res res_name =
     let _ = Printf.printf "%s FAILED :(\n" res_name in
     false
 
-let general_append a b =
-  match a, b with
-  | SeqList(l1), SeqList(l2) ->
-    SeqList(Linkedlist.append l1 l2)
-  | _ -> failwith "We don't have this implemented"
-
 let test_preprocessing =
   let seq_ty = TySeq(TyGround(NoInfo,GInt),0) in
   let default_ti =
@@ -1137,7 +1131,8 @@ let rec give_all_selected_ds rels_assoc_list selected_data_structures selected_d
 
 let get_actual_fun ds_choice fun_name =
   match ds_choice, (Ustring.to_utf8 fun_name) with
-  | 0, "append" -> SeqFun1(general_append)
+  | 0, "append" -> (SeqListFun1(Linkedlist.append))
+  | 0, "length" -> (SeqListFun2(Linkedlist.length))
   | _ -> failwith "Method not yet implemented"
 
     let rec update_ast_with_choices t ds_choices_assoc_list =
@@ -1149,6 +1144,7 @@ let get_actual_fun ds_choice fun_name =
         ) in
       match t with
       | TmSeq(ti,seq_ty,tm_l,seq) ->
+        let _ = Printf.printf "%s\n" (Ustring.to_utf8 (Pprint.pprint false t)) in
         let tm_l' = update_ast_list_with_choices (get_list_from_tm_list tm_l) ds_choices_assoc_list in
         let ds_choice' = List.assoc t ds_choices_assoc_list in
         let ti' = update_ti ti ds_choice' in
@@ -1157,6 +1153,7 @@ let get_actual_fun ds_choice fun_name =
         t
       | TmVar(ti,a,b,c) ->
         if check_if_seq t then
+          let _ = Printf.printf "%s\n" (Ustring.to_utf8 (Pprint.pprint false t)) in
           let ds_choice' = List.assoc t ds_choices_assoc_list in
           let ti' = update_ti ti ds_choice' in
           TmVar(ti',a,b,c)
@@ -1164,18 +1161,21 @@ let get_actual_fun ds_choice fun_name =
           t
       | TmChar(ti,a) ->
         if check_if_seq t then
+          let _ = Printf.printf "%s\n" (Ustring.to_utf8 (Pprint.pprint false t)) in
           let ds_choice' = List.assoc t ds_choices_assoc_list in
           let ti' = update_ti ti ds_choice' in
           TmChar(ti',a)
         else
           t
       | TmSeqMethod(ti,fun_name,actual_fun,c,d) ->
+        let _ = Printf.printf "%s\n" (Ustring.to_utf8 (Pprint.pprint false t)) in
         let ds_choice' = List.assoc t ds_choices_assoc_list in
         let ti' = update_ti ti ds_choice' in
         let actual_fun' = get_actual_fun ds_choice' fun_name in
         TmSeqMethod(ti',fun_name,actual_fun',c,d)
       | TmFix(ti) ->
         if check_if_seq t then
+          let _ = Printf.printf "%s\n" (Ustring.to_utf8 (Pprint.pprint false t)) in
           let ds_choice' = List.assoc t ds_choices_assoc_list in
           let ti' = update_ti ti ds_choice' in
           TmFix(ti')
@@ -1183,6 +1183,7 @@ let get_actual_fun ds_choice fun_name =
           t
       | TmConst(ti,a) ->
         if check_if_seq t then
+          let _ = Printf.printf "%s\n" (Ustring.to_utf8 (Pprint.pprint false t)) in
           let ds_choice' = List.assoc t ds_choices_assoc_list in
           let ti' = update_ti ti ds_choice' in
           TmConst(ti',a)
@@ -1191,6 +1192,7 @@ let get_actual_fun ds_choice fun_name =
       | TmLam(ti,a,b,tm) ->
         let tm' = update_ast_with_choices tm ds_choices_assoc_list in
         if check_if_seq t then
+          let _ = Printf.printf "%s\n" (Ustring.to_utf8 (Pprint.pprint false t)) in
           let ds_choice' = List.assoc t ds_choices_assoc_list in
           let ti' = update_ti ti ds_choice' in
           TmLam(ti',a,b,tm')
@@ -1199,6 +1201,7 @@ let get_actual_fun ds_choice fun_name =
       | TmClos(ti,a,b,tm,c,d) ->
         let tm' = update_ast_with_choices tm ds_choices_assoc_list in
         if check_if_seq t then
+          let _ = Printf.printf "%s\n" (Ustring.to_utf8 (Pprint.pprint false t)) in
           let ds_choice' = List.assoc t ds_choices_assoc_list in
           let ti' = update_ti ti ds_choice' in
           TmClos(ti',a,b,tm',c,d)
@@ -1207,7 +1210,14 @@ let get_actual_fun ds_choice fun_name =
       | TmApp(ti,tm1,tm2) ->
         let tm1' = update_ast_with_choices tm1 ds_choices_assoc_list in
         let tm2' = update_ast_with_choices tm2 ds_choices_assoc_list in
-        if check_if_seq t then
+        let res =
+          (match tm1, tm2 with
+           | TmSeqMethod _, TmSeq _ ->
+             true
+           | _ ->
+             false
+          ) in
+        if res && check_if_seq t then
           let ds_choice' = List.assoc t ds_choices_assoc_list in
           let ti' = update_ti ti ds_choice' in
           TmApp(ti',tm1',tm2')
@@ -1248,51 +1258,51 @@ let rec print_ast_with_choices t  =
   match t with
   | TmSeq(ti,seq_ty,tm_l,seq) ->
     let _ = print_ast_list_with_choices (get_list_from_tm_list tm_l) in
-    let _ = Printf.printf "- %s has ds choice: %d\n" (Ustring.to_utf8 (Pprint.pprint false t)) (get_ds_choice ti) in
+    (*let _ = Printf.printf "- %s has ds choice: %d\n" (Ustring.to_utf8 (Pprint.pprint false t)) (get_ds_choice ti) in*)
     true
   | TmNop ->
     false
   | TmVar(ti,a,b,c) ->
     if check_if_seq t then
-      let _ = Printf.printf "- %s has ds choice: %d\n" (Ustring.to_utf8 (Pprint.pprint false t)) (get_ds_choice ti) in
+      (*let _ = Printf.printf "- %s has ds choice: %d\n" (Ustring.to_utf8 (Pprint.pprint false t)) (get_ds_choice ti) in*)
       true
     else
       false
   | TmChar(ti,a) ->
     if check_if_seq t then
-      let _ = Printf.printf "- %s has ds choice: %d\n" (Ustring.to_utf8 (Pprint.pprint false t)) (get_ds_choice ti) in
+      (*let _ = Printf.printf "- %s has ds choice: %d\n" (Ustring.to_utf8 (Pprint.pprint false t)) (get_ds_choice ti) in*)
       true
     else
       false
   | TmSeqMethod(ti,a,b,c,d) ->
     if check_if_seq t then
-      let _ = Printf.printf "- %s has ds choice: %d\n" (Ustring.to_utf8 (Pprint.pprint false t)) (get_ds_choice ti) in
+      (*let _ = Printf.printf "- %s has ds choice: %d\n" (Ustring.to_utf8 (Pprint.pprint false t)) (get_ds_choice ti) in*)
       true
     else
       false
   | TmFix(ti) ->
     if check_if_seq t then
-      let _ = Printf.printf "- %s has ds choice: %d\n" (Ustring.to_utf8 (Pprint.pprint false t)) (get_ds_choice ti) in
+      (*let _ = Printf.printf "- %s has ds choice: %d\n" (Ustring.to_utf8 (Pprint.pprint false t)) (get_ds_choice ti) in*)
       true
     else
       false
   | TmConst(ti,a) ->
     if check_if_seq t then
-      let _ = Printf.printf "- %s has ds choice: %d\n" (Ustring.to_utf8 (Pprint.pprint false t)) (get_ds_choice ti) in
+      (*let _ = Printf.printf "- %s has ds choice: %d\n" (Ustring.to_utf8 (Pprint.pprint false t)) (get_ds_choice ti) in*)
       true
     else
       false
   | TmLam(ti,a,b,tm) ->
     let _ = print_ast_with_choices tm in
     if check_if_seq t then
-      let _ = Printf.printf "- %s has ds choice: %d\n" (Ustring.to_utf8 (Pprint.pprint false t)) (get_ds_choice ti) in
+      (*let _ = Printf.printf "- %s has ds choice: %d\n" (Ustring.to_utf8 (Pprint.pprint false t)) (get_ds_choice ti) in*)
       true
     else
       false
   | TmClos(ti,a,b,tm,c,d) ->
     let _ = print_ast_with_choices tm in
     if check_if_seq t then
-      let _ = Printf.printf "- %s has ds choice: %d\n" (Ustring.to_utf8 (Pprint.pprint false t)) (get_ds_choice ti) in
+      (*let _ = Printf.printf "- %s has ds choice: %d\n" (Ustring.to_utf8 (Pprint.pprint false t)) (get_ds_choice ti) in*)
       true
     else
       false
@@ -1300,7 +1310,7 @@ let rec print_ast_with_choices t  =
     let _ = print_ast_with_choices tm1 in
     let _ = print_ast_with_choices tm2 in
     if check_if_seq t then
-      let _ = Printf.printf "- %s has ds choice: %d\n" (Ustring.to_utf8 (Pprint.pprint false t)) (get_ds_choice ti) in
+      (*let _ = Printf.printf "- %s has ds choice: %d\n" (Ustring.to_utf8 (Pprint.pprint false t)) (get_ds_choice ti) in*)
       true
     else
       false
@@ -1309,7 +1319,7 @@ let rec print_ast_with_choices t  =
     let _ = print_ast_with_choices tm2 in
     let _ = print_ast_with_choices tm3 in
     if check_if_seq t then
-      let _ = Printf.printf "- %s has ds choice: %d\n" (Ustring.to_utf8 (Pprint.pprint false t)) (get_ds_choice ti) in
+      (*let _ = Printf.printf "- %s has ds choice: %d\n" (Ustring.to_utf8 (Pprint.pprint false t)) (get_ds_choice ti) in*)
       true
     else
       false
@@ -1318,7 +1328,7 @@ let rec print_ast_with_choices t  =
     let _ = print_ast_with_choices tm2 in
     let _ = print_ast_with_choices tm3 in
     if check_if_seq t then
-      let _ = Printf.printf "- %s has ds choice: %d\n" (Ustring.to_utf8 (Pprint.pprint false t)) (get_ds_choice ti) in
+      (*let _ = Printf.printf "- %s has ds choice: %d\n" (Ustring.to_utf8 (Pprint.pprint false t)) (get_ds_choice ti) in*)
       true
     else
       false
@@ -1326,14 +1336,14 @@ let rec print_ast_with_choices t  =
     failwith "Not implemented"
 
 let eval_test typecheck env t =
-  let _ = Printf.printf "The complete program is: %s \n" (Ustring.to_utf8 (Pprint.pprint false t)) in
+  (*let _ = Printf.printf "The complete program is: %s \n" (Ustring.to_utf8 (Pprint.pprint false t)) in*)
   if typecheck then
     (*let _ = test_preprocessing in*)
     let (rels,seqs) = traverse_AST_to_find_sequences t [] [] in
-    let seqs_string = print_seqs seqs in
-    let _ = Printf.printf "\nThe program points that are seqs are: %s of length %d" (Ustring.to_utf8 seqs_string) (List.length seqs) in
-    let rels_string = print_rels rels in
-    let _ = Printf.printf "\nThe relationships between seqs are: %s of length %d" (Ustring.to_utf8 rels_string) (List.length rels) in
+    (*let seqs_string = print_seqs seqs in*)
+    (*let _ = Printf.printf "\nThe program points that are seqs are: %s of length %d" (Ustring.to_utf8 seqs_string) (List.length seqs) in*)
+    (*let rels_string = print_rels rels in*)
+    (*let _ = Printf.printf "\nThe relationships between seqs are: %s of length %d" (Ustring.to_utf8 rels_string) (List.length rels) in*)
     (*TODO: Reducera relationerna*)
     (*Find all new sequences (sequence constructors)*)
     let seq_cons = find_sequence_constructors seqs in
@@ -1348,16 +1358,18 @@ let eval_test typecheck env t =
     let mf_matrix1 = find_sequence_methods rels_assoc_list3 in
     (*Translate matrix to frequencies*)
     let mf_matrix2 = Frequencies.translate_mf_assoc_list mf_matrix1 in
-    let mf_matrix2string = print_mf_matrix mf_matrix2 in
-    let _ = Printf.printf "\nThe MF matrix with frequencies set is: %s\n" mf_matrix2string in
+    (*let mf_matrix2string = print_mf_matrix mf_matrix2 in*)
+    (*let _ = Printf.printf "\nThe MF matrix with frequencies set is: %s\n" mf_matrix2string in*)
     let selected_data_structures = Dssa.main mf_matrix2 in
     let selected_list_assoc1 = init_selected_list_assoc rels_assoc_list2 in
     let selected_list_assoc2 = give_all_selected_ds rels_assoc_list3 selected_data_structures selected_list_assoc1 in
+    let selected_list_assoc2_string = print_assoc_list2 selected_list_assoc2 in
+    let _ = Printf.printf "The assoc list is: %s\n" selected_list_assoc2_string in
     (*TODO: Ändra i AST med resultat*)
     let t' = update_ast_with_choices t selected_list_assoc2 in
-    let _ = print_ast_with_choices t' in
-    (*TODO: Use t' instead of t*)
-    eval env t
+    (*let _ = print_ast_with_choices t' in
+      (*TODO: Use t' instead of t*)*)
+    eval env t'
   else
     eval env t
 

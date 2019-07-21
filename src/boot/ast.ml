@@ -120,7 +120,8 @@ and sequence =
   | SeqNone
 
 and actual_fun =
-  | SeqFun1 of (sequence -> sequence -> sequence)
+  | SeqListFun1 of ((tm Linkedlist.sequence) -> (tm Linkedlist.sequence) -> (tm Linkedlist.sequence))
+  | SeqListFun2 of ((tm Linkedlist.sequence) -> int)
   | SeqFunNone
 
 (* Terms / expressions *)
