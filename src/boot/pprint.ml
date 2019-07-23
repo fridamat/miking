@@ -7,6 +7,7 @@
 open Ast
 open Ustring.Op
 open Printf
+open Linkedlist
 
 
 (* Debug options *)
@@ -60,23 +61,23 @@ let rec pprint_pat pat =
   | PatIdent(_,s) -> s
   | PatChar(_,c) -> us"'" ^. list2ustring [c] ^. us"'"
   | PatUC(_,plst,_,_)
-      -> us"[" ^. (Ustring.concat (us",") (List.map pprint_pat plst)) ^. us"]"
+    -> us"[" ^. (Ustring.concat (us",") (List.map pprint_pat plst)) ^. us"]"
   | PatBool(_,b) -> us(if b then "true" else "false")
   | PatInt(_,i) -> us(sprintf "%d" i)
   | PatConcat(_,p1,p2) -> (pprint_pat p1) ^. us"++" ^. (pprint_pat p2)
 
 (* Converts a UC to a ustring *)
 let uc2ustring uclst =
-    List.map
-      (fun x -> match x with
-      |TmChar(_,i) -> i
-      | _ -> failwith "Not a string list") uclst
+  List.map
+    (fun x -> match x with
+       |TmChar(_,i) -> i
+       | _ -> failwith "Not a string list") uclst
 
 
 (* Pretty print match cases *)
 let rec pprint_cases basic cases =
-   Ustring.concat (us" else ") (List.map
-    (fun (Case(_,p,t)) -> pprint_pat p ^. us" => " ^. pprint basic t) cases)
+  Ustring.concat (us" else ") (List.map
+                                 (fun (Case(_,p,t)) -> pprint_pat p ^. us" => " ^. pprint basic t) cases)
 
 (* Pretty print constants *)
 and pprint_const c =
@@ -152,61 +153,69 @@ and pprint_const c =
   (* MCore unified collection type (UCT) intrinsics *)
   | CConcat(None) -> us"concat"
   | CConcat(Some(v)) -> us"concat(" ^. (pprint true v) ^. us")"
-  (* Ragnar polymorpic temps *)
-  | CPolyEq(None) -> us"polyeq"
-  | CPolyEq(Some(v)) -> us"polyeq(" ^. (pprint true v) ^. us")"
-  | CPolyNeq(None) -> us"polyneq"
-  | CPolyNeq(Some(v)) -> us"polyneq(" ^. (pprint true v) ^. us")"
   (* Atom - an untyped lable that can be used to implement
      domain specific constructs *)
   | CAtom(id,tms) -> us"[" ^. (ustring_of_sid id) ^. us"]" ^.
-      (if List.length tms = 0 then us""
-       else us"(" ^. Ustring.concat (us",") (List.map (pprint true) tms) ^. us")")
+                     (if List.length tms = 0 then us""
+                      else us"(" ^. Ustring.concat (us",") (List.map (pprint true) tms) ^. us")")
 
 
 (* Pretty print a term. The boolean parameter 'basic' is true when
    the pretty printing should be done in basic form. Use e.g. Set(1,2) instead of {1,2} *)
 and pprint basic t =
+  let rec pprint_linkedlist ll i =
+    (if i = (Linkedlist.length ll) then
+       us""
+     else
+       (pprint false (Linkedlist.nth ll i)) ^. us"," ^. (pprint_linkedlist ll (i+1))) in
+  let pprint_sequence seq =
+    (match seq with
+     | SeqList(s) ->
+       let s_string = pprint_linkedlist s 0 in
+       s_string
+     | _ -> us"") in
+  let rec pprint_tm_list tm_l =
+    (match tm_l with
+     | TmList([]) -> us""
+     | TmList(hd::[]) -> (pprint false hd)
+     | TmList(hd::tl) -> (pprint false hd) ^. us"," ^. (pprint_tm_list (TmList(tl)))) in
   let rec ppt inside t =
-  match t with
-  | TmVar(_,x,n,_) -> varDebugPrint x n
-  | TmLam(_,x,ty,t1) -> left inside ^.
-      us"lam " ^. x ^. us":" ^. pprint_ty ty ^. us". " ^. ppt false t1 ^. right inside
-  | TmClos(_,x,_,t,_,false) -> left inside ^. us"clos " ^. x ^. us". " ^.
-       ppt false t ^. right inside
-  | TmClos(_,x,_,t,_,true) -> left inside ^. us"peclos " ^.
-       x ^. us". " ^. ppt false t ^. right inside
-  | TmApp(_,t1,t2) ->
-       left inside ^. ppt true t1  ^. us" " ^. ppt true t2 ^. right inside
-  | TmConst(_,c) -> pprint_const c
-  | TmFix(_) -> us"fix"
-  | TmTyLam(_,x,kind,t1) -> left inside ^. us"Lam " ^. x ^. us"::"
-      ^. pprint_kind kind ^. us". " ^. ppt false t1  ^. us"" ^. right inside
-  | TmTyApp(_,t1,ty1) ->
+    match t with
+    | TmVar(_,x,n,_) -> varDebugPrint x n
+    | TmLam(_,x,ty,t1) -> left inside ^.
+                          us"lam " ^. x ^. us":" ^. pprint_ty ty ^. us". " ^. ppt false t1 ^. right inside
+    | TmClos(_,x,_,t,_,false) -> left inside ^. us"clos " ^. x ^. us". " ^.
+                                 ppt false t ^. right inside
+    | TmClos(_,x,_,t,_,true) -> left inside ^. us"peclos " ^.
+                                x ^. us". " ^. ppt false t ^. right inside
+    | TmApp(_,t1,t2) ->
+      us"TmApp(" ^. left inside ^. ppt true t1  ^. us", " ^. ppt true t2 ^. right inside ^. us")"
+    | TmConst(_,c) -> pprint_const c
+    | TmFix(_) -> us"fix"
+    | TmTyLam(_,x,kind,t1) -> left inside ^. us"Lam " ^. x ^. us"::"
+                              ^. pprint_kind kind ^. us". " ^. ppt false t1  ^. us"" ^. right inside
+    | TmTyApp(_,t1,ty1) ->
       left inside ^. ppt false t1 ^. us" [" ^. pprint_ty ty1 ^. us"]" ^. right inside
-  | TmDive(_) -> us"dive"
-  | TmIfexp(_,None,_) -> us"ifexp"
-  | TmIfexp(_,Some(g),Some(t2)) ->
-      us"ifexp(" ^. usbool g ^. us"," ^. ppt false t2 ^. us")"
-  | TmIfexp(_,Some(g),_) -> us"ifexp(" ^. usbool g ^. us")"
-  | TmChar(fi,c) -> us"'" ^. list2ustring [c] ^. us"'"
-  | TmExprSeq(fi,t1,t2) -> ppt false t1 ^. us"\n" ^. ppt false t2
-  | TmUC(fi,uct,ordered,uniqueness) -> (
-    match ordered, uniqueness with
-    | UCOrdered,UCMultivalued when not basic ->
-      let lst = uct2list uct in
-      (match lst with
-      | TmChar(_,_)::_ ->
-        let intlst = uc2ustring lst in
-        us"\"" ^. list2ustring intlst ^.  us"\""
-      | _ -> us"[" ^. (Ustring.concat (us",") (List.map (ppt false) lst)) ^. us"]")
-    | _,_ ->
-        (pprintUCKind ordered uniqueness) ^. us"(" ^.
+    | TmIfexp(_,c,t,e) -> us"if " ^. ppt false c ^. us" then " ^. ppt false t ^. us" else " ^. ppt false e
+    | TmSeq(fi,seq_ty,clist,tmseq) -> us"TmSeq(" ^. (pprint_tm_list clist) ^. us")" (*TODO:Print the selected data structure type ty*) (*TODO:Print the selected data structure type ty*)
+    | TmSeqMethod(fi,fun_name,actual_fun,args,arg_index) -> us"Seq." ^. fun_name ^. us"()" (*TODO:Print the selected data structure type ty and the arguments?*)
+    | TmChar(fi,c) -> us"'" ^. list2ustring [c] ^. us"'"
+    | TmUC(fi,uct,ordered,uniqueness) -> (
+        match ordered, uniqueness with
+        | UCOrdered,UCMultivalued when not basic ->
+          let lst = uct2list uct in
+          (match lst with
+           | TmChar(_,_)::_ ->
+             let intlst = uc2ustring lst in
+             us"\"" ^. list2ustring intlst ^.  us"\""
+           | _ -> us"[" ^. (Ustring.concat (us",") (List.map (ppt false) lst)) ^. us"]")
+        | _,_ ->
+          (pprintUCKind ordered uniqueness) ^. us"(" ^.
           (Ustring.concat (us",") (List.map (ppt false) (uct2list uct))) ^. us")")
-  | TmUtest(fi,t1,t2,tnext) -> us"utest " ^. ppt false t1  ^. us" " ^. ppt false t2
-  | TmMatch(fi,t1,cases)
-    ->  us"match " ^. ppt false t1 ^. us" {" ^. pprint_cases basic cases ^. us"}"
-  | TmNop -> us"Nop"
+    | TmUtest(fi,t1,t2,tnext) -> us"utest " ^. ppt false t1  ^. us" " ^. ppt false t2
+    | TmMatch(fi,t1,cases)
+      ->  us"match " ^. ppt false t1 ^. us" {" ^. pprint_cases basic cases ^. us"}"
+    | TmNop -> us"Nop"
   in ppt false t
 
 (* Pretty prints the environment *)
@@ -217,12 +226,12 @@ and pprint_env env =
 (* Pretty prints the typing environment *)
 and pprint_tyenv env =
   us"[" ^.
-    (List.mapi (fun i t -> us(sprintf " %d -> " i) ^.
-      (match t with
-      | TyenvTmvar(x,ty) -> x ^. us":" ^. pprint_ty ty
-      | TyenvTyvar(x,ki) -> x ^. us":" ^. us"::" ^. pprint_kind ki)
-     ) env
-            |> Ustring.concat (us",")) ^. us"]"
+  (List.mapi (fun i t -> us(sprintf " %d -> " i) ^.
+                         (match t with
+                          | TyenvTmvar(x,ty) -> x ^. us":" ^. pprint_ty ty
+                          | TyenvTyvar(x,ki) -> x ^. us":" ^. us"::" ^. pprint_kind ki)
+             ) env
+   |> Ustring.concat (us",")) ^. us"]"
 
 
 
@@ -230,31 +239,33 @@ and pprint_tyenv env =
 (* Pretty print a type *)
 and pprint_ty ty =
   let rec ppt inside ty =
-  match ty with
-  | TyGround(fi,gt) ->
-    (match gt with
-    | GBool -> us"Bool"
-    | GInt -> us"Int"
-    | GFloat -> us"Float"
-    | GVoid -> us"Void")
-  | TyArrow(fi,ty1,ty2) ->
+    match ty with
+    | TyGround(fi,gt) ->
+      (match gt with
+       | GBool -> us"Bool"
+       | GInt -> us"Int"
+       | GFloat -> us"Float"
+       | GVoid -> us"Void")
+    | TyArrow(fi,ty1,ty2) ->
       left inside ^. ppt true ty1 ^. us"->" ^. ppt false ty2 ^. right inside
-  | TyVar(fi,x,n) -> varDebugPrint x n
-  | TyAll(fi,x,kind,ty1) -> left inside ^. us"all " ^. x ^. us"::" ^.
-         pprint_kind kind ^. us". " ^. ppt false ty1 ^. right inside
-  | TyLam(fi,x,kind,ty1) -> left inside ^. us"lam " ^. x ^. us"::" ^.
-         pprint_kind kind ^. us". " ^. ppt false ty1 ^. right inside
-  | TyApp(fi,ty1,ty2) ->
-    left inside ^. ppt true ty1 ^. us" " ^. ppt true ty2 ^. right inside
- | TyDyn -> us"Dyn"
+    | TyVar(fi,x,n) -> varDebugPrint x n
+    | TyAll(fi,x,kind,ty1) -> left inside ^. us"all " ^. x ^. us"::" ^.
+                              pprint_kind kind ^. us". " ^. ppt false ty1 ^. right inside
+    | TyLam(fi,x,kind,ty1) -> left inside ^. us"lam " ^. x ^. us"::" ^.
+                              pprint_kind kind ^. us". " ^. ppt false ty1 ^. right inside
+    | TyApp(fi,ty1,ty2) ->
+      left inside ^. ppt true ty1 ^. us" " ^. ppt true ty2 ^. right inside
+    | TyDyn -> us"Dyn"
+    | TySeq(seq_ty,id) -> us"TySeq:" ^. (pprint_ty seq_ty)
+    | TySeqMethod(i_ty,r_ty) -> us"TySeqMethod:(input:" ^. (pprint_ty i_ty) ^. us"; output:" ^. (pprint_ty r_ty) ^. us")"
   in
-    ppt true ty
+  ppt true ty
 
 (* Pretty print kinds *)
 and pprint_kind k =
   let rec ppt inside k =
-  match k with
-  | KindStar(fi) -> us"*"
-  | KindArrow(fi,k1,k2) ->
-    left inside ^. ppt true k1 ^. us"->" ^. ppt false k2 ^. right inside
+    match k with
+    | KindStar(fi) -> us"*"
+    | KindArrow(fi,k1,k2) ->
+      left inside ^. ppt true k1 ^. us"->" ^. ppt false k2 ^. right inside
   in ppt false k

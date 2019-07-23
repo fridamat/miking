@@ -38,8 +38,8 @@ let reserved_strings = [
   ("in",            fun(i) -> Parser.IN{i=i;v=()});
   ("nop",           fun(i) -> Parser.NOP{i=i;v=()});
   ("fix",           fun(i) -> Parser.FIX{i=i;v=()});
-  ("dive",          fun(i) -> Parser.DIVE{i=i;v=()});
-  ("ifexp",         fun(i) -> Parser.IFEXP{i=i;v=()});
+  ("newseq",        fun(i) -> Parser.SEQ{i=i;v=()});
+  ("seqmethod",     fun(i) -> Parser.SEQMETHOD{i=i;v=()});
 
   (* v *)
   ("=",             fun(i) -> Parser.EQ{i=i;v=()});
@@ -102,6 +102,9 @@ let add_colno i = colno := !colno + i
 let mkinfo_fast s =
   last_info := Info(!filename,!rowno,!colno,!rowno,!colno+(String.length s));
   colcount_fast s; !last_info
+let mktinfo_fast s =
+  last_info := Info(!filename,!rowno,!colno,!rowno,!colno+(String.length s));
+  colcount_fast s; {ety = None; fi = !last_info}
 let mkinfo_utf8_fast s =
   last_info := Info(!filename,!rowno,!colno,!rowno,!colno + (utf8strlen s));
   colcount_utf8 s; !last_info
@@ -111,7 +114,7 @@ let mkinfo_ustring s =
   let col = !colno in
   count_ustring s;
   last_info := Info(!filename,row,col,!rowno,!colno);
-  !last_info
+  {ety = None; fi = !last_info}
 
 (* Init the lexer with file name and tab-size. *)
 let init file_name tab_size=
@@ -121,8 +124,8 @@ let init file_name tab_size=
   tabsize := tab_size
 
 (* Handle identifiers, keywords, and operators *)
-type buildfun = info -> Parser.token
-let (str_tab : (string,buildfun) Hashtbl.t) =
+type buildfun = tinfo -> Parser.token
+let (str_tab : (string, buildfun) Hashtbl.t) =
   Hashtbl.create 1024
 let _ = List.iter (fun (str,f) -> Hashtbl.add str_tab str f)
   reserved_strings
@@ -130,7 +133,7 @@ let _ = List.iter (fun (str,f) -> Hashtbl.add str_tab str f)
 (* Make identfier, keyword, or operator  *)
 let mkid s =
   try
-    let f = Hashtbl.find str_tab s in f (mkinfo_fast s)
+    let f = Hashtbl.find str_tab s in f (mktinfo_fast s)
   with Not_found ->
     let s2 = Ustring.from_utf8 s in
     Parser.IDENT {i=mkinfo_ustring s2; v=s2}
@@ -188,9 +191,9 @@ rule main = parse
   | newline
       { newrow(); main lexbuf }
   | (unsigned_integer as str)
-      { Parser.UINT{i=mkinfo_fast str; v=int_of_string str} }
+      { Parser.UINT{i={ety = None; fi = mkinfo_fast str}; v=int_of_string str} }
   | unsigned_number as str
-      { Parser.UFLOAT{i=mkinfo_fast str; v=float_of_string str} }
+      { Parser.UFLOAT{i={ety = None; fi = mkinfo_fast str}; v=float_of_string str} }
   | (ident as s) "("
       { let s2 = Ustring.from_utf8 s in
         (match s with
@@ -220,14 +223,14 @@ and parsestring = parse
   | eof
       { let s = Ustring.from_utf8 ("\"" ^ (Buffer.contents string_buf)) in
 	raise (Lex_error (LEX_STRING_NOT_TERMINATED,ERROR,
-		 mkinfo_ustring s, [s])) }
+		 (mkinfo_ustring s).fi, [s])) }
   | s_escape as s
       { Buffer.add_string string_buf s; parsestring lexbuf }
   | '\\' utf8 as s
       { count_ustring  (Ustring.from_utf8 ("\""^(Buffer.contents string_buf)));
         let s2 = Ustring.from_utf8 s in
 	raise (Lex_error (LEX_INVALID_ESCAPE,ERROR,
-		 mkinfo_ustring s2, [s2])) }
+		 (mkinfo_ustring s2).fi, [s2])) }
   | [^ '\\' '\"'] as c
       { Buffer.add_char string_buf c; parsestring lexbuf }
 
@@ -239,6 +242,6 @@ and section_comment = parse
   | eof
       { let s = Ustring.from_utf8 ("/*" ^ (Buffer.contents string_buf)) in
 	raise (Lex_error (LEX_COMMENT_NOT_TERMINATED,ERROR,
-	 	 mkinfo_ustring s, [s])) }
+	 	 (mkinfo_ustring s).fi, [s])) }
   | _ as c
       { Buffer.add_char string_buf c; section_comment lexbuf }
