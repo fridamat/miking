@@ -50,19 +50,20 @@ let to_string frequency =
   | One -> "one"
   | Many -> "many"
 
-let rec translate_mf_assoc_row mf_row =
-  match mf_row with
+let rec translate_mf_assoc_row mf_row fun_names =
+  match fun_names with
   | [] -> []
-  | (fun_name,fun_count)::tl ->
+  | hd::tl ->
+    let fun_count = List.assoc hd mf_row in
     if fun_count = 0 then
-      Zero::(translate_mf_assoc_row tl)
+      Zero::(translate_mf_assoc_row mf_row tl)
     else if fun_count = 1 then
-      One::(translate_mf_assoc_row tl)
+      One::(translate_mf_assoc_row mf_row tl)
     else
-      Many::(translate_mf_assoc_row tl)
+      Many::(translate_mf_assoc_row mf_row tl)
 
-let rec translate_mf_assoc_list mf_assoc_list =
+let rec translate_mf_assoc_list mf_assoc_list fun_names =
   match mf_assoc_list with
   | [] -> []
   | hd::tl ->
-    (translate_mf_assoc_row hd)::(translate_mf_assoc_list tl)
+    (translate_mf_assoc_row hd fun_names)::(translate_mf_assoc_list tl fun_names)

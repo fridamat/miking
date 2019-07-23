@@ -122,6 +122,7 @@ and sequence =
 and actual_fun =
   | SeqListFun1 of ((tm Linkedlist.sequence) -> (tm Linkedlist.sequence) -> (tm Linkedlist.sequence))
   | SeqListFun2 of ((tm Linkedlist.sequence) -> int)
+  | SeqListFun3 of ((tm Linkedlist.sequence) -> tm -> (tm Linkedlist.sequence))
   | SeqFunNone
 
 (* Terms / expressions *)
