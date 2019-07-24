@@ -269,3 +269,14 @@ and pprint_kind k =
   | KindArrow(fi,k1,k2) ->
     left inside ^. ppt true k1 ^. us"->" ^. ppt false k2 ^. right inside
   in ppt false k
+
+and pprint_seqfuntype seq_fun =
+  match seq_fun with
+  | SeqListFun1 _ ->
+    "tm linkedlist -> tm linkedlist -> tm linkedlist"
+  | SeqListFun2 _ ->
+    "tm linkedlist -> int"
+  | SeqListFun3 _->
+    "tm linkedlist -> tm -> tm linkedlist"
+  | SeqFunNone ->
+    "No type set"

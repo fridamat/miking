@@ -574,6 +574,9 @@ let call_seq_method ti fun_name actual_fun args =
     TmConst(ti,CInt(f l))
   | "push", SeqListFun3(f), [TmSeq(_,seq_ty,_,SeqList(l)); e] (*TODO: Check type of new element*) ->
     TmSeq(ti,seq_ty,TmList([]),SeqList(f l e))
+  | _, SeqFunNone, _ ->
+    let str = "No method type has been set" in
+    failwith str
   | _ ->
     let str = "Method" ^ (Ustring.to_utf8 fun_name) ^ "not implemented" in
     failwith str
@@ -811,7 +814,13 @@ let print_test_res res res_name =
   int_ti*)
 
 let eval_test typecheck env t =
-  eval env t
+  let t' =
+    (if typecheck then
+       Seqprocessing.process_ast t
+     else
+       t
+    ) in
+  eval env t'
 
 (* Main function for evaluation a function. Performs lexing, parsing
    and evaluation. Does not perform any type checking *)
