@@ -57,7 +57,8 @@ let find_rels_in_tmapp tm1 tm2 rels =
     (*Rel: s2 = input type of s1*)
     let new_rel = (tm2,tm1) in
     new_rel::rels
-  | _ -> rels
+  | _ ->
+    rels
 
 let rec find_sequences_in_ast t rels seqs =
   let rec find_sequences_in_ast_list l l_rels l_seqs =
@@ -172,7 +173,19 @@ let rec init_seqmethod_assoc_list_helper fun_names =
 
 let get_fun_names =
 (*TODO: Collect this from file*)
-["length";"append";"push"]
+  ["is_empty";
+   "first";
+   "last";
+   "push";
+   "pop";
+   "length";
+   "nth";
+   "append";
+   "reverse";
+   "push_last";
+   "pop_last";
+   "take";
+   "drop"]
 
 let init_seqmethod_assoc_list =
   let fun_names = get_fun_names in
@@ -273,9 +286,19 @@ let update_ti ti ds_choice =
 
 let get_actual_fun ds_choice fun_name =
   match ds_choice, (Ustring.to_utf8 fun_name) with
-  | 0, "append" -> (SeqListFun1(Linkedlist.append))
-  | 0, "length" -> (SeqListFun2(Linkedlist.length))
+  | 0, "is_empty" -> (SeqListFun4(Linkedlist.is_empty))
+  | 0, "first" -> (SeqListFun5(Linkedlist.first))
+  | 0, "last" -> (SeqListFun5(Linkedlist.last))
   | 0, "push" -> (SeqListFun3(Linkedlist.push))
+  | 0, "pop" -> (SeqListFun6(Linkedlist.pop))
+  | 0, "length" -> (SeqListFun2(Linkedlist.length))
+  | 0, "nth" -> (SeqListFun7(Linkedlist.nth))
+  | 0, "append" -> (SeqListFun1(Linkedlist.append))
+  | 0, "reverse" -> (SeqListFun6(Linkedlist.reverse))
+  | 0, "push_last" -> (SeqListFun3(Linkedlist.push_last))
+  | 0, "pop_last" -> (SeqListFun6(Linkedlist.pop_last))
+  | 0, "take" -> (SeqListFun8(Linkedlist.take))
+  | 0, "drop" -> (SeqListFun8(Linkedlist.drop))
   | _ -> failwith "Method not yet implemented"
 
 let rec update_ast_with_choices t selected_ds_assoc_list =
@@ -351,7 +374,7 @@ let rec update_ast_with_choices t selected_ds_assoc_list =
        | TmSeqMethod _, TmSeq _ -> true
        | _ -> false
       ) in
-    if res && check_if_seq ti then
+    if res && (check_if_seq ti) && (List.mem_assoc t selected_ds_assoc_list) then
       let ds_choice = List.assoc t selected_ds_assoc_list in
       let upd_ti = update_ti ti ds_choice in
       TmApp(upd_ti,upd_tm1,upd_tm2)
@@ -380,6 +403,12 @@ let rec update_ast_with_choices t selected_ds_assoc_list =
   | TmMatch _ | TmUC _ | TmTyApp _ | TmTyLam _ ->
     failwith "Not implemented"
 
+let rec build_fake_selected_ds size =
+  match size with
+  | 0 -> []
+  | _ ->
+    [0]::(build_fake_selected_ds (size-1))
+
 let process_ast t =
   (*Find all terms of sequence type and their internal relationships*)
   let (rels,seqs) = find_sequences_in_ast t [] [] in
@@ -397,7 +426,8 @@ let process_ast t =
   let mf_matrix2 = Frequencies.translate_mf_assoc_list mf_matrix1 get_fun_names in
   (*TODO: Keep track of order of sequences*)
   (*Call algorithm*)
-  let selected_data_structures = Dssa.main mf_matrix2 in
+  (*TODO:let selected_data_structures = Dssa.main mf_matrix2 in*)
+  let selected_data_structures = build_fake_selected_ds (List.length mf_matrix2) in
   (*Init assoc list for selected data structures*)
   let selected_list_assoc1 = init_selected_list_assoc rels_assoc_list2 in
   let selected_list_assoc2 = link_seqs_to_selected_ds selected_data_structures rels_assoc_list3 selected_list_assoc1 in

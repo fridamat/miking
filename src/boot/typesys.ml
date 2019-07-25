@@ -386,9 +386,19 @@ let getType t =
 
   let get_seq_fun_type fun_name =
     match Ustring.to_utf8 fun_name with
-    | "length" -> TyGround(NoInfo,GInt)
-    | "append" -> TySeq(TyDyn,-1)
+    | "is_empty" -> TyGround(NoInfo,GBool)
+    | "first" -> TyGround(NoInfo,GInt)
+    | "last" -> TyGround(NoInfo,GInt)
     | "push" -> TySeq(TyDyn,-1)
+    | "pop" -> TySeq(TyDyn,-1)
+    | "length" -> TyGround(NoInfo,GInt)
+    | "nth" -> TyGround(NoInfo,GInt)
+    | "append" -> TySeq(TyDyn,-1)
+    | "reverse" -> TySeq(TyDyn,-1)
+    | "push_last" -> TySeq(TyDyn,-1)
+    | "pop_last" -> TySeq(TyDyn,-1)
+    | "take" -> TySeq(TyDyn,-1)
+    | "drop" -> TySeq(TyDyn,-1)
     | _ -> failwith "We don't have type of this function"
 
 let rec check_types_of_list tm_l seq_ty =

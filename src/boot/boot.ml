@@ -546,11 +546,19 @@ let rec add_evaluated_term_to_args args term =
 
 let get_arg_types_length_dummy fi fun_name =
   match Ustring.to_utf8 fun_name with
-  | "length" -> 0
-  | "append" -> 1
-  | "add" -> 1
-  | "nth" -> 1
+  | "is_empty" -> 0
+  | "first" -> 0
+  | "last" -> 0
   | "push" -> 1
+  | "pop" -> 0
+  | "length" -> 0
+  | "nth" -> 1
+  | "append" -> 1
+  | "reverse" -> 0
+  | "push_last" -> 1
+  | "pop_last" -> 0
+  | "take" -> 1
+  | "drop" -> 1
   | _ -> raise_error fi "Sequence method not implemented."
 
 let get_last_arg_index fun_name =
@@ -568,12 +576,32 @@ let call_length_method ti args =
 
 let call_seq_method ti fun_name actual_fun args =
   match (Ustring.to_utf8 fun_name), actual_fun, args with
-  | "append", SeqListFun1(f), [TmSeq(ti1,seq_ty1,tmlist1,SeqList(l1)); TmSeq(ti2,seq_ty2,tmlist2,SeqList(l2))] ->
-    TmSeq(ti,seq_ty1,tmlist1,SeqList(f l1 l2))
+  | "is_empty", SeqListFun4(f), [TmSeq(ti,seq_ty,tm_list,SeqList(l))] ->
+    TmConst(ti,CBool(f l))
+  | "first", SeqListFun5(f), [TmSeq(ti,seq_ty,tm_list,SeqList(l))] ->
+    f l
+  | "last", SeqListFun5(f), [TmSeq(ti,seq_ty,tm_list,SeqList(l))] ->
+    f l
+  | "push", SeqListFun3(f), [TmSeq(_,seq_ty,tm_l,SeqList(l)); e] (*TODO: Check type of new element*) ->
+    TmSeq(ti,seq_ty,tm_l,SeqList(f l e))
+  | "pop", SeqListFun6(f), [TmSeq(ti,seq_ty,tm_list,SeqList(l))] ->
+    TmSeq(ti,seq_ty,tm_list,SeqList(f l))
   | "length", SeqListFun2(f), [TmSeq(_,_,_,SeqList(l))] ->
     TmConst(ti,CInt(f l))
-  | "push", SeqListFun3(f), [TmSeq(_,seq_ty,_,SeqList(l)); e] (*TODO: Check type of new element*) ->
-    TmSeq(ti,seq_ty,TmList([]),SeqList(f l e))
+  | "nth", SeqListFun7(f), [TmSeq(seq_ti,seq_ty,tm_list,SeqList(l)); TmConst(const_ty,CInt(n))] ->
+    f l n
+  | "append", SeqListFun1(f), [TmSeq(ti1,seq_ty1,tmlist1,SeqList(l1)); TmSeq(ti2,seq_ty2,tmlist2,SeqList(l2))] ->
+    TmSeq(ti,seq_ty1,tmlist1,SeqList(f l1 l2))
+  | "reverse", SeqListFun6(f), [TmSeq(ti,seq_ty,tm_list,SeqList(l))] ->
+    TmSeq(ti,seq_ty,tm_list,SeqList(f l))
+  | "push_last", SeqListFun3(f), [TmSeq(_,seq_ty,tm_l,SeqList(l)); e] (*TODO: Check type of new element*) ->
+    TmSeq(ti,seq_ty,tm_l,SeqList(f l e))
+  | "pop_last", SeqListFun6(f), [TmSeq(ti,seq_ty,tm_list,SeqList(l))] ->
+    TmSeq(ti,seq_ty,tm_list,SeqList(f l))
+  | "take", SeqListFun8(f), [TmSeq(ti,seq_ty,tm_list,SeqList(l)); TmConst(const_ti,CInt(n))] ->
+    TmSeq(ti,seq_ty,tm_list,SeqList(f l n))
+  | "drop", SeqListFun8(f), [TmSeq(ti,seq_ty,tm_list,SeqList(l)); TmConst(const_ti,CInt(n))] ->
+    TmSeq(ti,seq_ty,tm_list,SeqList(f l n))
   | _, SeqFunNone, _ ->
     let str = "No method type has been set" in
     failwith str

@@ -123,6 +123,11 @@ and actual_fun =
   | SeqListFun1 of ((tm Linkedlist.sequence) -> (tm Linkedlist.sequence) -> (tm Linkedlist.sequence))
   | SeqListFun2 of ((tm Linkedlist.sequence) -> int)
   | SeqListFun3 of ((tm Linkedlist.sequence) -> tm -> (tm Linkedlist.sequence))
+  | SeqListFun4 of ((tm Linkedlist.sequence) -> bool)
+  | SeqListFun5 of ((tm Linkedlist.sequence) -> tm)
+  | SeqListFun6 of ((tm Linkedlist.sequence) -> (tm Linkedlist.sequence))
+  | SeqListFun7 of ((tm Linkedlist.sequence) -> int -> tm)
+  | SeqListFun8 of ((tm Linkedlist.sequence) -> int -> (tm Linkedlist.sequence))
   | SeqFunNone
 
 (* Terms / expressions *)

@@ -1,22 +1,49 @@
 lang mcore
 
-let s_len1 = newseq [ int ] ((addi 1 3))
-utest 1 (seqmethod . length s_len1)
+// is_empty
+utest true (seqmethod.is_empty (newseq [int] ()))
+utest false (seqmethod.is_empty (newseq [int] (1)))
 
-utest (newseq [ int ] ((addi 1 3))) (newseq [ int ] (4))
+// first
+utest 1 (seqmethod.first (newseq [int] (1)))
+utest 1 (seqmethod.first (newseq [int] (1,2)))
 
-// Length test 2
-utest 0 (seqmethod . length (newseq [ int ] ()))
+// last
+utest 1 (seqmethod.last (newseq [int] (1)))
+utest 2 (seqmethod.last (newseq [int] (1,2)))
 
-// Length test 3
-utest 0 (let len = seqmethod . length in len (newseq [ int ] ()))
+// push
+utest (newseq [int] (1)) (seqmethod.push (newseq [int] ()) 1)
+utest (newseq [int] (1,2,3)) (seqmethod.push (newseq [int] (2,3)) 1)
 
-// Push test 1
-//utest (newseq [int] (1)) (seqmethod . push (newseq [ int ] ()) 1)
+// pop
+utest (newseq [int] ()) (seqmethod.pop (newseq [int] (1)))
+utest (newseq [int] (1,2,3)) (seqmethod.pop (newseq [int] (0,1,2,3)))
 
-// Nth test 1
-//utest 1 (seqmethod . nth (seqmethod . push (newseq [ int ] ()) 1) 0)
+// length
+utest 0 (seqmethod.length (newseq [int] ()))
+utest 2 (seqmethod.length (newseq [int] (1,2)))
 
-// Map test 1
-// let double = lam x:Int. muli x 2
-// utest (newseq [int] (2,4)) (seqmethod . map (double) (newseq [int] (1,2)))
+// nth
+utest 1 (seqmethod.nth (newseq [int] (1,2,3)) 0)
+utest 2 (seqmethod.nth (newseq [int] (1,2,3)) 1)
+utest 3 (seqmethod.nth (newseq [int] (1,2,3)) 2)
+
+// append
+utest (newseq [int] (1,2,3)) (seqmethod.append (newseq [int] (1)) (newseq [int] (2,3)))
+utest (newseq [int] (1,2,3)) (seqmethod.append (newseq [int] ()) (newseq [int] (1,2,3)))
+
+// reverse
+utest (newseq [int] (3,2,1)) (seqmethod.reverse (newseq [int] (1,2,3)))
+
+// push_last
+utest (newseq [int] (1,2,3)) (seqmethod.push_last (newseq [int] (1,2)) 3)
+
+// pop_last
+utest (newseq [int] (1,2,3)) (seqmethod.pop_last (newseq [int] (1,2,3,4)))
+
+// take
+utest (newseq [int] (1,2)) (seqmethod.take (newseq [int] (1,2,3)) 2)
+
+// drop
+utest (newseq [int] (2,3)) (seqmethod.drop (newseq [int] (1,2,3)) 1)
