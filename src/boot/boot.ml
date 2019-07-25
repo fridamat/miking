@@ -816,6 +816,7 @@ let print_test_res res res_name =
 let eval_test typecheck env t =
   let t' =
     (if typecheck then
+       let _ = Seqprocessing.run_tests in
        Seqprocessing.process_ast t
      else
        t

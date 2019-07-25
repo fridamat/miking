@@ -1,18 +1,23 @@
 open Ast
 open Dssa
 open Linkedlist
+open Ustring.Op
 
-let check_if_seq t =
-  match Typesys.getType t with
-  | TySeq _ -> true
-  | TySeqMethod(_,(TySeq _)) -> true (*seqmethod that returns a sequence*)
-  | TyArrow(_,(TySeq _),_) -> true (*"let x = s" where s is a sequence*)
-  | TyArrow(_,(TySeqMethod(_,(TySeq _))),_) -> true (*"let x = sm" where sm is a sequence method that returns a sequence*)
-  | _ -> false
+let check_if_seq ti =
+  match ti with
+  | {ety} ->
+    (match ety with
+     | Some(TySeq _) -> true
+     | Some(TySeqMethod(_,(TySeq _))) -> true (*seqmethod that returns a sequence*)
+     | Some(TyArrow(_,(TySeq _),_)) -> true (*"let x = s" where s is a sequence*)
+     | Some(TyArrow(_,(TySeqMethod(_,(TySeq _))),_)) -> true (*"let x = sm" where sm is a sequence method that returns a sequence*)
+     | _ -> false
+    )
+  | _ -> failwith "Not implemented"
 
 let find_rels_in_tmapp tm1 tm2 rels =
   (*TODO: Some cases below are duplicates if we don't want to distinguish between input and return types of methods*)
-  match tm1, tm2, (check_if_seq tm1), (check_if_seq tm2), Typesys.getType tm1 with
+  match tm1, tm2, (check_if_seq (Ast.tm_tinfo tm1)), (check_if_seq (Ast.tm_tinfo tm2)), Typesys.getType tm1 with
   | TmLam(lam_ti,_,_,_), TmSeq(seq_ti,_,_,_), true, true, _ (*"let x = new sequence"*) ->
     (*Rel: s1 = s2*)
     let new_rel = (tm1,tm2) in
@@ -68,26 +73,26 @@ let rec find_sequences_in_ast t rels seqs =
     find_sequences_in_ast_list (get_list_from_tm_list tm_l) rels new_seqs
   | TmNop ->
     (rels,seqs)
-  | TmVar _ | TmChar _ | TmSeqMethod _ | TmFix _ | TmConst _ ->
-    if check_if_seq t then
+  | TmVar(ti,_,_,_) | TmChar(ti,_) | TmSeqMethod(ti,_,_,_,_) | TmFix(ti) | TmConst(ti,_) ->
+    if check_if_seq ti then
       (rels,t::seqs)
     else
       (rels,seqs)
-  | TmLam(_,_,_,tm) | TmClos(_,_,_,tm,_,_) ->
+  | TmLam(ti,_,_,tm) | TmClos(ti,_,_,tm,_,_) ->
     let (new_rels,new_seqs) =
-      (if check_if_seq t then
+      (if check_if_seq ti then
          (rels,t::seqs)
        else
          (rels,seqs)
       ) in
     find_sequences_in_ast tm new_rels new_seqs
-  | TmApp(_,tm1,tm2) ->
+  | TmApp(ti,tm1,tm2) ->
     let new_rels1 = find_rels_in_tmapp tm1 tm2 rels in
     let (new_rels2,new_seqs1) = find_sequences_in_ast tm1 new_rels1 seqs in
     find_sequences_in_ast tm2 new_rels2 new_seqs1
-  | TmUtest(_,tm1,tm2,tm3) | TmIfexp(_,tm1,tm2,tm3) ->
+  | TmUtest(ti,tm1,tm2,tm3) | TmIfexp(ti,tm1,tm2,tm3) ->
     let (new_rels1,new_seqs1) =
-      (if check_if_seq t then
+      (if check_if_seq ti then
          (rels,t::seqs)
        else
          (rels,seqs)
@@ -290,14 +295,14 @@ let rec update_ast_with_choices t selected_ds_assoc_list =
   | TmNop ->
     t
   | TmVar(ti,a,b,c) ->
-    if check_if_seq t then
+    if check_if_seq ti then
       let ds_choice = List.assoc t selected_ds_assoc_list in
       let upd_ti = update_ti ti ds_choice in
       TmVar(upd_ti,a,b,c)
     else
       t
   | TmChar(ti,a) ->
-    if check_if_seq t then
+    if check_if_seq ti then
       let ds_choice = List.assoc t selected_ds_assoc_list in
       let upd_ti = update_ti ti ds_choice in
       TmChar(upd_ti,a)
@@ -309,14 +314,14 @@ let rec update_ast_with_choices t selected_ds_assoc_list =
     let upd_actual_fun = get_actual_fun ds_choice fun_name in
     TmSeqMethod(upd_ti,fun_name,upd_actual_fun,c,d)
   | TmFix(ti) ->
-    if check_if_seq t then
+    if check_if_seq ti then
       let ds_choice = List.assoc t selected_ds_assoc_list in
       let upd_ti = update_ti ti ds_choice in
       TmFix(upd_ti)
     else
       t
   | TmConst(ti,a) ->
-    if check_if_seq t then
+    if check_if_seq ti then
       let ds_choice = List.assoc t selected_ds_assoc_list in
       let upd_ti = update_ti ti ds_choice in
       TmConst(upd_ti,a)
@@ -324,7 +329,7 @@ let rec update_ast_with_choices t selected_ds_assoc_list =
       t
   | TmLam(ti,a,b,tm) ->
     let upd_tm = update_ast_with_choices tm selected_ds_assoc_list in
-    if check_if_seq t then
+    if check_if_seq ti then
       let ds_choice = List.assoc t selected_ds_assoc_list in
       let upd_ti = update_ti ti ds_choice in
       TmLam(upd_ti,a,b,upd_tm)
@@ -332,7 +337,7 @@ let rec update_ast_with_choices t selected_ds_assoc_list =
       TmLam(ti,a,b,upd_tm)
   | TmClos(ti,a,b,tm,c,d) ->
     let upd_tm = update_ast_with_choices tm selected_ds_assoc_list in
-    if check_if_seq t then
+    if check_if_seq ti then
       let ds_choice = List.assoc t selected_ds_assoc_list in
       let upd_ti = update_ti ti ds_choice in
       TmClos(upd_ti,a,b,upd_tm,c,d)
@@ -346,7 +351,7 @@ let rec update_ast_with_choices t selected_ds_assoc_list =
        | TmSeqMethod _, TmSeq _ -> true
        | _ -> false
       ) in
-    if res && check_if_seq t then
+    if res && check_if_seq ti then
       let ds_choice = List.assoc t selected_ds_assoc_list in
       let upd_ti = update_ti ti ds_choice in
       TmApp(upd_ti,upd_tm1,upd_tm2)
@@ -356,7 +361,7 @@ let rec update_ast_with_choices t selected_ds_assoc_list =
     let upd_tm1 = update_ast_with_choices tm1 selected_ds_assoc_list in
     let upd_tm2 = update_ast_with_choices tm2 selected_ds_assoc_list in
     let upd_tm3 = update_ast_with_choices tm3 selected_ds_assoc_list in
-    if check_if_seq t then
+    if check_if_seq ti then
       let ds_choice = List.assoc t selected_ds_assoc_list in
       let upd_ti = update_ti ti ds_choice in
       TmUtest(upd_ti,upd_tm1,upd_tm2,upd_tm3)
@@ -366,7 +371,7 @@ let rec update_ast_with_choices t selected_ds_assoc_list =
     let upd_tm1 = update_ast_with_choices tm1 selected_ds_assoc_list in
     let upd_tm2 = update_ast_with_choices tm2 selected_ds_assoc_list in
     let upd_tm3 = update_ast_with_choices tm3 selected_ds_assoc_list in
-    if check_if_seq t then
+    if check_if_seq ti then
       let ds_choice = List.assoc t selected_ds_assoc_list in
       let upd_ti = update_ti ti ds_choice in
       TmIfexp(upd_ti,upd_tm1,upd_tm2,upd_tm3)
@@ -398,3 +403,72 @@ let process_ast t =
   let selected_list_assoc2 = link_seqs_to_selected_ds selected_data_structures rels_assoc_list3 selected_list_assoc1 in
   let t' = update_ast_with_choices t selected_list_assoc2 in
   t'
+
+(*Test section*)
+let print_test_res test_name test_res =
+  if test_res then
+    "Test " ^ test_name ^ " passed!"
+  else
+    "Test " ^ test_name ^ " failed!"
+
+let test_check_if_seq =
+  let ti1 = {ety=Some(TySeq(TyDyn,0));fi=NoInfo} in
+  let test1 = (true = (check_if_seq ti1)) in
+  let ti2 = {ety=Some(TySeqMethod(TyDyn,TySeq(TyDyn,0)));fi=NoInfo} in
+  let test2 = (true = (check_if_seq ti2)) in
+  let ti3 = {ety=Some(TyArrow(NoInfo,TySeq(TyDyn,0),TyDyn));fi=NoInfo} in
+  let test3 = (true = (check_if_seq ti3)) in
+  let ti4 = {ety=Some(TyArrow(NoInfo,TySeqMethod(TyDyn,TySeq(TyDyn,0)),TyDyn));fi=NoInfo} in
+  let test4 = (true = (check_if_seq ti4)) in
+  let _ = Printf.printf "%s\n" (print_test_res "check_if_seq" (test1 && test2 && test3 && test4)) in
+  true
+
+(*
+let find_rels_in_tmapp tm1 tm2 rels =
+  (*TODO: Some cases below are duplicates if we don't want to distinguish between input and return types of methods*)
+  match tm1, tm2, (check_if_seq tm1), (check_if_seq tm2), Typesys.getType tm1 with
+  | TmLam(lam_ti,_,_,_), TmSeq(seq_ti,_,_,_), true, true, _ (*"let x = new sequence"*) ->
+    (*Rel: s1 = s2*)
+    let new_rel = (tm1,tm2) in
+    new_rel::rels
+  | TmLam(lam_ti,_,_,_), TmApp(app_ti,_,_), true, true, _ (*"let x = a1 a2" where application (a1 a2) is of type sequence*) ->
+    (*Rel: s1 = s2*)
+    let new_rel = (tm1,tm2) in
+    new_rel::rels
+  | TmLam(lam_ti,_,_,_), TmVar(var_ti,_,_,_), true, true, _ (*"let x = y" where y is of type sequence*) ->
+    (*Rel: s1 = s2*)
+    let new_rel = (tm1,tm2) in
+    new_rel::rels
+  | TmVar(var_ti,_,_,_), TmSeq(seq_ti,_,_,_), _, true, TySeqMethod(TySeq(_,_),_) (*"var sequence" where var is a seqmethod and the sequence is the first sequence argument to the method and hence the sequence decides the method's sequence INPUT - and maybe RETURN - type*) ->
+    let new_rel = (tm1,tm2) in
+    new_rel::rels
+  | TmSeqMethod(seqm_ti,_,_,_,_), TmSeq(seq_ti,_,_,_), _, true, TySeqMethod(_,TySeq _) (*"seqmethod sequence" where the sequence is the first sequence argument to the method and hence the sequence decides the method's sequence INPUT and RETURN type*) ->
+    (*Rel: return and input type of s1 = s2*)
+    let new_rel = (tm1,tm2) in
+    new_rel::rels
+  | TmSeqMethod(seqm_ti,_,_,_,_), _, _, true, TySeqMethod(_,TySeq _) (*"seqmethod a" where a is the first argument of type sequence to the method and hence a decides the method's sequence INPUT and RETURN type*) ->
+    (*Rel: return and input type of s1 = s2*)
+    let new_rel = (tm1,tm2) in
+    new_rel::rels
+  | TmSeqMethod(seqm_ti,_,_,_,_), TmSeq(seq_ti,_,_,_), _, true, TySeqMethod _ (*"seqmethod sequence" where the sequence is the first sequence argument to the method and hence the sequence decides the method's sequence INPUT type, but not the return type since the return type of the method is not a sequence*) ->
+    (*Rel: input type of s1 = s2*)
+    let new_rel = (tm1,tm2) in
+    new_rel::rels
+  | TmSeqMethod(seqm_ti,_,_,_,_), _, _, true, TySeqMethod _ (*"seqmethod a" where a is the first argument of type sequence to the method and hence a decides the method's sequence INPUT type, but not the return type since the return type of the method is not a sequence*) ->
+    (*Rel: input type of s1 = s2*)
+    let new_rel = (tm1,tm2) in
+    new_rel::rels
+  | TmApp(app_ti,_,_), TmSeq(seq_ti,_,_,_), _, true, TySeqMethod _ (*"a1 sequence" where a1 is of type sequence method and sequence is an argument (but not the first) to it. The method will already have the sequence type set from its first argument, so its sequence type will decide the sequence type of the sequence.*) ->
+    (*Rel: s2 = input type of s1*)
+    let new_rel = (tm2,tm1) in
+    new_rel::rels
+  | TmApp(app_ti,_,_), _, _, true, TySeqMethod _ (*"a1 a2" where a1 is of type sequence method and a2 is of type sequence. The method will already have the sequence type set from its first argument, so its sequence type will decide the sequence type of a2.*) ->
+    (*Rel: s2 = input type of s1*)
+    let new_rel = (tm2,tm1) in
+    new_rel::rels
+  | _ -> rels
+*)
+
+let run_tests =
+  let _ = test_check_if_seq in
+  true
