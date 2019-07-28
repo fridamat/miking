@@ -159,6 +159,17 @@ and pprint_const c =
       (if List.length tms = 0 then us""
        else us"(" ^. Ustring.concat (us",") (List.map (pprint true) tms) ^. us")")
 
+and pprint_ti ti =
+  match ti with
+  | {ety;fi} ->
+    (match ety with
+     | Some(ty) ->
+       us"{ety=" ^. (pprint_ty ty) ^. us", fi=" ^. (Msg.info2str fi) ^. us"}"
+     | _ ->
+       us"{ety=unknown, fi=" ^. (Msg.info2str fi) ^. us"}"
+    )
+  | _ -> failwith "Unknown case"
+
 
 (* Pretty print a term. The boolean parameter 'basic' is true when
    the pretty printing should be done in basic form. Use e.g. Set(1,2) instead of {1,2} *)
@@ -173,7 +184,7 @@ and pprint basic t =
     | SeqList(s) ->
       let s_string = pprint_linkedlist s 0 in
       s_string
-    | _ -> us"") in
+    | _ -> us"[]") in
   let rec pprint_tm_list tm_l =
     (match tm_l with
      | TmList([]) -> us""
@@ -182,22 +193,24 @@ and pprint basic t =
   let rec ppt inside t =
   match t with
   | TmVar(_,x,n,_) -> varDebugPrint x n
-  | TmLam(_,x,ty,t1) -> left inside ^.
-      us"lam " ^. x ^. us":" ^. pprint_ty ty ^. us". " ^. ppt false t1 ^. right inside
+  | TmLam(ti,x,ty,t1) ->
+    us"Tmlam(" ^. (pprint_ti ti) ^. us", " ^. x ^. us", " ^. (pprint_ty ty) ^. us", " ^. (pprint false t1) ^. us")"
   | TmClos(_,x,_,t,_,false) -> left inside ^. us"clos " ^. x ^. us". " ^.
        ppt false t ^. right inside
   | TmClos(_,x,_,t,_,true) -> left inside ^. us"peclos " ^.
        x ^. us". " ^. ppt false t ^. right inside
-  | TmApp(_,t1,t2) ->
-    us"TmApp(" ^. left inside ^. ppt true t1  ^. us", " ^. ppt true t2 ^. right inside ^. us")"
-  | TmConst(_,c) -> pprint_const c
+  | TmApp(ti,t1,t2) ->
+    us"TmApp(" ^. (pprint_ti ti) ^. us", " ^. (pprint false t1) ^. us", " ^. (pprint false t2) ^. us")"
+  | TmConst(ti,c) ->
+    us"TmConst(" ^. (pprint_ti ti) ^. us", " ^. (pprint_const c) ^. us")"
   | TmFix(_) -> us"fix"
   | TmTyLam(_,x,kind,t1) -> left inside ^. us"Lam " ^. x ^. us"::"
       ^. pprint_kind kind ^. us". " ^. ppt false t1  ^. us"" ^. right inside
   | TmTyApp(_,t1,ty1) ->
       left inside ^. ppt false t1 ^. us" [" ^. pprint_ty ty1 ^. us"]" ^. right inside
   | TmIfexp(_,c,t,e) -> us"if " ^. ppt false c ^. us" then " ^. ppt false t ^. us" else " ^. ppt false e
-  | TmSeq(fi,ty_ident,clist,tmseq) -> us"TmSeq(" ^. (pprint_tm_list clist) ^. us")" (*TODO:Print the selected data structure type ty*) (*TODO:Print the selected data structure type ty*)
+  | TmSeq(ti,ty_ident,tm_list,tm_seq) ->
+    us"TmSeq(" ^. (pprint_ti ti) ^. us", " ^. ty_ident ^. us", " ^. (pprint_tm_list tm_list) ^. us", [])"
   | TmSeqMethod(fi,fun_name,actual_fun,args,arg_index) -> us"Seq." ^. fun_name ^. us"()" (*TODO:Print the selected data structure type ty and the arguments?*)
   | TmChar(fi,c) -> us"'" ^. list2ustring [c] ^. us"'"
   | TmUC(fi,uct,ordered,uniqueness) -> (
@@ -256,7 +269,7 @@ and pprint_ty ty =
   | TyApp(fi,ty1,ty2) ->
     left inside ^. ppt true ty1 ^. us" " ^. ppt true ty2 ^. right inside
   | TyDyn -> us"Dyn"
-  | TySeq(seq_ty,id) -> us"TySeq:" ^. (pprint_ty seq_ty)
+  | TySeq(seq_ty,id) -> us"TySeq(" ^. (pprint_ty seq_ty) ^. us",0)"
   | TySeqMethod(i_ty,r_ty) -> us"TySeqMethod:(input:" ^. (pprint_ty i_ty) ^. us"; output:" ^. (pprint_ty r_ty) ^. us")"
   in
     ppt true ty
