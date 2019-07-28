@@ -60,6 +60,16 @@ let find_rels_in_tmapp tm1 tm2 rels =
   | _ ->
     rels
 
+let print_seq_ty ti =
+  match ti with
+  | {ety} ->
+    (match ety with
+     | Some(TySeq(seq_ty,_)) ->
+       let _ = Printf.printf "The sequence's element type is: %s\n" (Ustring.to_utf8 (Pprint.pprint_ty seq_ty)) in
+       true
+     | _ -> false)
+  | _ -> false
+
 let rec find_sequences_in_ast t rels seqs =
   let rec find_sequences_in_ast_list l l_rels l_seqs =
     (match l with

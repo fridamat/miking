@@ -115,6 +115,7 @@ let tyequal ty1 ty2 =
       tyrec seq_ty1 seq_ty2
     | TySeq(seq_ty,_), TySeqMethod(i_ty,r_ty) ->
       tyrec ty1 r_ty
+    | TySeqMethod(_,TyDyn), b | b, TySeqMethod(_,TyDyn) -> true
     | TySeqMethod(i_ty1,r_ty1),TySeqMethod(i_ty2,r_ty2) ->
       tyrec r_ty1 r_ty2 (*TODO: Check input type as well?*)
     | TySeqMethod(i_ty,r_ty),b ->
@@ -392,7 +393,7 @@ let getType t =
     | "push" -> TySeq(TyDyn,-1)
     | "pop" -> TySeq(TyDyn,-1)
     | "length" -> TyGround(NoInfo,GInt)
-    | "nth" -> TyGround(NoInfo,GInt)
+    | "nth" -> TyDyn
     | "append" -> TySeq(TyDyn,-1)
     | "reverse" -> TySeq(TyDyn,-1)
     | "push_last" -> TySeq(TyDyn,-1)
@@ -409,12 +410,12 @@ let rec check_types_of_list tm_l seq_ty =
       let res = check_types_of_list tl seq_ty in
       res
     else
-      false
+      failwith "One of the elements in the list has the wrong type" (*TODO: raise instead?*)
 
 let get_element_ty fi seq_ty =
   match (Ustring.to_utf8 seq_ty) with
   | "int" -> TyGround(NoInfo,GInt)
-  | _ -> failwith "Element type not allowed"
+  | _ -> failwith "Element type not allowed yet"
 
 (* Bidirectional type checking where type variable application is not needed.
    Main idea: propagate both types and type environment (filled will
@@ -517,7 +518,8 @@ let rec tc env ty t =
   | TmSeq(ti,seq_ty,tmlist,tmseq) ->
     let updated_tmlist = tc_list (Ast.get_list_from_tm_list tmlist) in
     let e_ty = get_element_ty (tm_info t) seq_ty in
-    let _ = check_types_of_list updated_tmlist e_ty in setType (TySeq(e_ty,-1)) (TmSeq(ti,seq_ty,TmList(updated_tmlist),tmseq))
+    let _ = check_types_of_list updated_tmlist e_ty in
+    setType (TySeq(e_ty,-1)) (TmSeq(ti,seq_ty,TmList(updated_tmlist),tmseq))
   | TmSeqMethod(ti,fun_name,actual_fun,args,arg_index) ->
     let updated_args = tc_list args in
     let new_seqmethod = setType (TySeqMethod(TySeq(TyDyn,-1),get_seq_fun_type fun_name)) (TmSeqMethod(ti,fun_name,actual_fun,updated_args,arg_index)) in

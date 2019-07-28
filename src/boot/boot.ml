@@ -574,6 +574,22 @@ let call_length_method ti args =
      | _ -> raise_error ti.fi "No such data structure type.")
   | _ -> raise_error ti.fi "Sequence method not implemented."
 
+(*author: Alfrida*)
+let check_element_type t1 t2 =
+  let res =
+    (match (Typesys.getType t1), (Typesys.getType t2) with
+     | TySeq(el_ty1,_), TySeq(el_ty2,_) ->
+       Typesys.tyequal el_ty1 el_ty2
+     | TySeq(el_ty1,_), el_ty2 ->
+       Typesys.tyequal el_ty1 el_ty2
+     | el_ty1, TySeq(el_ty2,_) ->
+       Typesys.tyequal el_ty1 el_ty2
+     | _ -> failwith "Expected a comparison with a sequence") in
+  if res then
+    true
+  else
+    failwith "Element types have to be the same"
+
 let call_seq_method ti fun_name actual_fun args =
   match (Ustring.to_utf8 fun_name), actual_fun, args with
   | "is_empty", SeqListFun4(f), [TmSeq(ti,seq_ty,tm_list,SeqList(l))] ->
@@ -582,7 +598,8 @@ let call_seq_method ti fun_name actual_fun args =
     f l
   | "last", SeqListFun5(f), [TmSeq(ti,seq_ty,tm_list,SeqList(l))] ->
     f l
-  | "push", SeqListFun3(f), [TmSeq(_,seq_ty,tm_l,SeqList(l)); e] (*TODO: Check type of new element*) ->
+  | "push", SeqListFun3(f), [TmSeq(seq_ti,seq_ty,tm_l,SeqList(l)); e] ->
+    let _ = check_element_type (TmSeq(seq_ti,seq_ty,tm_l,SeqList(l))) e in
     TmSeq(ti,seq_ty,tm_l,SeqList(f l e))
   | "pop", SeqListFun6(f), [TmSeq(ti,seq_ty,tm_list,SeqList(l))] ->
     TmSeq(ti,seq_ty,tm_list,SeqList(f l))
@@ -591,10 +608,12 @@ let call_seq_method ti fun_name actual_fun args =
   | "nth", SeqListFun7(f), [TmSeq(seq_ti,seq_ty,tm_list,SeqList(l)); TmConst(const_ty,CInt(n))] ->
     f l n
   | "append", SeqListFun1(f), [TmSeq(ti1,seq_ty1,tmlist1,SeqList(l1)); TmSeq(ti2,seq_ty2,tmlist2,SeqList(l2))] ->
+    let _ = check_element_type (TmSeq(ti1,seq_ty1,tmlist1,SeqList(l1))) (TmSeq(ti2,seq_ty2,tmlist2,SeqList(l2))) in
     TmSeq(ti,seq_ty1,tmlist1,SeqList(f l1 l2))
   | "reverse", SeqListFun6(f), [TmSeq(ti,seq_ty,tm_list,SeqList(l))] ->
     TmSeq(ti,seq_ty,tm_list,SeqList(f l))
-  | "push_last", SeqListFun3(f), [TmSeq(_,seq_ty,tm_l,SeqList(l)); e] (*TODO: Check type of new element*) ->
+  | "push_last", SeqListFun3(f), [TmSeq(seq_ti,seq_ty,tm_l,SeqList(l)); e] ->
+    let _ = check_element_type (TmSeq(seq_ti,seq_ty,tm_l,SeqList(l))) e in
     TmSeq(ti,seq_ty,tm_l,SeqList(f l e))
   | "pop_last", SeqListFun6(f), [TmSeq(ti,seq_ty,tm_list,SeqList(l))] ->
     TmSeq(ti,seq_ty,tm_list,SeqList(f l))
