@@ -110,7 +110,7 @@ and args = tm list
 and ds_choice = int
 and fun_name = ustring
 and ty_id = int
-and seq_ty = ustring
+and ty_ident = ustring
 
 and tm_list =
   | TmList   of tm list
@@ -143,7 +143,7 @@ and tm =
 | TmTyApp       of tinfo * tm * ty                   (* Type application *)
 (*TODO: Add ability to create a new seq with a list of elements, that is add '* tm list option' or reference to CList*)
 (*TODO: Make ds_choice:s below optional*)
-| TmSeq         of tinfo * seq_ty * tm_list * sequence              (* Sequence constructor *)
+| TmSeq         of tinfo * ty_ident * tm_list * sequence              (* Sequence constructor *)
 | TmSeqMethod   of tinfo * fun_name * actual_fun * args * arg_index (* Sequence method *)
 
 

@@ -105,7 +105,7 @@ let rec debruijn env t =
   | TmTyLam(ti,x,kind,t1) -> TmTyLam(ti,x,kind,debruijn (VarTy(x)::env) t1)
   | TmTyApp(ti,t1,ty1) -> TmTyApp(ti,debruijn env t1, debruijnTy env ty1)
   | TmIfexp(ti,cnd,thn,els) -> TmIfexp(ti, debruijn env cnd, debruijn env thn, debruijn env els)
-  | TmSeq(ti,seq_ty,clist,cseq) -> TmSeq(ti,seq_ty,TmList(debruijn_list env (get_list_from_tm_list clist)),cseq)
+  | TmSeq(ti,ty_ident,clist,cseq) -> TmSeq(ti,ty_ident,TmList(debruijn_list env (get_list_from_tm_list clist)),cseq)
   | TmSeqMethod(ti,fun_name,actual_fun,args,arg_index) ->
     TmSeqMethod(ti,fun_name,actual_fun,(debruijn_list env args),arg_index)
   | TmChar(_,_) -> t
@@ -565,15 +565,6 @@ let get_last_arg_index fun_name =
   (*TODO: Check length of arg types in sequence function table*)
   get_arg_types_length_dummy fun_name
 
-let call_length_method ti args =
-  match args with
-  | [TmSeq(ti,seq_ty,clist,cseq)] ->
-    (match cseq with
-     | SeqList(ll) ->
-       TmConst(ti,CInt(Linkedlist.length ll))
-     | _ -> raise_error ti.fi "No such data structure type.")
-  | _ -> raise_error ti.fi "Sequence method not implemented."
-
 (*author: Alfrida*)
 let check_element_type t1 t2 =
   let res =
@@ -592,35 +583,35 @@ let check_element_type t1 t2 =
 
 let call_seq_method ti fun_name actual_fun args =
   match (Ustring.to_utf8 fun_name), actual_fun, args with
-  | "is_empty", SeqListFun4(f), [TmSeq(ti,seq_ty,tm_list,SeqList(l))] ->
+  | "is_empty", SeqListFun4(f), [TmSeq(ti,ty_ident,tm_list,SeqList(l))] ->
     TmConst(ti,CBool(f l))
-  | "first", SeqListFun5(f), [TmSeq(ti,seq_ty,tm_list,SeqList(l))] ->
+  | "first", SeqListFun5(f), [TmSeq(ti,ty_ident,tm_list,SeqList(l))] ->
     f l
-  | "last", SeqListFun5(f), [TmSeq(ti,seq_ty,tm_list,SeqList(l))] ->
+  | "last", SeqListFun5(f), [TmSeq(ti,ty_ident,tm_list,SeqList(l))] ->
     f l
-  | "push", SeqListFun3(f), [TmSeq(seq_ti,seq_ty,tm_l,SeqList(l)); e] ->
-    let _ = check_element_type (TmSeq(seq_ti,seq_ty,tm_l,SeqList(l))) e in
-    TmSeq(ti,seq_ty,tm_l,SeqList(f l e))
-  | "pop", SeqListFun6(f), [TmSeq(ti,seq_ty,tm_list,SeqList(l))] ->
-    TmSeq(ti,seq_ty,tm_list,SeqList(f l))
+  | "push", SeqListFun3(f), [TmSeq(seq_ti,ty_ident,tm_l,SeqList(l)); e] ->
+    let _ = check_element_type (TmSeq(seq_ti,ty_ident,tm_l,SeqList(l))) e in
+    TmSeq(ti,ty_ident,tm_l,SeqList(f l e))
+  | "pop", SeqListFun6(f), [TmSeq(ti,ty_ident,tm_list,SeqList(l))] ->
+    TmSeq(ti,ty_ident,tm_list,SeqList(f l))
   | "length", SeqListFun2(f), [TmSeq(_,_,_,SeqList(l))] ->
     TmConst(ti,CInt(f l))
-  | "nth", SeqListFun7(f), [TmSeq(seq_ti,seq_ty,tm_list,SeqList(l)); TmConst(const_ty,CInt(n))] ->
+  | "nth", SeqListFun7(f), [TmSeq(seq_ti,ty_ident,tm_list,SeqList(l)); TmConst(const_ty,CInt(n))] ->
     f l n
-  | "append", SeqListFun1(f), [TmSeq(ti1,seq_ty1,tmlist1,SeqList(l1)); TmSeq(ti2,seq_ty2,tmlist2,SeqList(l2))] ->
-    let _ = check_element_type (TmSeq(ti1,seq_ty1,tmlist1,SeqList(l1))) (TmSeq(ti2,seq_ty2,tmlist2,SeqList(l2))) in
-    TmSeq(ti,seq_ty1,tmlist1,SeqList(f l1 l2))
-  | "reverse", SeqListFun6(f), [TmSeq(ti,seq_ty,tm_list,SeqList(l))] ->
-    TmSeq(ti,seq_ty,tm_list,SeqList(f l))
-  | "push_last", SeqListFun3(f), [TmSeq(seq_ti,seq_ty,tm_l,SeqList(l)); e] ->
-    let _ = check_element_type (TmSeq(seq_ti,seq_ty,tm_l,SeqList(l))) e in
-    TmSeq(ti,seq_ty,tm_l,SeqList(f l e))
-  | "pop_last", SeqListFun6(f), [TmSeq(ti,seq_ty,tm_list,SeqList(l))] ->
-    TmSeq(ti,seq_ty,tm_list,SeqList(f l))
-  | "take", SeqListFun8(f), [TmSeq(ti,seq_ty,tm_list,SeqList(l)); TmConst(const_ti,CInt(n))] ->
-    TmSeq(ti,seq_ty,tm_list,SeqList(f l n))
-  | "drop", SeqListFun8(f), [TmSeq(ti,seq_ty,tm_list,SeqList(l)); TmConst(const_ti,CInt(n))] ->
-    TmSeq(ti,seq_ty,tm_list,SeqList(f l n))
+  | "append", SeqListFun1(f), [TmSeq(ti1,ty_ident1,tmlist1,SeqList(l1)); TmSeq(ti2,ty_ident2,tmlist2,SeqList(l2))] ->
+    let _ = check_element_type (TmSeq(ti1,ty_ident1,tmlist1,SeqList(l1))) (TmSeq(ti2,ty_ident2,tmlist2,SeqList(l2))) in
+    TmSeq(ti,ty_ident1,tmlist1,SeqList(f l1 l2))
+  | "reverse", SeqListFun6(f), [TmSeq(ti,ty_ident,tm_list,SeqList(l))] ->
+    TmSeq(ti,ty_ident,tm_list,SeqList(f l))
+  | "push_last", SeqListFun3(f), [TmSeq(seq_ti,ty_ident,tm_l,SeqList(l)); e] ->
+    let _ = check_element_type (TmSeq(seq_ti,ty_ident,tm_l,SeqList(l))) e in
+    TmSeq(ti,ty_ident,tm_l,SeqList(f l e))
+  | "pop_last", SeqListFun6(f), [TmSeq(ti,ty_ident,tm_list,SeqList(l))] ->
+    TmSeq(ti,ty_ident,tm_list,SeqList(f l))
+  | "take", SeqListFun8(f), [TmSeq(ti,ty_ident,tm_list,SeqList(l)); TmConst(const_ti,CInt(n))] ->
+    TmSeq(ti,ty_ident,tm_list,SeqList(f l n))
+  | "drop", SeqListFun8(f), [TmSeq(ti,ty_ident,tm_list,SeqList(l)); TmConst(const_ti,CInt(n))] ->
+    TmSeq(ti,ty_ident,tm_list,SeqList(f l n))
   | _, SeqFunNone, _ ->
     let str = "No method type has been set" in
     failwith str
@@ -709,12 +700,12 @@ let rec eval env t =
          eval env els
      | _ -> raise_error ti.fi "Condition in if-expression not a bool.")
   (* Sequence constructor *)
-  | TmSeq(fi,seq_ty,tmlist,tmseq) ->
+  | TmSeq(fi,ty_ident,tmlist,tmseq) ->
     (match tmseq with
     | SeqNone ->
       let new_tmlist = TmList(eval_tmlist env tmlist) in
       let new_tmseq = get_seq_from_list new_tmlist tmseq in
-      TmSeq(fi,seq_ty,new_tmlist,new_tmseq)
+      TmSeq(fi,ty_ident,new_tmlist,new_tmseq)
     | _ -> t)
   (* Sequence method*)
   | TmSeqMethod(_,_,_,_,_) -> t

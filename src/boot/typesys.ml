@@ -352,7 +352,7 @@ let setType ty = function
   | TmFix(ti) -> TmFix({ti with ety = Some ty})
   | TmTyLam(ti,x,kind,t1) -> TmTyLam({ti with ety = Some ty},x,kind,t1)
   | TmTyApp(ti,t1,ty2) -> TmTyApp({ti with ety = Some ty},t1,ty2)
-  | TmSeq(ti,seq_ty,tmlist,tmseq) -> TmSeq({ti with ety = Some ty},seq_ty,tmlist,tmseq)
+  | TmSeq(ti,ty_ident,tmlist,tmseq) -> TmSeq({ti with ety = Some ty},ty_ident,tmlist,tmseq)
   | TmSeqMethod(ti,fun_name,actual_fun,args,arg_index) ->
     TmSeqMethod({ti with ety = Some ty},fun_name,actual_fun,args,arg_index)
   | TmChar(ti,x) -> TmChar({ti with ety = Some ty},x)
@@ -412,8 +412,8 @@ let rec check_types_of_list tm_l seq_ty =
     else
       failwith "One of the elements in the list has the wrong type" (*TODO: raise instead?*)
 
-let get_element_ty fi seq_ty =
-  match (Ustring.to_utf8 seq_ty) with
+let get_element_ty fi ty_ident =
+  match (Ustring.to_utf8 ty_ident) with
   | "int" -> TyGround(NoInfo,GInt)
   | _ -> failwith "Element type not allowed yet"
 
@@ -515,11 +515,11 @@ let rec tc env ty t =
                   else errorKindMismatch  (ty_info ty2) ki11 ki12 in
       setType resTy (TmTyApp(ti,t1',ty2))
     | ty -> errorExpectsUniversal (tm_info t1) ty)
-  | TmSeq(ti,seq_ty,tmlist,tmseq) ->
+  | TmSeq(ti,ty_ident,tmlist,tmseq) ->
     let updated_tmlist = tc_list (Ast.get_list_from_tm_list tmlist) in
-    let e_ty = get_element_ty (tm_info t) seq_ty in
+    let e_ty = get_element_ty (tm_info t) ty_ident in
     let _ = check_types_of_list updated_tmlist e_ty in
-    setType (TySeq(e_ty,-1)) (TmSeq(ti,seq_ty,TmList(updated_tmlist),tmseq))
+    setType (TySeq(e_ty,-1)) (TmSeq(ti,ty_ident,TmList(updated_tmlist),tmseq))
   | TmSeqMethod(ti,fun_name,actual_fun,args,arg_index) ->
     let updated_args = tc_list args in
     let new_seqmethod = setType (TySeqMethod(TySeq(TyDyn,-1),get_seq_fun_type fun_name)) (TmSeqMethod(ti,fun_name,actual_fun,updated_args,arg_index)) in

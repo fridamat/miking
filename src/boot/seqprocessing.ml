@@ -79,7 +79,7 @@ let rec find_sequences_in_ast t rels seqs =
        find_sequences_in_ast_list tl new_l_rels new_l_seqs
     ) in
   match t with
-  | TmSeq(ti,seq_ty,tm_l,tm_seq) ->
+  | TmSeq(ti,ty_ident,tm_l,tm_seq) ->
     let new_seqs = t::seqs in
     find_sequences_in_ast_list (get_list_from_tm_list tm_l) rels new_seqs
   | TmNop ->
@@ -320,11 +320,11 @@ let rec update_ast_with_choices t selected_ds_assoc_list =
        update_ast_list_with_choices tl l_selected_ds_assoc_list
     ) in
   match t with
-  | TmSeq(ti,seq_ty,tm_l,tm_seq) ->
+  | TmSeq(ti,ty_ident,tm_l,tm_seq) ->
     let upd_tm_l = update_ast_list_with_choices (get_list_from_tm_list tm_l) selected_ds_assoc_list in
     let ds_choice = List.assoc t selected_ds_assoc_list in
     let upd_ti = update_ti ti ds_choice in
-    TmSeq(upd_ti,seq_ty,TmList(upd_tm_l),tm_seq)
+    TmSeq(upd_ti,ty_ident,TmList(upd_tm_l),tm_seq)
   | TmNop ->
     t
   | TmVar(ti,a,b,c) ->
