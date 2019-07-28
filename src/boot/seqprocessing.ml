@@ -16,7 +16,7 @@ let check_if_seq ti =
   | _ -> failwith "Not implemented"
 
 let find_rels_in_tmapp tm1 tm2 rels =
-  (*TODO: Some cases below are duplicates if we don't want to distinguish between input and return types of methods*)
+  (*!TODO: Some cases below are duplicates if we don't want to distinguish between input and return types of methods*)
   match tm1, tm2, (check_if_seq (Ast.tm_tinfo tm1)), (check_if_seq (Ast.tm_tinfo tm2)), Typesys.getType tm1 with
   | TmLam(lam_ti,_,_,_), TmSeq(seq_ti,_,_,_), true, true, _ (*"let x = new sequence"*) ->
     (*Rel: s1 = s2*)
@@ -182,7 +182,7 @@ let rec init_seqmethod_assoc_list_helper fun_names =
     (hd,0)::(init_seqmethod_assoc_list_helper tl)
 
 let get_fun_names =
-(*TODO: Collect this from file*)
+(*!TODO: Collect this from file*)
   ["is_empty";
    "first";
    "last";
@@ -273,7 +273,7 @@ let update_ti ti ds_choice =
     (match ti with
      | {ety} ->
        (match ety with
-        | Some(TySeq(ty,ds_choice1)) (*TODO: dschoice in ty?*) ->
+        | Some(TySeq(ty,ds_choice1)) (*!TODO: dschoice in ty?*) ->
           Some(TySeq(ty,ds_choice))
         | Some(TySeqMethod(TySeq(ty1,ds_choice1),TySeq(ty2,ds_choice2))) ->
           Some(TySeqMethod(TySeq(ty1,ds_choice),TySeq(ty2,ds_choice)))
@@ -434,9 +434,9 @@ let process_ast t =
   let mf_matrix1 = get_sequence_method_counts rels_assoc_list3 in
   (*Translate mf matrix with counts to frequencies*)
   let mf_matrix2 = Frequencies.translate_mf_assoc_list mf_matrix1 get_fun_names in
-  (*TODO: Keep track of order of sequences*)
+  (*!TODO: Keep track of order of sequences*)
   (*Call algorithm*)
-  (*TODO:let selected_data_structures = Dssa.main mf_matrix2 in*)
+  (*!TODO:let selected_data_structures = Dssa.main mf_matrix2 in*)
   let selected_data_structures = build_fake_selected_ds (List.length mf_matrix2) in
   (*Init assoc list for selected data structures*)
   let selected_list_assoc1 = init_selected_list_assoc rels_assoc_list2 in
@@ -462,52 +462,6 @@ let test_check_if_seq =
   let test4 = (true = (check_if_seq ti4)) in
   let _ = Printf.printf "%s\n" (print_test_res "check_if_seq" (test1 && test2 && test3 && test4)) in
   true
-
-(*
-let find_rels_in_tmapp tm1 tm2 rels =
-  (*TODO: Some cases below are duplicates if we don't want to distinguish between input and return types of methods*)
-  match tm1, tm2, (check_if_seq tm1), (check_if_seq tm2), Typesys.getType tm1 with
-  | TmLam(lam_ti,_,_,_), TmSeq(seq_ti,_,_,_), true, true, _ (*"let x = new sequence"*) ->
-    (*Rel: s1 = s2*)
-    let new_rel = (tm1,tm2) in
-    new_rel::rels
-  | TmLam(lam_ti,_,_,_), TmApp(app_ti,_,_), true, true, _ (*"let x = a1 a2" where application (a1 a2) is of type sequence*) ->
-    (*Rel: s1 = s2*)
-    let new_rel = (tm1,tm2) in
-    new_rel::rels
-  | TmLam(lam_ti,_,_,_), TmVar(var_ti,_,_,_), true, true, _ (*"let x = y" where y is of type sequence*) ->
-    (*Rel: s1 = s2*)
-    let new_rel = (tm1,tm2) in
-    new_rel::rels
-  | TmVar(var_ti,_,_,_), TmSeq(seq_ti,_,_,_), _, true, TySeqMethod(TySeq(_,_),_) (*"var sequence" where var is a seqmethod and the sequence is the first sequence argument to the method and hence the sequence decides the method's sequence INPUT - and maybe RETURN - type*) ->
-    let new_rel = (tm1,tm2) in
-    new_rel::rels
-  | TmSeqMethod(seqm_ti,_,_,_,_), TmSeq(seq_ti,_,_,_), _, true, TySeqMethod(_,TySeq _) (*"seqmethod sequence" where the sequence is the first sequence argument to the method and hence the sequence decides the method's sequence INPUT and RETURN type*) ->
-    (*Rel: return and input type of s1 = s2*)
-    let new_rel = (tm1,tm2) in
-    new_rel::rels
-  | TmSeqMethod(seqm_ti,_,_,_,_), _, _, true, TySeqMethod(_,TySeq _) (*"seqmethod a" where a is the first argument of type sequence to the method and hence a decides the method's sequence INPUT and RETURN type*) ->
-    (*Rel: return and input type of s1 = s2*)
-    let new_rel = (tm1,tm2) in
-    new_rel::rels
-  | TmSeqMethod(seqm_ti,_,_,_,_), TmSeq(seq_ti,_,_,_), _, true, TySeqMethod _ (*"seqmethod sequence" where the sequence is the first sequence argument to the method and hence the sequence decides the method's sequence INPUT type, but not the return type since the return type of the method is not a sequence*) ->
-    (*Rel: input type of s1 = s2*)
-    let new_rel = (tm1,tm2) in
-    new_rel::rels
-  | TmSeqMethod(seqm_ti,_,_,_,_), _, _, true, TySeqMethod _ (*"seqmethod a" where a is the first argument of type sequence to the method and hence a decides the method's sequence INPUT type, but not the return type since the return type of the method is not a sequence*) ->
-    (*Rel: input type of s1 = s2*)
-    let new_rel = (tm1,tm2) in
-    new_rel::rels
-  | TmApp(app_ti,_,_), TmSeq(seq_ti,_,_,_), _, true, TySeqMethod _ (*"a1 sequence" where a1 is of type sequence method and sequence is an argument (but not the first) to it. The method will already have the sequence type set from its first argument, so its sequence type will decide the sequence type of the sequence.*) ->
-    (*Rel: s2 = input type of s1*)
-    let new_rel = (tm2,tm1) in
-    new_rel::rels
-  | TmApp(app_ti,_,_), _, _, true, TySeqMethod _ (*"a1 a2" where a1 is of type sequence method and a2 is of type sequence. The method will already have the sequence type set from its first argument, so its sequence type will decide the sequence type of a2.*) ->
-    (*Rel: s2 = input type of s1*)
-    let new_rel = (tm2,tm1) in
-    new_rel::rels
-  | _ -> rels
-*)
 
 let run_tests =
   let _ = test_check_if_seq in

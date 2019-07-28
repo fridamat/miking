@@ -35,11 +35,11 @@
       | TmTyLam(fi,x,k,t1) -> hasx t1
       | TmTyApp(fi,t1,ty1) -> hasx t1
       | TmIfexp(fi,cnd,thn,els) -> hasx cnd || hasx thn || hasx els
-      | TmSeq(_,_,_,_) -> false (*TODO: Change if sequence can contain terms*)
-      | TmSeqMethod(fi,fun_name,actual_fun,args,arg_index) ->
-      (match args with
-        | [] -> false
-        | hd::tl -> hasx hd || hasx (TmSeqMethod(fi,fun_name,actual_fun,tl,arg_index)))
+      | TmSeq(ti,ty_ident,tm_list,tm_seq) ->
+        (match get_list_from_tm_list tm_list with
+          | [] -> false
+          | hd::tl -> hasx hd || hasx (TmSeq(ti,ty_ident,tm_list,tm_seq)))
+      | TmSeqMethod(fi,fun_name,actual_fun,args,arg_index) -> false
       | TmChar(_,_) -> false
       | TmUC(fi,uct,ordered,uniqueness) ->
           let rec work uc = match uc with
@@ -50,7 +50,6 @@
       | TmMatch(fi,t1,cases) ->
           List.exists (fun (Case(_,_,t)) -> hasx t) cases
       | TmNop -> false
-      (*TODO: Add sequence declaration and method call*)
     in
     if hasx t then
       TmApp({ety = None; fi = NoInfo},
@@ -65,7 +64,7 @@ let mkopkind fi op =
   | None -> KindStar(fi)
   | Some(k) -> k
 
-(*TODO: Remove method from here*)
+(*!TODO: Remove method from here?*)
 let init_seq tm_l =
   match tm_l with
   | TmList([]) -> SeqList(Linkedlist.empty)
@@ -182,11 +181,9 @@ mcore_scope:
         TmUtest(fi,$2,$3,$4) }
   | LET IDENT EQ mc_term mcore_scope
       { let fi = mktinfo $1.i.fi (tm_info $4) in
-        (*TODO: Add ds_choice or connection to var for sequences?*)
         TmApp(fi,TmLam(fi,$2.v,TyDyn,$5),$4) }
   | LET IDENT EQ mc_term IN mc_term
       { let fi = mktinfo $1.i.fi (tm_info $4) in
-        (*TODO: Add ds_choice or connection to var for sequences?*)
         TmApp(fi,TmLam(fi,$2.v,TyDyn,$6),$4) }
 
 mc_term:
@@ -200,19 +197,13 @@ mc_term:
         TmTyLam(fi,$2.v,mkopkind $2.i.fi $3,$5) }
   | LET IDENT EQ mc_term IN mc_term
       { let fi = mktinfo $1.i.fi (tm_info $4) in
-        (*TODO: Add ds_choice or connection to var for sequences?*)
         TmApp(fi,TmLam(fi,$2.v,TyDyn,$6),$4) }
   | IF mc_term THEN mc_term ELSE mc_term
       { let fi = mktinfo $1.i.fi (tm_info $6) in
         TmIfexp(fi, $2, $4, $6) }
   | SEQ LSQUARE IDENT RSQUARE LPAREN mc_list
       { let fi = mktinfo $1.i.fi $4.i.fi in
-        (*TODO:Change ds_choice to None?*)
-        (*TODO:Collect a list instead of creating an empty OCaml list*)
-        (*TODO: Treat as a new variable to keep track of in algorithm?*)
-        (*TODO: Add other types of lists*)
-        (*TODO: Add TmPost in parse step 2*)
-        (*TODO: You should not init_seq here, but later*)
+        (*!TODO: You should not init_seq here, but later*)
         TmSeq(fi, $3.v, $6, (init_seq $6)) }
 
 mc_list:
@@ -252,7 +243,6 @@ mc_atom:
   | FIX                  { TmFix($1.i) }
   | SEQMETHOD DOT IDENT
       { let fi = mktinfo ($1.i.fi) ($3.i.fi) in
-        (*TODO:Change ds_choice to None?*)
         TmSeqMethod(fi, $3.v, SeqFunNone, [], 0) }
 
 

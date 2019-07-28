@@ -141,8 +141,6 @@ and tm =
 | TmFix         of tinfo                             (* Fix point *)
 | TmTyLam       of tinfo * ustring * kind * tm       (* Type abstraction *)
 | TmTyApp       of tinfo * tm * ty                   (* Type application *)
-(*TODO: Add ability to create a new seq with a list of elements, that is add '* tm list option' or reference to CList*)
-(*TODO: Make ds_choice:s below optional*)
 | TmSeq         of tinfo * ty_ident * tm_list * sequence              (* Sequence constructor *)
 | TmSeqMethod   of tinfo * fun_name * actual_fun * args * arg_index (* Sequence method *)
 

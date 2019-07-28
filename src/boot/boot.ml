@@ -138,7 +138,7 @@ let compare_sequences seq1 seq2 =
   | SeqList(ll1), SeqList(ll2) ->
     compare_linked_lists ll1 ll2 0
   | SeqNone, SeqNone -> true
-  | _ -> failwith "Sequence not implemented."
+  | _ -> failwith "Comparison of sequence type not implemented."
 
 let rec compare_int_lists l1 l2 =
   match l1, l2 with
@@ -151,7 +151,6 @@ let rec compare_int_lists l1 l2 =
   | _ -> failwith "We expected lists."
 
 let compare_lists l1 l2 =
-  (*TODO: Add more types of lists*)
   match l1, l2 with
   | hd1::_, hd2::_ ->
     (
@@ -183,9 +182,8 @@ let rec compare_term_lists l1 l2 =
      | TmIfexp(_,tm11,tm12,tm13), TmIfexp(_,tm21,tm22,tm23) ->
        (compare_terms tm11 tm21) && (compare_terms tm12 tm22) && (compare_terms tm13 tm23)
      | TmFix _, TmFix _ -> true
-     | TmSeq(_,_,tm_l1,_), TmSeq(_,_,tm_l2,_) ->
-       (*TODO: Is it enough to compare the tmls?*)
-       compare_term_lists (get_list_from_tm_list tm_l1) (get_list_from_tm_list tm_l2)
+     | TmSeq(_,_,tm_l1,seq1), TmSeq(_,_,tm_l2,seq2) ->
+       (compare_term_lists (get_list_from_tm_list tm_l1) (get_list_from_tm_list tm_l2)) && (compare_sequences seq1 seq2)
      | TmSeqMethod(_,fun_name1,_,_,_), TmSeqMethod(_,fun_name2,_,_,_) ->
        fun_name1 = fun_name2
      | _ -> false) in
@@ -562,7 +560,7 @@ let get_arg_types_length_dummy fi fun_name =
   | _ -> raise_error fi "Sequence method not implemented."
 
 let get_last_arg_index fun_name =
-  (*TODO: Check length of arg types in sequence function table*)
+  (*!TODO: Check length of arg types in sequence function table*)
   get_arg_types_length_dummy fun_name
 
 (*author: Alfrida*)
@@ -624,7 +622,7 @@ let get_ds_choice ti =
     (match ti with
      | {ety} ->
        (match ety with
-        | Some(TySeq(ty,ds_choice1)) (*TODO: dschoice in ty?*) ->
+        | Some(TySeq(ty,ds_choice1)) ->
           ds_choice1
         |
           Some(TySeqMethod(TySeq(ty1,ds_choice1),TySeq(ty2,ds_choice2))) ->
@@ -875,9 +873,7 @@ let evalprog filename typecheck =
         |> debruijn (builtin |> List.split |> fst |> (List.map (fun x-> VarTm(us x))))
         |> debug_after_debruijn
         |> (if typecheck then Typesys.typecheck builtin else fun x -> x)
-        (*TODO: Data structure selection*)
         |> Typesys.erase |> debug_after_erase
-        (* TODO: Give the right types to built-ins *)
         |> eval_test typecheck (builtin |> List.split |> snd |> List.map (fun x -> TmConst({ety = None; fi = NoInfo},x)))
         |> fun _ -> ()
 
