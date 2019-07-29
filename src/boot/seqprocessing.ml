@@ -218,7 +218,9 @@ let get_fun_name_from_seqmethod seqm =
 
 let rec create_mf_matrix_row seqm_assoc_list seqmethods =
   match seqmethods with
-  | [] -> seqm_assoc_list
+  | [] ->
+    let _ = Printf.printf "%s\n" "Empty seqmethod list" in
+    seqm_assoc_list
   | hd::tl ->
     let fun_name = get_fun_name_from_seqmethod hd in
     let curr_fun_count = List.assoc fun_name seqm_assoc_list in
@@ -420,6 +422,7 @@ let rec build_fake_selected_ds size =
     [0]::(build_fake_selected_ds (size-1))
 
 let process_ast t =
+  let _ = Printf.printf "The program is:\n%s\n" (Ustring.to_utf8 (Pprint.pprint true t)) in
   (*Find all terms of sequence type and their internal relationships*)
   let (rels,seqs) = find_sequences_in_ast t [] [] in
   (*Get the sequence constructors from the list of sequences*)
@@ -463,6 +466,157 @@ let test_check_if_seq =
   let _ = Printf.printf "%s\n" (print_test_res "check_if_seq" (test1 && test2 && test3 && test4)) in
   true
 
+let get_ty_seq_int_noinfo =
+  TySeq(TyGround(NoInfo,GInt),-1)
+
+let get_ty_void_noinfo =
+  TyGround(NoInfo,GVoid)
+
+let create_dummy_fi dummy_filename =
+  Msg.Info(dummy_filename,0,0,0,0)
+
+let create_dummy_ti dummy_ety dummy_fi =
+  {ety=Some(dummy_ety);fi=dummy_fi}
+
+let create_tmconst_int dummy_filename n =
+  TmConst(
+    (create_dummy_ti (TyGround(NoInfo,GInt)) (create_dummy_fi dummy_filename)),
+    CInt(n)
+  )
+
+let rec compare_relationships rels1 rels2 =
+  match rels1, rels2 with
+  | [], [] -> true
+  | [], _ -> false
+  | _, [] -> false
+  | (hd11,hd12)::tl1, (hd21,hd22)::tl2 ->
+    if (hd11 = hd21) && (hd12 == hd22) then
+      compare_relationships tl1 tl2
+    else
+      false
+  | _ -> failwith "Unexpected format of rels list"
+
+let rec compare_sequences seq1 seq2 =
+  match seq1, seq2 with
+  | [], [] -> true
+  | [], _ -> false
+  | _, [] -> false
+  | hd1::tl1, hd2::tl2 ->
+    if hd1 = hd2 then
+      compare_sequences tl1 tl2
+    else
+      false
+
+let rec compare_assoc_list_of_lists l1 l2 =
+  match l1, l2 with
+  | [], [] -> true
+  | [], _ -> false
+  | _, [] -> false
+  | (hd1,hdl1)::tl1, (hd2,hdl2)::tl2 ->
+    if (hd1 == hd2) && (compare_sequences hdl1 hdl2) then
+      compare_assoc_list_of_lists tl1 tl2
+    else
+      false
+  | _ -> failwith "Unexpected form of assoc list of lists"
+
+let rec compare_relationships_lists l1 l2 =
+  match l1, l2 with
+  | [], [] -> true
+  | [], _ -> false
+  | _, [] -> false
+  | hd1::tl1, hd2::tl2 ->
+    if compare_relationships hd1 hd2 then
+      compare_relationships_lists tl1 tl2
+    else
+      let _ = Printf.printf "%d\n" (List.length l1) in
+      false
+  | _ -> failwith "Unexpected for of mf_matrix first version"
+
+let run_process_test1 =
+  (*TEST1*)
+  (*let s = newseq [int] (1)*)
+  (*TmApp((lam s:Dyn. Nop), TmSeq(1))*)
+  let seq1 =
+    TmSeq(
+      (create_dummy_ti get_ty_seq_int_noinfo (create_dummy_fi (us"seq1_fi1"))),
+      us"int",
+      TmList(
+        [(create_tmconst_int (us"seq1_fi2") 1)]
+      ),
+      SeqNone
+    ) in
+  let lam1 =
+    TmLam(
+      (create_dummy_ti (TyArrow(NoInfo,get_ty_seq_int_noinfo,get_ty_void_noinfo)) (create_dummy_fi (us"lam1_fi1"))),
+      us"s",
+      TyDyn,
+      TmNop
+    ) in
+  let app1 =
+    TmApp(
+      (create_dummy_ti get_ty_void_noinfo (create_dummy_fi (us"app1_fi1"))),
+      lam1,
+      seq1
+    ) in
+  let ast1 = app1 in
+  (*Test find_sequences_in_ast*)
+  let (rels,seqs) = find_sequences_in_ast ast1 [] [] in
+  let exp_rels = [(lam1,seq1)] in
+  let comp_rels_res = compare_relationships rels exp_rels in
+  let exp_seqs = [seq1;lam1] in
+  let comp_seqs_res = compare_sequences seqs exp_seqs in
+  (*Test get_sequence_constructors*)
+  let seq_cons = get_sequence_constructors seqs in
+  let exp_seq_cons = [seq1] in
+  let comp_seq_cons_res = compare_sequences seq_cons exp_seq_cons in
+  (*Test init_assoc_list*)
+  let rels_assoc_list1 = init_assoc_list seqs in
+  let exp_rels_assoc_list1 = [(seq1,[]);(lam1,[])] in
+  let comp_rels_assoc_list1_res = compare_assoc_list_of_lists rels_assoc_list1 exp_rels_assoc_list1 in
+  (*Test reduce_relationships*)
+  let rels_assoc_list2 = reduce_relationships rels rels_assoc_list1 in
+  let exp_rels_assoc_list2 = [(seq1,[lam1]);(lam1,[])] in
+  let comp_rels_assoc_list2_res = compare_assoc_list_of_lists rels_assoc_list2 exp_rels_assoc_list2 in
+  (*Test get_seq_cons_relationships*)
+  let rels_assoc_list3 = get_seq_cons_relationships seq_cons rels_assoc_list2 [] in
+  let exp_rels_assoc_list3 = [(seq1,[lam1])] in
+  let comp_rels_assoc_list3_res = compare_assoc_list_of_lists rels_assoc_list3 exp_rels_assoc_list3 in
+  (*Test get_sequence_method_counts*)
+  let mf_matrix1 = get_sequence_method_counts rels_assoc_list3 in
+  let exp_mf_matrix1 = [[("is_empty",0);
+                        ("first",0);
+                        ("last",0);
+                        ("push",0);
+                        ("pop",0);
+                        ("length",0);
+                        ("nth",0);
+                        ("append",0);
+                        ("reverse",0);
+                        ("push_last",0);
+                        ("pop_last",0);
+                        ("take",0);
+                        ("drop",0)]] in
+  let comp_mf_matrix1_res = compare_relationships_lists mf_matrix1 exp_mf_matrix1 in
+  (*Test translate_mf_assoc_list*)
+  let mf_matrix2 = Frequencies.translate_mf_assoc_list mf_matrix1 get_fun_names in
+  let exp_mf_matrix2 = [[Frequencies.Zero;
+                        Frequencies.Zero;
+                        Frequencies.Zero;
+                        Frequencies.Zero;
+                        Frequencies.Zero;
+                        Frequencies.Zero;
+                        Frequencies.Zero;
+                        Frequencies.Zero;
+                        Frequencies.Zero;
+                        Frequencies.Zero;
+                        Frequencies.Zero;
+                        Frequencies.Zero;
+                        Frequencies.Zero;]] in
+  let comp_mf_matrix2_res = compare_sequences mf_matrix2 exp_mf_matrix2 in
+  let test_res_str = Printf.printf "%s\n" (print_test_res "process_test1" (comp_rels_res && comp_seqs_res && comp_seq_cons_res && comp_rels_assoc_list1_res && comp_rels_assoc_list2_res && comp_rels_assoc_list3_res && comp_mf_matrix1_res && comp_mf_matrix2_res)) in
+  true
+
 let run_tests =
   let _ = test_check_if_seq in
-  true
+  let _ = run_process_test1 in
+true
