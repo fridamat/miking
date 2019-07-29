@@ -51,6 +51,8 @@ let rec find_rels_in_tmapp tm1 tm2 rels =
     new_rel::rels
   | TmApp(app_ti,TmSeqMethod(seqm_ti,fun_name,actual_fun,args,arg_index),TmLam(lam_ti,x,lam_ty,lam_tm)), TmSeq(seq_ti,_,_,_), _, true, _ ->
     find_rels_in_tmapp (TmSeqMethod(seqm_ti,fun_name,actual_fun,args,arg_index)) tm2 rels
+  | TmApp(app_ti1,TmApp(app_ti2,TmSeqMethod(seqm_ti,fun_name,actual_fun,args,arg_index),TmLam(lam_ti,x,lam_ty,lam_tm)),b), TmSeq(seq_ti,_,_,_), _, true, _ ->
+    find_rels_in_tmapp (TmSeqMethod(seqm_ti,fun_name,actual_fun,args,arg_index)) tm2 rels
   | TmApp(app_ti,_,_), TmSeq(seq_ti,_,_,_), _, true, TySeqMethod _ (*"a1 sequence" where a1 is of type sequence method and sequence is an argument (but not the first) to it. The method will already have the sequence type set from its first argument, so its sequence type will decide the sequence type of the sequence.*) ->
     (*Rel: s2 = input type of s1*)
     let new_rel = (tm2,tm1) in
@@ -198,7 +200,13 @@ let get_fun_names =
    "pop_last";
    "take";
    "drop";
-   "map"]
+   "map";
+   "any";
+   "seqall";
+   "find";
+   "filter";
+   "foldr";
+   "foldl"]
 
 let init_seqmethod_assoc_list =
   let fun_names = get_fun_names in
@@ -222,7 +230,6 @@ let get_fun_name_from_seqmethod seqm =
 let rec create_mf_matrix_row seqm_assoc_list seqmethods =
   match seqmethods with
   | [] ->
-    let _ = Printf.printf "%s\n" "Empty seqmethod list" in
     seqm_assoc_list
   | hd::tl ->
     let fun_name = get_fun_name_from_seqmethod hd in
@@ -315,6 +322,12 @@ let get_actual_fun ds_choice fun_name =
   | 0, "take" -> (SeqListFun8(Linkedlist.take))
   | 0, "drop" -> (SeqListFun8(Linkedlist.drop))
   | 0, "map" -> (SeqListFun9(Linkedlist.map))
+  | 0, "any" -> (SeqListFun10(Linkedlist.any))
+  | 0, "seqall" -> (SeqListFun10(Linkedlist.all))
+  | 0, "find" -> (SeqListFun11(Linkedlist.find))
+  | 0, "filter" -> (SeqListFun12(Linkedlist.filter))
+  | 0, "foldr" -> (SeqListFun13(Linkedlist.foldr))
+  | 0, "foldl" -> (SeqListFun13(Linkedlist.foldl))
   | _ -> failwith "Method not yet implemented1"
 
 let rec update_ast_with_choices t selected_ds_assoc_list =
@@ -600,11 +613,21 @@ let run_process_test1 =
                         ("pop_last",0);
                         ("take",0);
                          ("drop",0);
-                         ("map",0);]] in
+                         ("map",0);
+                         ("any",0);
+                         ("seqall",0);
+                         ("find",0);
+                         ("filter",0);
+                         ("foldr",0);
+                         ("foldl",0)]] in
   let comp_mf_matrix1_res = compare_relationships_lists mf_matrix1 exp_mf_matrix1 in
   (*Test translate_mf_assoc_list*)
   let mf_matrix2 = Frequencies.translate_mf_assoc_list mf_matrix1 get_fun_names in
+  (*TODO:Make below automatic*)
   let exp_mf_matrix2 = [[Frequencies.Zero;
+                         Frequencies.Zero;
+                         Frequencies.Zero;
+                         Frequencies.Zero;
                         Frequencies.Zero;
                         Frequencies.Zero;
                         Frequencies.Zero;
@@ -615,8 +638,12 @@ let run_process_test1 =
                         Frequencies.Zero;
                         Frequencies.Zero;
                         Frequencies.Zero;
-                        Frequencies.Zero;
-                        Frequencies.Zero;]] in
+                         Frequencies.Zero;
+                         Frequencies.Zero;
+                         Frequencies.Zero;
+                         Frequencies.Zero;
+                         Frequencies.Zero;
+                         Frequencies.Zero]] in
   let comp_mf_matrix2_res = compare_sequences mf_matrix2 exp_mf_matrix2 in
   let test_res_str = Printf.printf "%s\n" (print_test_res "process_test1" (comp_rels_res && comp_seqs_res && comp_seq_cons_res && comp_rels_assoc_list1_res && comp_rels_assoc_list2_res && comp_rels_assoc_list3_res && comp_mf_matrix1_res && comp_mf_matrix2_res)) in
   true

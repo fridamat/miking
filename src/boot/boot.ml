@@ -558,6 +558,12 @@ let get_arg_types_length_dummy fi fun_name =
   | "take" -> 1
   | "drop" -> 1
   | "map" -> 1
+  | "any" -> 1
+  | "seqall" -> 1
+  | "find" -> 1
+  | "filter" -> 1
+  | "foldr" -> 2
+  | "foldl" -> 2
   | _ -> raise_error fi "Sequence method not implemented."
 
 let get_last_arg_index fun_name =
@@ -643,10 +649,56 @@ let rec eval env t =
     | "drop", SeqListFun8(f), [TmSeq(ti,ty_ident,tm_list,SeqList(l)); TmConst(const_ti,CInt(n))] ->
       TmSeq(ti,ty_ident,tm_list,SeqList(f l n))
     | "map", SeqListFun9(f), [TmClos(clos_ti,x,clos_ty,clos_tm,clos_env,clos_pemode); TmSeq(seq_ti,ty_ident,tm_list,SeqList(l))] ->
-      (*TODO: Check type of element against lam_ty*)
+      (*TODO: Check type of element against lam_ty for those below*)
+      (*TODO: Check return type of list for those below*)
       let map_f e =
         (eval env' (TmApp(seq_ti,TmLam(clos_ti,x,clos_ty,clos_tm),e))) in
       TmSeq(seq_ti,ty_ident,tm_list,SeqList(f map_f l))
+    | "any", SeqListFun10(f), [TmClos(clos_ti,x,clos_ty,clos_tm,clos_env,clos_pemode); TmSeq(seq_ti,ty_ident,tm_list,SeqList(l))] ->
+      let any_f e =
+        (match eval env' (TmApp(seq_ti,TmLam(clos_ti,x,clos_ty,clos_tm),e)) with
+         | TmConst(_,CBool(b)) ->
+           b
+         | _ -> failwith "Wrong return type of any function"
+        ) in
+      TmConst(seq_ti,CBool(f any_f l))
+    | "seqall", SeqListFun10(f), [TmClos(clos_ti,x,clos_ty,clos_tm,clos_env,clos_pemode); TmSeq(seq_ti,ty_ident,tm_list,SeqList(l))] ->
+      let all_f e =
+        (match eval env' (TmApp(seq_ti,TmLam(clos_ti,x,clos_ty,clos_tm),e)) with
+         | TmConst(_,CBool(b)) ->
+           b
+         | _ -> failwith "Wrong return type of any function"
+        ) in
+      TmConst(seq_ti,CBool(f all_f l))
+    | "find", SeqListFun11(f), [TmClos(clos_ti,x,clos_ty,clos_tm,clos_env,clos_pemode); TmSeq(seq_ti,ty_ident,tm_list,SeqList(l))] ->
+      let find_f e =
+        (match eval env' (TmApp(seq_ti,TmLam(clos_ti,x,clos_ty,clos_tm),e)) with
+         | TmConst(_,CBool(b)) ->
+           b
+         | _ -> failwith "Wrong return type of any function"
+      ) in
+      let res =
+        (match f find_f l with
+         | Some(e) -> e
+         | None -> failwith "Element did not exist in list" (*TODO: How should I handle this...*)
+        ) in
+      res
+    | "filter", SeqListFun12(f), [TmClos(clos_ti,x,clos_ty,clos_tm,clos_env,clos_pemode); TmSeq(seq_ti,ty_ident,tm_list,SeqList(l))] ->
+      let filter_f e =
+        (match eval env' (TmApp(seq_ti,TmLam(clos_ti,x,clos_ty,clos_tm),e)) with
+           | TmConst(_,CBool(b)) ->
+             b
+           | _ -> failwith "Wrong return type of any function"
+        ) in
+      TmSeq(seq_ti,ty_ident,tm_list,SeqList(f filter_f l))
+    | "foldr", SeqListFun13(f), [TmClos(clos_ti,x,clos_ty,clos_tm,clos_env,clos_pemode); b; TmSeq(seq_ti,ty_ident,tm_list,SeqList(l))] ->
+      let foldr_f b' e =
+        eval env' (TmApp(seq_ti,TmApp(seq_ti,TmLam(clos_ti,x,clos_ty,clos_tm),b'),e)) in
+      f foldr_f b l
+    | "foldl", SeqListFun13(f), [TmClos(clos_ti,x,clos_ty,clos_tm,clos_env,clos_pemode); b; TmSeq(seq_ti,ty_ident,tm_list,SeqList(l))] ->
+      let foldl_f b' e =
+        eval env' (TmApp(seq_ti,TmApp(seq_ti,TmLam(clos_ti,x,clos_ty,clos_tm),b'),e)) in
+        f foldl_f b l
     | _, SeqFunNone, _ ->
       let str = "No method type has been set" in
       failwith str
@@ -762,97 +814,6 @@ let print_test_res res res_name =
   else
     let _ = Printf.printf "%s FAILED :(\n" res_name in
     false
-
-(*let test_preprocessing =
-  let seq_ty = TySeq(TyGround(NoInfo,GInt),0) in
-  let default_ti =
-    {ety=Some(TyDyn); fi=NoInfo} in
-  let seq_ti =
-    {ety=Some(seq_ty); fi=NoInfo} in
-  let seqm_ti1 (*seqmethod with _ -> seq*) =
-    {ety=Some(TySeqMethod(TyDyn,seq_ty)); fi=NoInfo} in
-  let seqm_ti2 (*seqmethod with seq -> seq*) =
-    {ety=Some(TySeqMethod(seq_ty,seq_ty)); fi=NoInfo} in
-  let arrow_seq_ti (*seq -> _*) =
-    {ety=Some(TyArrow(NoInfo,seq_ty,TyDyn)); fi=NoInfo} in
-  let arrow_seqm_ti1 (*(seqmethod with _ -> seq) -> _*) =
-    {ety=Some(TyArrow(NoInfo,TySeqMethod(TyDyn,seq_ty),TyDyn)); fi=NoInfo} in
-  let arrow_seqm_ti2 (*(seqmethod with seq -> seq) -> _*) =
-    {ety=Some(TyArrow(NoInfo,TySeqMethod(seq_ty,seq_ty),TyDyn)); fi=NoInfo} in
-  let int_ti =
-    {ety=Some(TyGround(NoInfo,GInt)); fi=NoInfo} in
-  (*TEST 1*)
-  (*
-    AST:
-      TmApp((lam s1:Dyn. Nop), TmSeq(1,2))
-  *)
-  (*
-    Program:
-      let s1 = newseq [int] (1,2)
-  *)
-  let t1_e1 = TmConst(int_ti,CInt(1)) in
-  let t1_e2 = TmConst(int_ti,CInt(2)) in
-  let t1_seq1 = TmSeq(seq_ti,us"int",TmList([t1_e1;t1_e2]),SeqNone) in
-  let t1_lam1 = TmLam(arrow_seq_ti,us"s1",TyDyn,TmNop) in
-  let t1_app1 = TmApp(default_ti,t1_lam1,t1_seq1) in
-  let t1_ast = t1_app1 in
-  let (t1_rels,t1_seqs) = traverse_AST_to_find_sequences t1_ast [] [] in
-  let t1_exp_seqs = [t1_seq1;t1_lam1] in
-  let t1_seqs_res = compare_term_lists t1_seqs t1_exp_seqs in
-  let t1_exp_rels = [(t1_lam1,t1_seq1)] in
-  let t1_rels_res = compare_term_pair_lists t1_rels t1_exp_rels in
-  let _ = print_test_res (t1_seqs_res && t1_rels_res) "Test 1" in
-  (*TEST 2*)
-  (*
-    AST:
-      TmApp((lam s1:Dyn. TmApp((lam s2:Dyn. Nop), s1'0)), TmSeq(1))
-  *)
-  (*
-    Program:
-      let s1 = newseq [int] (1)
-      let s2 = s1
-  *)
-  let t2_e1 = TmConst(int_ti,CInt(1)) in
-  let t2_seq1 = TmSeq(seq_ti,us"int",TmList([t2_e1]),SeqNone) in
-  let t2_var1 = TmVar(seq_ti,us"s1",0,false) in
-  let t2_lam1 = TmLam(arrow_seq_ti,us"s2",TyDyn,TmNop) in
-  let t2_app1 = TmApp(default_ti,t2_lam1,t2_var1) in
-  let t2_lam2 = TmLam(arrow_seq_ti,us"s1",TyDyn,t2_app1) in
-  let t2_app2 = TmApp(default_ti,t2_lam2,t2_seq1) in
-  let t2_ast = t2_app2 in
-  let (t2_rels,t2_seqs) = traverse_AST_to_find_sequences t2_ast [] [] in
-  let t2_exp_seqs = [t2_seq1;t2_var1;t2_lam1;t2_lam2] in
-  let t2_seqs_res = compare_term_lists t2_seqs t2_exp_seqs in
-  let t2_exp_rels = [(t2_lam1,t2_var1);(t2_lam2,t2_seq1)] in
-  let t2_rels_res = compare_term_pair_lists t2_rels t2_exp_rels in
-  let _ = print_test_res (t2_seqs_res && t2_rels_res) "Test 2" in
-  (*TEST 3*)
-  (*
-    AST:
-      TmApp((lam s4:Dyn. Nop), TmApp((TmApp((Seq.append(), TmSeq(1))), TmSeq(2)))
-  *)
-  (*
-    Program:
-      let s4 = seqmethod.append (newseq [int] (1)) (newseq [int] (2))
-  *)
-  let t3_e1 = TmConst(int_ti,CInt(2)) in
-  let t3_seq1 = TmSeq(seq_ti,us"int",TmList([t3_e1]),SeqNone) in
-  let t3_e2 = TmConst(int_ti,CInt(1)) in
-  let t3_seq2 = TmSeq(seq_ti,us"int",TmList([t3_e2]),SeqNone) in
-  let t3_seqm1 = TmSeqMethod(seqm_ti2,us"append",SeqFunNone,[],0) in
-  let t3_app1 = TmApp(seqm_ti2,t3_seqm1,t3_seq2) in
-  let t3_app2 = TmApp(seqm_ti2,t3_app1,t3_seq1) in
-  let t3_lam1 = TmLam(arrow_seqm_ti2,us"s4",TyDyn,TmNop) in
-  let t3_app3 = TmApp(default_ti,t3_lam1,t3_app2) in
-  let t3_ast = t3_app3 in
-  let (t3_rels,t3_seqs) = traverse_AST_to_find_sequences t3_ast [] []  in
-  (*let _ = Printf.printf "The rels are: %s\n" (Ustring.to_utf8 rels_string) in*)
-  let t3_exp_seqs = [t3_seq1;t3_seq2;t3_seqm1;t3_lam1] in
-  let t3_seqs_res = compare_term_lists t3_seqs t3_exp_seqs in
-  let t3_exp_rels = [(t3_seqm1,t3_seq2);(t3_seq1,t3_app1);(t3_lam1,t3_app2)] in
-  let t3_rels_res = compare_term_pair_lists t3_rels t3_exp_rels in
-  let _ = print_test_res (t3_seqs_res && t3_rels_res) "Test 3" in
-  int_ti*)
 
 let eval_test typecheck env t =
   let t' =

@@ -385,7 +385,8 @@ let getType t =
   | TmMatch({ety},_,_) -> extract ety
   | TmNop -> TyGround(NoInfo,GVoid)
 
-  let get_seq_fun_type fun_name =
+let get_seq_fun_type fun_name =
+  (*TODO: What if lists do not contain ints...*)
     match Ustring.to_utf8 fun_name with
     | "is_empty" -> TyGround(NoInfo,GBool)
     | "first" -> TyGround(NoInfo,GInt)
@@ -401,6 +402,12 @@ let getType t =
     | "take" -> TySeq(TyDyn,-1)
     | "drop" -> TySeq(TyDyn,-1)
     | "map" -> TySeq(TyDyn,-1)
+    | "any" -> TyGround(NoInfo,GBool)
+    | "seqall" -> TyGround(NoInfo,GBool)
+    | "find" -> TyGround(NoInfo,GInt)
+    | "filter" -> TySeq(TyDyn,-1)
+    | "foldr" -> TyGround(NoInfo,GInt) (*TODO: Should have the type of the element after it and the one below*)
+    | "foldl" -> TyGround(NoInfo,GInt)
     | _ -> failwith "We don't have type of this function"
 
 let rec check_types_of_list tm_l seq_ty =
