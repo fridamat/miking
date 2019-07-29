@@ -128,6 +128,7 @@ and actual_fun =
   | SeqListFun6 of ((tm Linkedlist.sequence) -> (tm Linkedlist.sequence))
   | SeqListFun7 of ((tm Linkedlist.sequence) -> int -> tm)
   | SeqListFun8 of ((tm Linkedlist.sequence) -> int -> (tm Linkedlist.sequence))
+  | SeqListFun9 of ((tm -> tm) -> (tm Linkedlist.sequence) -> (tm Linkedlist.sequence)) (*TODO: Should the first argument be TmLam?*)
   | SeqFunNone
 
 (* Terms / expressions *)

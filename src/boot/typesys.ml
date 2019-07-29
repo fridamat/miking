@@ -400,6 +400,7 @@ let getType t =
     | "pop_last" -> TySeq(TyDyn,-1)
     | "take" -> TySeq(TyDyn,-1)
     | "drop" -> TySeq(TyDyn,-1)
+    | "map" -> TySeq(TyDyn,-1)
     | _ -> failwith "We don't have type of this function"
 
 let rec check_types_of_list tm_l seq_ty =

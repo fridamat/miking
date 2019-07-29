@@ -15,7 +15,7 @@ let check_if_seq ti =
     )
   | _ -> failwith "Not implemented"
 
-let find_rels_in_tmapp tm1 tm2 rels =
+let rec find_rels_in_tmapp tm1 tm2 rels =
   (*!TODO: Some cases below are duplicates if we don't want to distinguish between input and return types of methods*)
   match tm1, tm2, (check_if_seq (Ast.tm_tinfo tm1)), (check_if_seq (Ast.tm_tinfo tm2)), Typesys.getType tm1 with
   | TmLam(lam_ti,_,_,_), TmSeq(seq_ti,_,_,_), true, true, _ (*"let x = new sequence"*) ->
@@ -49,6 +49,8 @@ let find_rels_in_tmapp tm1 tm2 rels =
     (*Rel: input type of s1 = s2*)
     let new_rel = (tm1,tm2) in
     new_rel::rels
+  | TmApp(app_ti,TmSeqMethod(seqm_ti,fun_name,actual_fun,args,arg_index),TmLam(lam_ti,x,lam_ty,lam_tm)), TmSeq(seq_ti,_,_,_), _, true, _ ->
+    find_rels_in_tmapp (TmSeqMethod(seqm_ti,fun_name,actual_fun,args,arg_index)) tm2 rels
   | TmApp(app_ti,_,_), TmSeq(seq_ti,_,_,_), _, true, TySeqMethod _ (*"a1 sequence" where a1 is of type sequence method and sequence is an argument (but not the first) to it. The method will already have the sequence type set from its first argument, so its sequence type will decide the sequence type of the sequence.*) ->
     (*Rel: s2 = input type of s1*)
     let new_rel = (tm2,tm1) in
@@ -195,7 +197,8 @@ let get_fun_names =
    "push_last";
    "pop_last";
    "take";
-   "drop"]
+   "drop";
+   "map"]
 
 let init_seqmethod_assoc_list =
   let fun_names = get_fun_names in
@@ -311,7 +314,8 @@ let get_actual_fun ds_choice fun_name =
   | 0, "pop_last" -> (SeqListFun6(Linkedlist.pop_last))
   | 0, "take" -> (SeqListFun8(Linkedlist.take))
   | 0, "drop" -> (SeqListFun8(Linkedlist.drop))
-  | _ -> failwith "Method not yet implemented"
+  | 0, "map" -> (SeqListFun9(Linkedlist.map))
+  | _ -> failwith "Method not yet implemented1"
 
 let rec update_ast_with_choices t selected_ds_assoc_list =
   let rec update_ast_list_with_choices l l_selected_ds_assoc_list =
@@ -595,7 +599,8 @@ let run_process_test1 =
                         ("push_last",0);
                         ("pop_last",0);
                         ("take",0);
-                        ("drop",0)]] in
+                         ("drop",0);
+                         ("map",0);]] in
   let comp_mf_matrix1_res = compare_relationships_lists mf_matrix1 exp_mf_matrix1 in
   (*Test translate_mf_assoc_list*)
   let mf_matrix2 = Frequencies.translate_mf_assoc_list mf_matrix1 get_fun_names in

@@ -557,6 +557,7 @@ let get_arg_types_length_dummy fi fun_name =
   | "pop_last" -> 0
   | "take" -> 1
   | "drop" -> 1
+  | "map" -> 1
   | _ -> raise_error fi "Sequence method not implemented."
 
 let get_last_arg_index fun_name =
@@ -578,44 +579,6 @@ let check_element_type t1 t2 =
     true
   else
     failwith "Element types have to be the same"
-
-let call_seq_method ti fun_name actual_fun args =
-  match (Ustring.to_utf8 fun_name), actual_fun, args with
-  | "is_empty", SeqListFun4(f), [TmSeq(ti,ty_ident,tm_list,SeqList(l))] ->
-    TmConst(ti,CBool(f l))
-  | "first", SeqListFun5(f), [TmSeq(ti,ty_ident,tm_list,SeqList(l))] ->
-    f l
-  | "last", SeqListFun5(f), [TmSeq(ti,ty_ident,tm_list,SeqList(l))] ->
-    f l
-  | "push", SeqListFun3(f), [TmSeq(seq_ti,ty_ident,tm_l,SeqList(l)); e] ->
-    let _ = check_element_type (TmSeq(seq_ti,ty_ident,tm_l,SeqList(l))) e in
-    TmSeq(ti,ty_ident,tm_l,SeqList(f l e))
-  | "pop", SeqListFun6(f), [TmSeq(ti,ty_ident,tm_list,SeqList(l))] ->
-    TmSeq(ti,ty_ident,tm_list,SeqList(f l))
-  | "length", SeqListFun2(f), [TmSeq(_,_,_,SeqList(l))] ->
-    TmConst(ti,CInt(f l))
-  | "nth", SeqListFun7(f), [TmSeq(seq_ti,ty_ident,tm_list,SeqList(l)); TmConst(const_ty,CInt(n))] ->
-    f l n
-  | "append", SeqListFun1(f), [TmSeq(ti1,ty_ident1,tmlist1,SeqList(l1)); TmSeq(ti2,ty_ident2,tmlist2,SeqList(l2))] ->
-    let _ = check_element_type (TmSeq(ti1,ty_ident1,tmlist1,SeqList(l1))) (TmSeq(ti2,ty_ident2,tmlist2,SeqList(l2))) in
-    TmSeq(ti,ty_ident1,tmlist1,SeqList(f l1 l2))
-  | "reverse", SeqListFun6(f), [TmSeq(ti,ty_ident,tm_list,SeqList(l))] ->
-    TmSeq(ti,ty_ident,tm_list,SeqList(f l))
-  | "push_last", SeqListFun3(f), [TmSeq(seq_ti,ty_ident,tm_l,SeqList(l)); e] ->
-    let _ = check_element_type (TmSeq(seq_ti,ty_ident,tm_l,SeqList(l))) e in
-    TmSeq(ti,ty_ident,tm_l,SeqList(f l e))
-  | "pop_last", SeqListFun6(f), [TmSeq(ti,ty_ident,tm_list,SeqList(l))] ->
-    TmSeq(ti,ty_ident,tm_list,SeqList(f l))
-  | "take", SeqListFun8(f), [TmSeq(ti,ty_ident,tm_list,SeqList(l)); TmConst(const_ti,CInt(n))] ->
-    TmSeq(ti,ty_ident,tm_list,SeqList(f l n))
-  | "drop", SeqListFun8(f), [TmSeq(ti,ty_ident,tm_list,SeqList(l)); TmConst(const_ti,CInt(n))] ->
-    TmSeq(ti,ty_ident,tm_list,SeqList(f l n))
-  | _, SeqFunNone, _ ->
-    let str = "No method type has been set" in
-    failwith str
-  | _ ->
-    let str = "Method" ^ (Ustring.to_utf8 fun_name) ^ "not implemented" in
-    failwith str
 
 let get_ds_choice ti =
   let ds_choice =
@@ -648,6 +611,48 @@ let get_ds_choice ti =
 
 (* Main evaluation loop of a term. Evaluates using big-step semantics *)
 let rec eval env t =
+  let call_seq_method ti fun_name actual_fun args env' =
+    (match (Ustring.to_utf8 fun_name), actual_fun, args with
+    | "is_empty", SeqListFun4(f), [TmSeq(ti,ty_ident,tm_list,SeqList(l))] ->
+      TmConst(ti,CBool(f l))
+    | "first", SeqListFun5(f), [TmSeq(ti,ty_ident,tm_list,SeqList(l))] ->
+      f l
+    | "last", SeqListFun5(f), [TmSeq(ti,ty_ident,tm_list,SeqList(l))] ->
+      f l
+    | "push", SeqListFun3(f), [TmSeq(seq_ti,ty_ident,tm_l,SeqList(l)); e] ->
+      let _ = check_element_type (TmSeq(seq_ti,ty_ident,tm_l,SeqList(l))) e in
+      TmSeq(ti,ty_ident,tm_l,SeqList(f l e))
+    | "pop", SeqListFun6(f), [TmSeq(ti,ty_ident,tm_list,SeqList(l))] ->
+      TmSeq(ti,ty_ident,tm_list,SeqList(f l))
+    | "length", SeqListFun2(f), [TmSeq(_,_,_,SeqList(l))] ->
+      TmConst(ti,CInt(f l))
+    | "nth", SeqListFun7(f), [TmSeq(seq_ti,ty_ident,tm_list,SeqList(l)); TmConst(const_ty,CInt(n))] ->
+      f l n
+    | "append", SeqListFun1(f), [TmSeq(ti1,ty_ident1,tmlist1,SeqList(l1)); TmSeq(ti2,ty_ident2,tmlist2,SeqList(l2))] ->
+      let _ = check_element_type (TmSeq(ti1,ty_ident1,tmlist1,SeqList(l1))) (TmSeq(ti2,ty_ident2,tmlist2,SeqList(l2))) in
+      TmSeq(ti,ty_ident1,tmlist1,SeqList(f l1 l2))
+    | "reverse", SeqListFun6(f), [TmSeq(ti,ty_ident,tm_list,SeqList(l))] ->
+      TmSeq(ti,ty_ident,tm_list,SeqList(f l))
+    | "push_last", SeqListFun3(f), [TmSeq(seq_ti,ty_ident,tm_l,SeqList(l)); e] ->
+      let _ = check_element_type (TmSeq(seq_ti,ty_ident,tm_l,SeqList(l))) e in
+      TmSeq(ti,ty_ident,tm_l,SeqList(f l e))
+    | "pop_last", SeqListFun6(f), [TmSeq(ti,ty_ident,tm_list,SeqList(l))] ->
+      TmSeq(ti,ty_ident,tm_list,SeqList(f l))
+    | "take", SeqListFun8(f), [TmSeq(ti,ty_ident,tm_list,SeqList(l)); TmConst(const_ti,CInt(n))] ->
+      TmSeq(ti,ty_ident,tm_list,SeqList(f l n))
+    | "drop", SeqListFun8(f), [TmSeq(ti,ty_ident,tm_list,SeqList(l)); TmConst(const_ti,CInt(n))] ->
+      TmSeq(ti,ty_ident,tm_list,SeqList(f l n))
+    | "map", SeqListFun9(f), [TmClos(clos_ti,x,clos_ty,clos_tm,clos_env,clos_pemode); TmSeq(seq_ti,ty_ident,tm_list,SeqList(l))] ->
+      (*TODO: Check type of element against lam_ty*)
+      let map_f e =
+        (eval env' (TmApp(seq_ti,TmLam(clos_ti,x,clos_ty,clos_tm),e))) in
+      TmSeq(seq_ti,ty_ident,tm_list,SeqList(f map_f l))
+    | _, SeqFunNone, _ ->
+      let str = "No method type has been set" in
+      failwith str
+    | _ ->
+      let str = "Method" ^ (Ustring.to_utf8 fun_name) ^ "not implemented" in
+      failwith str) in
   let rec eval_tmlist env tm_l =
     (match tm_l with
      | TmList([]) -> []
@@ -677,7 +682,7 @@ let rec eval env t =
          let updated_args = add_evaluated_term_to_args args (eval env t2) in
          let last_arg_index = get_last_arg_index ti.fi fun_name in
          if arg_index == last_arg_index then
-           let res = call_seq_method ti fun_name actual_fun updated_args in
+           let res = call_seq_method ti fun_name actual_fun updated_args env in
            res
          else if arg_index < last_arg_index then
            TmSeqMethod(ti,fun_name,actual_fun,updated_args,(arg_index+1))
