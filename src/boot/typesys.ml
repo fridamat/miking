@@ -102,8 +102,14 @@ let tyequal ty1 ty2 =
     | TyGround(_,g1),TyGround(_,g2) -> g1 = g2
     | TyArrow(_,ty11,ty12),TyArrow(_,ty21,ty22) ->
       tyrec ty11 ty21 &&  tyrec ty21 ty22
+    | a, TyArrow(_,ty1',ty2') ->
+      tyrec a ty2'
     | TyVar(_,_,n1),TyVar(_,_,n2) -> n1 = n2
+    | a, TyVar(_,_,_) ->
+      true
     | TyAll(_,x1,_,ty1),TyAll(_,x2,_,ty2) -> tyrec ty1 ty2
+    | a, TyAll(_,_,_,ty) ->
+      tyrec a ty
     | TyLam(fi1,x1,kind1,ty1), TyLam(fi2,x2,kind2,ty2) ->
       tyrec ty1 ty2 && kindEqual kind1 kind2
     | TyApp(fi1,ty11,ty12), TyApp(fi2,ty21,ty22)->
@@ -385,30 +391,151 @@ let getType t =
   | TmMatch({ety},_,_) -> extract ety
   | TmNop -> TyGround(NoInfo,GVoid)
 
-let get_seq_fun_type fun_name =
-  (*TODO: What if lists do not contain ints...*)
-    match Ustring.to_utf8 fun_name with
-    | "is_empty" -> TyGround(NoInfo,GBool)
-    | "first" -> TyGround(NoInfo,GInt)
-    | "last" -> TyGround(NoInfo,GInt)
-    | "push" -> TySeq(TyDyn,-1)
-    | "pop" -> TySeq(TyDyn,-1)
-    | "length" -> TyGround(NoInfo,GInt)
-    | "nth" -> TyDyn
-    | "append" -> TySeq(TyDyn,-1)
-    | "reverse" -> TySeq(TyDyn,-1)
-    | "push_last" -> TySeq(TyDyn,-1)
-    | "pop_last" -> TySeq(TyDyn,-1)
-    | "take" -> TySeq(TyDyn,-1)
-    | "drop" -> TySeq(TyDyn,-1)
-    | "map" -> TySeq(TyDyn,-1)
-    | "any" -> TyGround(NoInfo,GBool)
-    | "seqall" -> TyGround(NoInfo,GBool)
-    | "find" -> TyGround(NoInfo,GInt)
-    | "filter" -> TySeq(TyDyn,-1)
-    | "foldr" -> TyGround(NoInfo,GInt) (*TODO: Should have the type of the element after it and the one below*)
-    | "foldl" -> TyGround(NoInfo,GInt)
-    | _ -> failwith "We don't have type of this function"
+let get_seq_fun_type fun_name fi =
+  match Ustring.to_utf8 fun_name with
+  | "is_empty" ->
+    TyAll(fi,us"a",KindStar(fi),TyArrow(fi,TySeq(TyVar(fi,us"a",0),-1),TyGround(NoInfo,GBool)))
+  | "first" ->
+    TyAll(fi,us"a",KindStar(fi),TyArrow(fi,TySeq(TyVar(fi,us"a",0),-1),TyVar(fi,us"a",0)))
+  | "last" ->
+    TyAll(fi,us"a",KindStar(fi),TyArrow(fi,TySeq(TyVar(fi,us"a",0),-1),TyVar(fi,us"a",0)))
+  | "push" ->
+    TyAll(fi,us"a",KindStar(fi),
+          TyArrow(fi,
+                  TySeq(TyVar(fi,us"a",0),-1),
+                  TyArrow(fi,
+                          TyVar(fi,us"a",0),
+                          TySeq(TyVar(fi,us"a",0),-1))))
+  | "pop" ->
+    TyAll(fi,us"a",KindStar(fi),
+          TyArrow(fi,
+                  TySeq(TyVar(fi,us"a",0),-1),
+                  TySeq(TyVar(fi,us"a",0),-1)))
+  | "length" ->
+    TyAll(fi,us"a",KindStar(fi),
+          TyArrow(fi,
+                  TySeq(TyVar(fi,us"a",0),-1),
+                  TyGround(fi,GInt)))
+  | "nth" ->
+    TyAll(fi,us"a",KindStar(fi),
+          TyArrow(fi,
+                  TySeq(TyVar(fi,us"a",0),-1),
+                  TyArrow(fi,
+                          TyGround(fi,GInt),
+                          TyVar(fi,us"a",0))))
+  | "append" ->
+    TyAll(fi,us"a",KindStar(fi),
+          TyArrow(fi,
+                  TySeq(TyVar(fi,us"a",0),-1),
+                  TyArrow(fi,
+                          TySeq(TyVar(fi,us"a",0),-1),
+                          TySeq(TyVar(fi,us"a",0),-1))))
+  | "reverse" ->
+    TyAll(fi,us"a",KindStar(fi),
+          TyArrow(fi,
+                  TySeq(TyVar(fi,us"a",0),-1),
+                  TySeq(TyVar(fi,us"a",0),-1)))
+  | "push_last" ->
+    TyAll(fi,us"a",KindStar(fi),
+          TyArrow(fi,
+                  TySeq(TyVar(fi,us"a",0),-1),
+                  TyArrow(fi,
+                          TyVar(fi,us"a",0),
+                          TySeq(TyVar(fi,us"a",0),-1))))
+  | "pop_last" ->
+    TyAll(fi,us"a",KindStar(fi),
+          TyArrow(fi,
+                  TySeq(TyVar(fi,us"a",0),-1),
+                  TySeq(TyVar(fi,us"a",0),-1)))
+  | "take" ->
+    TyAll(fi,us"a",KindStar(fi),
+          TyArrow(fi,
+                  TySeq(TyVar(fi,us"a",0),-1),
+                  TyArrow(fi,
+                          TyGround(fi,GInt),
+                          TySeq(TyVar(fi,us"a",0),-1))))
+  | "drop" ->
+    TyAll(fi,us"a",KindStar(fi),
+          TyArrow(fi,
+                  TySeq(TyVar(fi,us"a",0),-1),
+                  TyArrow(fi,
+                          TyGround(fi,GInt),
+                          TySeq(TyVar(fi,us"a",0),-1))))
+  | "map" ->
+    TyAll(fi,us"a",KindStar(fi),
+          TyAll(fi,us"b",KindStar(fi),
+                TyArrow(fi,
+                        TyArrow(fi,
+                                TyVar(fi,us"a",0),
+                                TyVar(fi,us"b",0)),
+                        TyArrow(fi,
+                                TySeq(TyVar(fi,us"a",0),-1),
+                                TySeq(TyVar(fi,us"b",0),-1)))))
+  | "any" ->
+    TyAll(fi,us"a",KindStar(fi),
+          TyArrow(fi,
+                  TyArrow(fi,
+                          TyVar(fi,us"a",0),
+                          TyGround(fi,GBool)),
+                  TyArrow(fi,
+                          TySeq(TyVar(fi,us"a",0),-1),
+                          TyGround(fi,GBool))))
+  | "seqall" ->
+    TyAll(fi,us"a",KindStar(fi),
+          TyArrow(fi,
+                  TyArrow(fi,
+                          TyVar(fi,us"a",0),
+                          TyGround(fi,GBool)),
+                  TyArrow(fi,
+                          TySeq(TyVar(fi,us"a",0),-1),
+                          TyGround(fi,GBool))))
+  | "find" ->
+    TyAll(fi,us"a",KindStar(fi),
+          TyArrow(fi,
+                  TyArrow(fi,
+                          TyVar(fi,us"a",0),
+                          TyGround(fi,GBool)),
+                  TyArrow(fi,
+                          TySeq(TyVar(fi,us"a",0),-1),
+                          TyVar(fi,us"a",0)))) (*TODO: Should return option*)
+  | "filter" ->
+    TyAll(fi,us"a",KindStar(fi),
+          TyArrow(fi,
+                  TyArrow(fi,
+                          TyVar(fi,us"a",0),
+                          TyGround(fi,GBool)),
+                  TyArrow(fi,
+                          TySeq(TyVar(fi,us"a",0),-1),
+                          TySeq(TyVar(fi,us"a",0),-1))))
+  | "foldr" ->
+    TyAll(fi,us"a",KindStar(fi),
+          TyAll(fi,us"b",KindStar(fi),
+                TyArrow(fi,
+                        TyArrow(fi,
+                                TyVar(fi,us"a",0),
+                                TyArrow(fi,
+                                        TyVar(fi,us"b",0),
+                                        TyVar(fi,us"b",0))),
+                        TyArrow(fi,
+                                TyVar(fi,us"b",0),
+                                TyArrow(fi,
+                                        TySeq(TyVar(fi,us"a",0),-1),
+                                        TyVar(fi,us"b",0))))))
+  | "foldl" ->
+    TyAll(fi,us"b",KindStar(fi),
+          TyAll(fi,us"a",KindStar(fi),
+                TyArrow(fi,
+                        TyArrow(fi,
+                                TyVar(fi,us"b",0),
+                                TyArrow(fi,
+                                        TyVar(fi,us"a",0),
+                                        TyVar(fi,us"b",0))),
+                        TyArrow(fi,
+                                TyVar(fi,us"b",0),
+                                TyArrow(fi,
+                                        TySeq(TyVar(fi,us"a",0),-1),
+                                        TyVar(fi,us"b",0))))))
+  | _ -> failwith "We don't have type of this function"
 
 let rec check_types_of_list tm_l seq_ty =
   match tm_l with
@@ -530,7 +657,7 @@ let rec tc env ty t =
     setType (TySeq(e_ty,-1)) (TmSeq(ti,ty_ident,TmList(updated_tmlist),tmseq))
   | TmSeqMethod(ti,fun_name,actual_fun,args,arg_index) ->
     let updated_args = tc_list args in
-    let new_seqmethod = setType (TySeqMethod(TySeq(TyDyn,-1),get_seq_fun_type fun_name)) (TmSeqMethod(ti,fun_name,actual_fun,updated_args,arg_index)) in
+    let new_seqmethod = setType (TySeqMethod(TySeq(TyDyn,-1),get_seq_fun_type fun_name (tm_info t))) (TmSeqMethod(ti,fun_name,actual_fun,updated_args,arg_index)) in
     new_seqmethod
   | TmChar(ti,x) -> failwith "TODO TmChar (later)"
   | TmUC(ti,tree,ord,unique) -> failwith "TmUC (later)"
