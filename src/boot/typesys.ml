@@ -41,7 +41,7 @@ let rec tyShift d c ty =
   | TyLam(fi,x,kind,ty1) -> TyLam(fi,x,kind, tyShift d (c+1) ty1)
   | TyApp(fi,ty1,ty2) -> TyApp(fi, tyShift d c ty1, tyShift d c ty2)
   | TyDyn -> TyDyn
-  | TySeq(seq_ty) -> TySeq(seq_ty)
+  | TySeq(seq_ty) -> TySeq(tyShift d c seq_ty) (*TODO???*)
 
 
 (* Substitutes type [tys] in ty *)
@@ -211,7 +211,7 @@ let rec containsTyDyn ty =
   | TyLam(fi,x,ki1,ty1) -> containsTyDyn ty1
   | TyApp(fi,ty1,ty2) -> containsTyDyn ty1 || containsTyDyn ty2
   | TyDyn -> true
-  | TySeq(seq_ty) -> false
+  | TySeq(seq_ty) -> containsTyDyn seq_ty
 
 
 (* Returns true of the type contains at least one TyVar *)
@@ -225,7 +225,7 @@ let containsFreeTyVar ty =
   | TyLam(fi,x,ki1,ty1) -> work (c+1) ty1
   | TyApp(fi,ty1,ty2) -> work c ty1 || work c ty2
   | TyDyn -> false
-  | TySeq(seq_ty) -> false
+  | TySeq(seq_ty) -> work c seq_ty
   in work 0 ty
 
 
@@ -240,7 +240,7 @@ let isTyVarFree ty =
   | TyLam(fi,x,ki1,ty1) -> work (d+1) ty1
   | TyApp(fi,ty1,ty2) -> work d ty1 || work d ty2
   | TyDyn -> false
-  | TySeq(seq_ty) -> false
+  | TySeq(seq_ty) -> work d seq_ty
   in work 0 ty
 
 
@@ -307,8 +307,8 @@ let tyMerge ty1 ty2 =
      | TySeq(seq_ty1),TySeq(seq_ty2) -> (TySeq(seq_ty1),env) (*TODO*)
      | TySeq(seq_ty),TyDyn -> (TySeq(seq_ty),env)
      | TyDyn,TySeq(seq_ty) -> (TySeq(seq_ty),env)
-     | TySeq(seq_ty),TyGround(_,_) -> failwith "TODO TySeq,TyGround"
-     | TyGround(_,_),TySeq(seq_ty) -> failwith "TODO TyGround,TySeq"
+     | TySeq(seq_ty),TyGround(_,_) -> tyRec seq_ty ty2 env
+     | TyGround(_,_),TySeq(seq_ty) -> tyRec seq_ty ty1 env
     )
   in
   try Some(tyRec ty1 ty2 [])
@@ -646,6 +646,11 @@ let rec tc env ty t =
   | TmMatch(ti,t1,cases) -> failwith "TODO TmMatch (later)"
   | TmNop -> TmNop
 
+let get_tybody ty =
+  match ty with
+  | TyAll(_,_,_,ty) -> ty
+  | _ -> ty
+
 (* Erase type abstractions and applications *)
 let rec erase t =
   let rec erase_list t_list =
@@ -657,16 +662,22 @@ let rec erase t =
   | TmVar(ti,x,n,pe) -> t
   | TmLam(ti,x,ty1,t1) -> TmLam(ti,x,ty1,erase t1)
   | TmClos(ti,s,ty,t1,env1,pe) -> failwith "Closer should not exist during erase."
-  | TmApp(ti,t1,t2) -> TmApp(ti, erase t1, erase t2)
+  | TmApp(ti,t1,t2) ->
+    let upd_app = TmApp(ti, erase t1, erase t2) in
+    upd_app
   | TmConst(ti,c) -> t
   | TmIfexp(ti,cnd,thn,els) -> TmIfexp(ti, cnd, erase thn, erase els)
   | TmSeq(ti,ty_ident,tm_list,tm_seq,ds_choice) ->
     let upd_tm_list = TmList(erase_list (get_list_from_tmlist tm_list)) in
     TmSeq(ti,ty_ident,upd_tm_list,tm_seq,ds_choice) (*TODO???*)
-  | TmSeqMethod _ -> t
+  | TmSeqMethod _ ->
+    t
   | TmFix(ti) -> t
   | TmTyLam(ti,x,kind,t1) -> erase t1
-  | TmTyApp(ti,t1,ty1) -> erase t1
+  | TmTyApp(ti,t1,ty1) ->
+    let t1_tybody = get_tybody (getType t1) in
+    let res = tySubst ty1 t1_tybody in
+    setType (res) t1
   | TmChar(ti,x) -> t
   | TmUC(ti,tree,ord,unique) -> t
   | TmUtest(ti,t1,t2,t3) -> TmUtest(ti, erase t1, erase t2, erase t3)
