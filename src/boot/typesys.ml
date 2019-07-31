@@ -572,33 +572,25 @@ let rec tc env ty t =
     if containsTyDyn ty1' then errorCannotInferType (tm_info t1) ty1'
     else
       let rec dive ty1' ty2' env s =
-        let _ = Printf.printf "***%s / %s***\n" (Ustring.to_utf8 (Pprint.pprint_ty ty1')) (Ustring.to_utf8 (Pprint.pprint_ty ty2')) in
         (match ty1' with
          | TyArrow(fi3,ty11,ty12) ->
-           let _ = Printf.printf "%s\n" "We have a TyArrow" in
            (* TODO Elias: The then-case might not be right... *)
            let ty22 = if containsTyDyn ty2' then
-               let _ = Printf.printf "%s\n" "ty2 contains TyDyn" in
                getType (tc env ty11 t2)
              else
-               let _ = Printf.printf "%s\n" "ty2 DOESN'T contain TyDyn" in
                ty2' in
            if containsTyDyn ty22 then errorCannotInferType (tm_info t2) ty22 else
-             let _ = Printf.printf "%s\n" "ty22 DOESN'T contain TyDyn" in
              let ty22s = tyShift s 0 ty22 in
              (match tyMerge ty11 ty22s with
              | None -> errorFuncAppMismatch (tm_info t2) ty11 ty22s
              | Some(ty11',substEnv) ->
-               let _ = Printf.printf "%s ty11:%s ty12 %s\n" "Some tymerge" (Ustring.to_utf8 (Pprint.pprint_ty ty11')) (Ustring.to_utf8 (Pprint.pprint_ty ty12)) in
                let res = substAll substEnv ty12 in
-               let _ = Printf.printf "%s\n" (Ustring.to_utf8 (Pprint.pprint_ty res)) in
              res)
         | TyAll(fi,x,ki,ty4) ->
           let ty' = dive ty4 ty2' env (s+1) in
           if isTyVarFree ty' then
             TyAll(fi,x,ki,ty')
           else
-            let _ = Printf.printf "Var %s not free\n" (Ustring.to_utf8 x) in
             ty'
         | _ -> errorNotFunctionType (tm_info t1) ty1')
       in
@@ -633,7 +625,7 @@ let rec tc env ty t =
       setType resTy (TmTyApp(ti,t1',ty2))
     | ty -> errorExpectsUniversal (tm_info t1) ty)
   | TmSeq(ti,ty_ident,tmlist,tmseq,ds_choice) ->
-    let updated_tmlist = tc_list (Ast.get_list_from_tm_list tmlist) in
+    let updated_tmlist = tc_list (Ast.get_list_from_tmlist tmlist) in
     let e_ty = get_element_ty (tm_info t) ty_ident in
     let _ = check_types_of_list updated_tmlist e_ty in
     setType (TySeq(e_ty)) (TmSeq(ti,ty_ident,TmList(updated_tmlist),tmseq,ds_choice))
@@ -669,7 +661,7 @@ let rec erase t =
   | TmConst(ti,c) -> t
   | TmIfexp(ti,cnd,thn,els) -> TmIfexp(ti, cnd, erase thn, erase els)
   | TmSeq(ti,ty_ident,tm_list,tm_seq,ds_choice) ->
-    let upd_tm_list = TmList(erase_list (get_list_from_tm_list tm_list)) in
+    let upd_tm_list = TmList(erase_list (get_list_from_tmlist tm_list)) in
     TmSeq(ti,ty_ident,upd_tm_list,tm_seq,ds_choice) (*TODO???*)
   | TmSeqMethod _ -> t
   | TmFix(ti) -> t
