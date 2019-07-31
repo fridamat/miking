@@ -256,7 +256,7 @@ and pprint_ty ty =
   | TyApp(fi,ty1,ty2) ->
     left inside ^. ppt true ty1 ^. us" " ^. ppt true ty2 ^. right inside
   | TyDyn -> us"Dyn"
-  | TySeq(seq_ty) -> us"TySeq:" ^. (pprint_ty seq_ty)
+  | TySeq(seq_ty) -> us"TySeq[" ^. (pprint_ty seq_ty) ^. us"]"
   in
     ppt true ty
 

@@ -308,7 +308,7 @@ let arity c =
 
 type 'a tokendata = {i:tinfo; v:'a}
 
-let get_list_from_tm_list tm_l =
+let get_list_from_tmlist tm_l =
   match tm_l with
   | TmList(l) -> l
 

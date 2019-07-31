@@ -104,7 +104,7 @@ let rec debruijn env t =
   | TmTyLam(ti,x,kind,t1) -> TmTyLam(ti,x,kind,debruijn (VarTy(x)::env) t1)
   | TmTyApp(ti,t1,ty1) -> TmTyApp(ti,debruijn env t1, debruijnTy env ty1)
   | TmIfexp(ti,cnd,thn,els) -> TmIfexp(ti, debruijn env cnd, debruijn env thn, debruijn env els)
-  | TmSeq(ti,ty_ident,clist,cseq,ds_choice) -> TmSeq(ti,ty_ident,TmList(debruijn_list env (get_list_from_tm_list clist)),cseq,ds_choice)
+  | TmSeq(ti,ty_ident,clist,cseq,ds_choice) -> TmSeq(ti,ty_ident,TmList(debruijn_list env (get_list_from_tmlist clist)),cseq,ds_choice)
   | TmSeqMethod(ti,fun_name,actual_fun,args,arg_index,ds_choice) ->
     TmSeqMethod(ti,fun_name,actual_fun,(debruijn_list env args),arg_index,ds_choice)
   | TmChar(_,_) -> t
@@ -182,7 +182,7 @@ let rec compare_term_lists l1 l2 =
        (compare_terms tm11 tm21) && (compare_terms tm12 tm22) && (compare_terms tm13 tm23)
      | TmFix _, TmFix _ -> true
      | TmSeq(_,_,tm_l1,seq1,ds_choice1), TmSeq(_,_,tm_l2,seq2,ds_choice2) ->
-       (compare_term_lists (get_list_from_tm_list tm_l1) (get_list_from_tm_list tm_l2)) && (compare_sequences seq1 seq2)
+       (compare_term_lists (get_list_from_tmlist tm_l1) (get_list_from_tmlist tm_l2)) && (compare_sequences seq1 seq2)
      | TmSeqMethod(_,fun_name1,_,_,_,_), TmSeqMethod(_,fun_name2,_,_,_,_) ->
        fun_name1 = fun_name2
      | _ -> false) in
@@ -800,13 +800,13 @@ let print_test_res res res_name =
     false
 
 let eval_test typecheck env t =
-  (*let t' =
+  let t' =
     (if typecheck then
-       let _ = Seqprocessing.run_tests in
+       (*let _ = Seqprocessing.run_tests in*)
        Seqprocessing.process_ast t
      else
        t
-    ) in*)
+    ) in
   eval env t
 
 (* Main function for evaluation a function. Performs lexing, parsing

@@ -36,7 +36,7 @@
       | TmTyApp(fi,t1,ty1) -> hasx t1
       | TmIfexp(fi,cnd,thn,els) -> hasx cnd || hasx thn || hasx els
       | TmSeq(ti,ty_ident,tm_list,tm_seq,ds_choice) ->
-        (match get_list_from_tm_list tm_list with
+        (match get_list_from_tmlist tm_list with
           | [] -> false
           | hd::tl -> hasx hd || hasx (TmSeq(ti,ty_ident,tm_list,tm_seq,ds_choice)))
       | TmSeqMethod(fi,fun_name,actual_fun,args,arg_index,ds_choice) -> false
@@ -212,7 +212,7 @@ mc_list:
   | mc_term RPAREN
       { TmList($1 :: []) }
   | mc_term COMMA mc_list
-      { TmList($1::(get_list_from_tm_list $3))}
+      { TmList($1::(get_list_from_tmlist $3))}
 
 ty_op:
   | COLON ty
