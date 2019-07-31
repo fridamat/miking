@@ -80,8 +80,7 @@ let rec debruijn env t =
     | TyLam(fi,x,kind,ty1) -> TyLam(fi,x,kind, debruijnTy (VarTy(x)::env) ty1)
     | TyApp(fi,ty1,ty2) -> TyApp(fi, debruijnTy env ty1, debruijnTy env ty2)
     | TyDyn -> TyDyn
-    | TySeq(seq_ty,ds_choice) -> TySeq(seq_ty,ds_choice)
-    | TySeqMethod(i_ty,r_ty) -> TySeqMethod(i_ty,r_ty)
+    | TySeq(seq_ty) -> TySeq((debruijnTy env seq_ty)) (*TODO???*)
     )
   in
   let rec debruijn_list env l =
@@ -105,9 +104,9 @@ let rec debruijn env t =
   | TmTyLam(ti,x,kind,t1) -> TmTyLam(ti,x,kind,debruijn (VarTy(x)::env) t1)
   | TmTyApp(ti,t1,ty1) -> TmTyApp(ti,debruijn env t1, debruijnTy env ty1)
   | TmIfexp(ti,cnd,thn,els) -> TmIfexp(ti, debruijn env cnd, debruijn env thn, debruijn env els)
-  | TmSeq(ti,ty_ident,clist,cseq) -> TmSeq(ti,ty_ident,TmList(debruijn_list env (get_list_from_tm_list clist)),cseq)
-  | TmSeqMethod(ti,fun_name,actual_fun,args,arg_index) ->
-    TmSeqMethod(ti,fun_name,actual_fun,(debruijn_list env args),arg_index)
+  | TmSeq(ti,ty_ident,clist,cseq,ds_choice) -> TmSeq(ti,ty_ident,TmList(debruijn_list env (get_list_from_tm_list clist)),cseq,ds_choice)
+  | TmSeqMethod(ti,fun_name,actual_fun,args,arg_index,ds_choice) ->
+    TmSeqMethod(ti,fun_name,actual_fun,(debruijn_list env args),arg_index,ds_choice)
   | TmChar(_,_) -> t
   | TmUC(ti,uct,o,u) -> TmUC(ti, UCLeaf(List.map (debruijn env) (uct2list uct)),o,u)
   | TmUtest(ti,t1,t2,tnext)
@@ -182,9 +181,9 @@ let rec compare_term_lists l1 l2 =
      | TmIfexp(_,tm11,tm12,tm13), TmIfexp(_,tm21,tm22,tm23) ->
        (compare_terms tm11 tm21) && (compare_terms tm12 tm22) && (compare_terms tm13 tm23)
      | TmFix _, TmFix _ -> true
-     | TmSeq(_,_,tm_l1,seq1), TmSeq(_,_,tm_l2,seq2) ->
+     | TmSeq(_,_,tm_l1,seq1,ds_choice1), TmSeq(_,_,tm_l2,seq2,ds_choice2) ->
        (compare_term_lists (get_list_from_tm_list tm_l1) (get_list_from_tm_list tm_l2)) && (compare_sequences seq1 seq2)
-     | TmSeqMethod(_,fun_name1,_,_,_), TmSeqMethod(_,fun_name2,_,_,_) ->
+     | TmSeqMethod(_,fun_name1,_,_,_,_), TmSeqMethod(_,fun_name2,_,_,_,_) ->
        fun_name1 = fun_name2
      | _ -> false) in
   match l1, l2 with
@@ -221,7 +220,7 @@ let rec val_equal v1 v2 =
         | _ -> false
       in o1 = o2 && u1 = u2 && eql (uct2revlist t1) (uct2revlist t2)
   | TmNop,TmNop -> true
-  | TmSeq(_,_,tml1,seq1), TmSeq(_,_,tml2,seq2) ->
+  | TmSeq(_,_,tml1,seq1,ds_choice1), TmSeq(_,_,tml2,seq2,ds_choice2) ->
     compare_sequences seq1 seq2
   | _ -> false
 
@@ -574,11 +573,11 @@ let get_last_arg_index fun_name =
 let check_element_type t1 t2 =
   let res =
     (match (Typesys.getType t1), (Typesys.getType t2) with
-     | TySeq(el_ty1,_), TySeq(el_ty2,_) ->
+     | TySeq(el_ty1), TySeq(el_ty2) ->
        Typesys.tyequal el_ty1 el_ty2
-     | TySeq(el_ty1,_), el_ty2 ->
+     | TySeq(el_ty1), el_ty2 ->
        Typesys.tyequal el_ty1 el_ty2
-     | el_ty1, TySeq(el_ty2,_) ->
+     | el_ty1, TySeq(el_ty2) ->
        Typesys.tyequal el_ty1 el_ty2
      | _ -> failwith "Expected a comparison with a sequence") in
   if res then
@@ -591,25 +590,10 @@ let get_ds_choice ti =
     (match ti with
      | {ety} ->
        (match ety with
-        | Some(TySeq(ty,ds_choice1)) ->
-          ds_choice1
-        |
-          Some(TySeqMethod(TySeq(ty1,ds_choice1),TySeq(ty2,ds_choice2))) ->
-          ds_choice1
-        | Some(TySeqMethod(TySeq(ty1,ds_choice1),ret_ty)) ->
-          ds_choice1
-        | Some(TySeqMethod(ret_ty,TySeq(ty2,ds_choice2))) ->
-          ds_choice2
-        | Some(TyArrow(fi,TySeq(ty,ds_choice1), b_ty)) ->
-          ds_choice1
-        |
-          Some(TyArrow(fi,TySeqMethod(TySeq(ty1,ds_choice1),TySeq(ty2,ds_choice2)), b_ty)) ->
-          ds_choice1
-        |
-          Some(TyArrow(fi,TySeqMethod(TySeq(ty1,ds_choice1),ret_ty), b_ty)) ->
-          ds_choice1
-        | Some(TyArrow(fi,TySeqMethod(inp_ty, TySeq(ty1,ds_choice1)), b_ty)) ->
-          ds_choice1
+        | Some(TySeq(ty)) ->
+          0 (*TODO:Change*)
+        | Some(TyArrow(fi,TySeq(ty), b_ty)) ->
+          0 (*TODO:Change*)
         | _ -> failwith "It is not of the right type"
        )
     ) in
@@ -619,42 +603,42 @@ let get_ds_choice ti =
 let rec eval env t =
   let call_seq_method ti fun_name actual_fun args env' =
     (match (Ustring.to_utf8 fun_name), actual_fun, args with
-    | "is_empty", SeqListFun4(f), [TmSeq(ti,ty_ident,tm_list,SeqList(l))] ->
+    | "is_empty", SeqListFun4(f), [TmSeq(ti,ty_ident,tm_list,SeqList(l),ds_choice)] ->
       TmConst(ti,CBool(f l))
-    | "first", SeqListFun5(f), [TmSeq(ti,ty_ident,tm_list,SeqList(l))] ->
+    | "first", SeqListFun5(f), [TmSeq(ti,ty_ident,tm_list,SeqList(l),ds_choice)] ->
       f l
-    | "last", SeqListFun5(f), [TmSeq(ti,ty_ident,tm_list,SeqList(l))] ->
+    | "last", SeqListFun5(f), [TmSeq(ti,ty_ident,tm_list,SeqList(l),ds_choice)] ->
       f l
-    | "push", SeqListFun3(f), [TmSeq(seq_ti,ty_ident,tm_l,SeqList(l)); e] ->
-      let _ = check_element_type (TmSeq(seq_ti,ty_ident,tm_l,SeqList(l))) e in
-      TmSeq(ti,ty_ident,tm_l,SeqList(f l e))
-    | "pop", SeqListFun6(f), [TmSeq(ti,ty_ident,tm_list,SeqList(l))] ->
-      TmSeq(ti,ty_ident,tm_list,SeqList(f l))
-    | "length", SeqListFun2(f), [TmSeq(_,_,_,SeqList(l))] ->
+    | "push", SeqListFun3(f), [TmSeq(seq_ti,ty_ident,tm_l,SeqList(l),ds_choice); e] ->
+      let _ = check_element_type (TmSeq(seq_ti,ty_ident,tm_l,SeqList(l),ds_choice)) e in
+      TmSeq(ti,ty_ident,tm_l,SeqList(f l e),ds_choice)
+    | "pop", SeqListFun6(f), [TmSeq(ti,ty_ident,tm_list,SeqList(l),ds_choice)] ->
+      TmSeq(ti,ty_ident,tm_list,SeqList(f l),ds_choice)
+    | "length", SeqListFun2(f), [TmSeq(_,_,_,SeqList(l),ds_choice)] ->
       TmConst(ti,CInt(f l))
-    | "nth", SeqListFun7(f), [TmSeq(seq_ti,ty_ident,tm_list,SeqList(l)); TmConst(const_ty,CInt(n))] ->
+    | "nth", SeqListFun7(f), [TmSeq(seq_ti,ty_ident,tm_list,SeqList(l),ds_choice); TmConst(const_ty,CInt(n))] ->
       f l n
-    | "append", SeqListFun1(f), [TmSeq(ti1,ty_ident1,tmlist1,SeqList(l1)); TmSeq(ti2,ty_ident2,tmlist2,SeqList(l2))] ->
-      let _ = check_element_type (TmSeq(ti1,ty_ident1,tmlist1,SeqList(l1))) (TmSeq(ti2,ty_ident2,tmlist2,SeqList(l2))) in
-      TmSeq(ti,ty_ident1,tmlist1,SeqList(f l1 l2))
-    | "reverse", SeqListFun6(f), [TmSeq(ti,ty_ident,tm_list,SeqList(l))] ->
-      TmSeq(ti,ty_ident,tm_list,SeqList(f l))
-    | "push_last", SeqListFun3(f), [TmSeq(seq_ti,ty_ident,tm_l,SeqList(l)); e] ->
-      let _ = check_element_type (TmSeq(seq_ti,ty_ident,tm_l,SeqList(l))) e in
-      TmSeq(ti,ty_ident,tm_l,SeqList(f l e))
-    | "pop_last", SeqListFun6(f), [TmSeq(ti,ty_ident,tm_list,SeqList(l))] ->
-      TmSeq(ti,ty_ident,tm_list,SeqList(f l))
-    | "take", SeqListFun8(f), [TmSeq(ti,ty_ident,tm_list,SeqList(l)); TmConst(const_ti,CInt(n))] ->
-      TmSeq(ti,ty_ident,tm_list,SeqList(f l n))
-    | "drop", SeqListFun8(f), [TmSeq(ti,ty_ident,tm_list,SeqList(l)); TmConst(const_ti,CInt(n))] ->
-      TmSeq(ti,ty_ident,tm_list,SeqList(f l n))
-    | "map", SeqListFun9(f), [TmClos(clos_ti,x,clos_ty,clos_tm,clos_env,clos_pemode); TmSeq(seq_ti,ty_ident,tm_list,SeqList(l))] ->
+    | "append", SeqListFun1(f), [TmSeq(ti1,ty_ident1,tmlist1,SeqList(l1),ds_choice1); TmSeq(ti2,ty_ident2,tmlist2,SeqList(l2),ds_choice2)] ->
+      let _ = check_element_type (TmSeq(ti1,ty_ident1,tmlist1,SeqList(l1),ds_choice1)) (TmSeq(ti2,ty_ident2,tmlist2,SeqList(l2),ds_choice2)) in
+      TmSeq(ti,ty_ident1,tmlist1,SeqList(f l1 l2),ds_choice1)
+    | "reverse", SeqListFun6(f), [TmSeq(ti,ty_ident,tm_list,SeqList(l),ds_choice)] ->
+      TmSeq(ti,ty_ident,tm_list,SeqList(f l),ds_choice)
+    | "push_last", SeqListFun3(f), [TmSeq(seq_ti,ty_ident,tm_l,SeqList(l),ds_choice); e] ->
+      let _ = check_element_type (TmSeq(seq_ti,ty_ident,tm_l,SeqList(l),ds_choice)) e in
+      TmSeq(ti,ty_ident,tm_l,SeqList(f l e),ds_choice)
+    | "pop_last", SeqListFun6(f), [TmSeq(ti,ty_ident,tm_list,SeqList(l),ds_choice)] ->
+      TmSeq(ti,ty_ident,tm_list,SeqList(f l),ds_choice)
+    | "take", SeqListFun8(f), [TmSeq(ti,ty_ident,tm_list,SeqList(l),ds_choice); TmConst(const_ti,CInt(n))] ->
+      TmSeq(ti,ty_ident,tm_list,SeqList(f l n),ds_choice)
+    | "drop", SeqListFun8(f), [TmSeq(ti,ty_ident,tm_list,SeqList(l),ds_choice); TmConst(const_ti,CInt(n))] ->
+      TmSeq(ti,ty_ident,tm_list,SeqList(f l n),ds_choice)
+    | "map", SeqListFun9(f), [TmClos(clos_ti,x,clos_ty,clos_tm,clos_env,clos_pemode); TmSeq(seq_ti,ty_ident,tm_list,SeqList(l),ds_choice)] ->
       (*TODO: Check type of element against lam_ty for those below*)
       (*TODO: Check return type of list for those below*)
       let map_f e =
         (eval env' (TmApp(seq_ti,TmLam(clos_ti,x,clos_ty,clos_tm),e))) in
-      TmSeq(seq_ti,ty_ident,tm_list,SeqList(f map_f l))
-    | "any", SeqListFun10(f), [TmClos(clos_ti,x,clos_ty,clos_tm,clos_env,clos_pemode); TmSeq(seq_ti,ty_ident,tm_list,SeqList(l))] ->
+      TmSeq(seq_ti,ty_ident,tm_list,SeqList(f map_f l),ds_choice)
+    | "any", SeqListFun10(f), [TmClos(clos_ti,x,clos_ty,clos_tm,clos_env,clos_pemode); TmSeq(seq_ti,ty_ident,tm_list,SeqList(l),ds_choice)] ->
       let any_f e =
         (match eval env' (TmApp(seq_ti,TmLam(clos_ti,x,clos_ty,clos_tm),e)) with
          | TmConst(_,CBool(b)) ->
@@ -662,7 +646,7 @@ let rec eval env t =
          | _ -> failwith "Wrong return type of any function"
         ) in
       TmConst(seq_ti,CBool(f any_f l))
-    | "seqall", SeqListFun10(f), [TmClos(clos_ti,x,clos_ty,clos_tm,clos_env,clos_pemode); TmSeq(seq_ti,ty_ident,tm_list,SeqList(l))] ->
+    | "seqall", SeqListFun10(f), [TmClos(clos_ti,x,clos_ty,clos_tm,clos_env,clos_pemode); TmSeq(seq_ti,ty_ident,tm_list,SeqList(l),ds_choice)] ->
       let all_f e =
         (match eval env' (TmApp(seq_ti,TmLam(clos_ti,x,clos_ty,clos_tm),e)) with
          | TmConst(_,CBool(b)) ->
@@ -670,7 +654,7 @@ let rec eval env t =
          | _ -> failwith "Wrong return type of any function"
         ) in
       TmConst(seq_ti,CBool(f all_f l))
-    | "find", SeqListFun11(f), [TmClos(clos_ti,x,clos_ty,clos_tm,clos_env,clos_pemode); TmSeq(seq_ti,ty_ident,tm_list,SeqList(l))] ->
+    | "find", SeqListFun11(f), [TmClos(clos_ti,x,clos_ty,clos_tm,clos_env,clos_pemode); TmSeq(seq_ti,ty_ident,tm_list,SeqList(l),ds_choice)] ->
       let find_f e =
         (match eval env' (TmApp(seq_ti,TmLam(clos_ti,x,clos_ty,clos_tm),e)) with
          | TmConst(_,CBool(b)) ->
@@ -683,19 +667,19 @@ let rec eval env t =
          | None -> failwith "Element did not exist in list" (*TODO: How should I handle this...*)
         ) in
       res
-    | "filter", SeqListFun12(f), [TmClos(clos_ti,x,clos_ty,clos_tm,clos_env,clos_pemode); TmSeq(seq_ti,ty_ident,tm_list,SeqList(l))] ->
+    | "filter", SeqListFun12(f), [TmClos(clos_ti,x,clos_ty,clos_tm,clos_env,clos_pemode); TmSeq(seq_ti,ty_ident,tm_list,SeqList(l),ds_choice)] ->
       let filter_f e =
         (match eval env' (TmApp(seq_ti,TmLam(clos_ti,x,clos_ty,clos_tm),e)) with
            | TmConst(_,CBool(b)) ->
              b
            | _ -> failwith "Wrong return type of any function"
         ) in
-      TmSeq(seq_ti,ty_ident,tm_list,SeqList(f filter_f l))
-    | "foldr", SeqListFun13(f), [TmClos(clos_ti,x,clos_ty,clos_tm,clos_env,clos_pemode); b; TmSeq(seq_ti,ty_ident,tm_list,SeqList(l))] ->
+      TmSeq(seq_ti,ty_ident,tm_list,SeqList(f filter_f l),ds_choice)
+    | "foldr", SeqListFun13(f), [TmClos(clos_ti,x,clos_ty,clos_tm,clos_env,clos_pemode); b; TmSeq(seq_ti,ty_ident,tm_list,SeqList(l),ds_choice)] ->
       let foldr_f b' e =
         eval env' (TmApp(seq_ti,TmApp(seq_ti,TmLam(clos_ti,x,clos_ty,clos_tm),b'),e)) in
       f foldr_f b l
-    | "foldl", SeqListFun13(f), [TmClos(clos_ti,x,clos_ty,clos_tm,clos_env,clos_pemode); b; TmSeq(seq_ti,ty_ident,tm_list,SeqList(l))] ->
+    | "foldl", SeqListFun13(f), [TmClos(clos_ti,x,clos_ty,clos_tm,clos_env,clos_pemode); b; TmSeq(seq_ti,ty_ident,tm_list,SeqList(l),ds_choice)] ->
       let foldl_f b' e =
         eval env' (TmApp(seq_ti,TmApp(seq_ti,TmLam(clos_ti,x,clos_ty,clos_tm),b'),e)) in
         f foldl_f b l
@@ -730,14 +714,14 @@ let rec eval env t =
          (match eval env t2 with
          | TmClos(fi,x,_,t3,env2,_) as tt -> eval ((TmApp(ti,TmFix(ti),tt))::env2) t3
          | _ -> failwith "Incorrect CFix")
-       | TmSeqMethod(ti,fun_name,actual_fun,args,arg_index) ->
+       | TmSeqMethod(ti,fun_name,actual_fun,args,arg_index,ds_choice) ->
          let updated_args = add_evaluated_term_to_args args (eval env t2) in
          let last_arg_index = get_last_arg_index ti.fi fun_name in
          if arg_index == last_arg_index then
            let res = call_seq_method ti fun_name actual_fun updated_args env in
            res
          else if arg_index < last_arg_index then
-           TmSeqMethod(ti,fun_name,actual_fun,updated_args,(arg_index+1))
+           TmSeqMethod(ti,fun_name,actual_fun,updated_args,(arg_index+1),ds_choice)
          else
            raise_error ti.fi "Argument index is out of bounds."
        | _ -> raise_error ti.fi "Application to a non closure value.")
@@ -755,15 +739,15 @@ let rec eval env t =
          eval env els
      | _ -> raise_error ti.fi "Condition in if-expression not a bool.")
   (* Sequence constructor *)
-  | TmSeq(fi,ty_ident,tmlist,tmseq) ->
+  | TmSeq(fi,ty_ident,tmlist,tmseq,ds_choice) ->
     (match tmseq with
     | SeqNone ->
       let new_tmlist = TmList(eval_tmlist env tmlist) in
       let new_tmseq = get_seq_from_list new_tmlist tmseq in
-      TmSeq(fi,ty_ident,new_tmlist,new_tmseq)
+      TmSeq(fi,ty_ident,new_tmlist,new_tmseq,ds_choice)
     | _ -> t)
   (* Sequence method*)
-  | TmSeqMethod(_,_,_,_,_) -> t
+  | TmSeqMethod _ -> t
   (* The rest *)
   | TmChar(_,_) -> t
   | TmUC(ti,uct,o,u) -> TmUC(ti,ucmap (eval env) uct,o,u)
@@ -816,14 +800,14 @@ let print_test_res res res_name =
     false
 
 let eval_test typecheck env t =
-  let t' =
+  (*let t' =
     (if typecheck then
        let _ = Seqprocessing.run_tests in
        Seqprocessing.process_ast t
      else
        t
-    ) in
-  eval env t'
+    ) in*)
+  eval env t
 
 (* Main function for evaluation a function. Performs lexing, parsing
    and evaluation. Does not perform any type checking *)

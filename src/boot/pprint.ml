@@ -197,8 +197,8 @@ and pprint basic t =
   | TmTyApp(_,t1,ty1) ->
       left inside ^. ppt false t1 ^. us" [" ^. pprint_ty ty1 ^. us"]" ^. right inside
   | TmIfexp(_,c,t,e) -> us"if " ^. ppt false c ^. us" then " ^. ppt false t ^. us" else " ^. ppt false e
-  | TmSeq(fi,ty_ident,clist,tmseq) -> us"TmSeq(" ^. (pprint_tm_list clist) ^. us")" (*TODO:Print the selected data structure type ty*) (*TODO:Print the selected data structure type ty*)
-  | TmSeqMethod(fi,fun_name,actual_fun,args,arg_index) -> us"Seq." ^. fun_name ^. us"()" (*TODO:Print the selected data structure type ty and the arguments?*)
+  | TmSeq(fi,ty_ident,clist,tmseq,ds_choice) -> us"TmSeq(" ^. (pprint_tm_list clist) ^. us")" (*TODO:Print the selected data structure type ty*) (*TODO:Print the selected data structure type ty*)
+  | TmSeqMethod(fi,fun_name,actual_fun,args,arg_index,ds_choice) -> us"Seq." ^. fun_name ^. us"()" (*TODO:Print the selected data structure type ty and the arguments?*)
   | TmChar(fi,c) -> us"'" ^. list2ustring [c] ^. us"'"
   | TmUC(fi,uct,ordered,uniqueness) -> (
     match ordered, uniqueness with
@@ -256,8 +256,7 @@ and pprint_ty ty =
   | TyApp(fi,ty1,ty2) ->
     left inside ^. ppt true ty1 ^. us" " ^. ppt true ty2 ^. right inside
   | TyDyn -> us"Dyn"
-  | TySeq(seq_ty,id) -> us"TySeq:" ^. (pprint_ty seq_ty)
-  | TySeqMethod(i_ty,r_ty) -> us"TySeqMethod:(input:" ^. (pprint_ty i_ty) ^. us"; output:" ^. (pprint_ty r_ty) ^. us")"
+  | TySeq(seq_ty) -> us"TySeq:" ^. (pprint_ty seq_ty)
   in
     ppt true ty
 
