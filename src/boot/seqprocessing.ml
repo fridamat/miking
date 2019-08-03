@@ -1,4 +1,6 @@
 open Ast
+open Dssa
+open Linkedlist
 open Typesys
 
 (*Print methods*)
@@ -31,6 +33,30 @@ let rec get_mf_count_string mf_matrix =
   | [] -> "\n"
   | hd::tl ->
     "\n ----START---- \n" ^ (get_mf_count_string_helper hd) ^ "\n" ^ (get_mf_count_string tl)
+
+let rec get_mf_freq_row_string mf_row =
+  match mf_row with
+  | [] -> "/"
+  | hd::tl ->
+    (Frequencies.to_string hd) ^ " " ^ (get_mf_freq_row_string tl)
+
+let rec get_mf_freq_string mf_matrix =
+  match mf_matrix with
+  | [] -> "\n"
+  | hd::tl ->
+    (get_mf_freq_row_string hd) ^ "\n" ^ (get_mf_freq_string tl)
+
+let rec get_selected_datastructures_string selected_dss =
+  match selected_dss with
+  | [] -> "\n"
+  | hd::tl ->
+    "- " ^ (string_of_int (List.nth hd 0)) ^ "\n" ^ (get_selected_datastructures_string tl)
+
+let rec get_seqs_w_selected_dss_string selected_ds_assoc_l =
+  match selected_ds_assoc_l with
+  | [] -> "\n"
+  | (hd1,hd2)::tl ->
+    "- " ^ (Ustring.to_utf8 (Pprint.pprint false hd1)) ^ " with data structure " ^ (string_of_int hd2) ^ "\n" ^ (get_seqs_w_selected_dss_string tl)
 
 (*Help methods*)
 let rec check_if_ty_is_seq ty =
@@ -321,13 +347,91 @@ let rec find_lam_var_rels seqs rels seqs_unchanged =
        find_lam_var_rels tl rels seqs_unchanged
     )
 
+let rec connect_seqs_list_w_sel_ds sel_ds seq_l =
+  match seq_l with
+  | [] -> []
+  | hd::tl ->
+    (hd,sel_ds)::(connect_seqs_list_w_sel_ds sel_ds tl)
+
+let rec connect_seqs_w_sel_dss selected_dss rels_assoc_l =
+  match selected_dss, rels_assoc_l with
+  | [], [] -> []
+  | [], _ | _, [] -> failwith "The lists should have the same length"
+  | (hd1::tl1), ((hd2,hdl2)::tl2) ->
+    let new_entry = (hd2,(List.nth hd1 0)) in
+    let new_entries = connect_seqs_list_w_sel_ds (List.nth hd1 0) hdl2 in
+    List.append (new_entry::new_entries) (connect_seqs_w_sel_dss tl1 tl2)
+
+let get_actual_fun_w_sel_ds fun_name sel_ds =
+  match sel_ds, (Ustring.to_utf8 fun_name) with
+  | 0, "is_empty" -> (SeqListFun4(Linkedlist.is_empty))
+  | 0, "first" -> (SeqListFun5(Linkedlist.first))
+  | 0, "last" -> (SeqListFun5(Linkedlist.last))
+  | 0, "push" -> (SeqListFun3(Linkedlist.push))
+  | 0, "pop" -> (SeqListFun6(Linkedlist.pop))
+  | 0, "length" -> (SeqListFun2(Linkedlist.length))
+  | 0, "nth" -> (SeqListFun7(Linkedlist.nth))
+  | 0, "append" -> (SeqListFun1(Linkedlist.append))
+  | 0, "reverse" -> (SeqListFun6(Linkedlist.reverse))
+  | 0, "push_last" -> (SeqListFun3(Linkedlist.push_last))
+  | 0, "pop_last" -> (SeqListFun6(Linkedlist.pop_last))
+  | 0, "take" -> (SeqListFun8(Linkedlist.take))
+  | 0, "drop" -> (SeqListFun8(Linkedlist.drop))
+  | 0, "map" -> (SeqListFun9(Linkedlist.map))
+  | 0, "any" -> (SeqListFun10(Linkedlist.any))
+  | 0, "seqall" -> (SeqListFun10(Linkedlist.all))
+  | 0, "find" -> (SeqListFun11(Linkedlist.find))
+  | 0, "filter" -> (SeqListFun12(Linkedlist.filter))
+  | 0, "foldr" -> (SeqListFun13(Linkedlist.foldr))
+  | 0, "foldl" -> (SeqListFun13(Linkedlist.foldl))
+  | _ -> failwith "Method not yet implemented1"
+
+let rec update_ast_w_sel_dss ast sel_dss =
+  let rec update_ast_list_w_sel_dss ast_l sel_dss' =
+    (match ast_l with
+     | [] -> []
+     | hd::tl ->
+       let upd_hd = update_ast_w_sel_dss hd sel_dss' in
+       upd_hd::(update_ast_list_w_sel_dss tl sel_dss')) in
+  match ast with
+  | TmSeq(ti,ty_ident,tm_l,tm_seq,ds_choice) ->
+    let upd_tm_l = update_ast_list_w_sel_dss (get_list_from_tmlist tm_l) sel_dss in
+    let upd_ds_choice = List.assoc ast sel_dss in
+    TmSeq(ti,ty_ident,TmList(upd_tm_l),tm_seq,upd_ds_choice)
+  | TmSeqMethod(ti,fun_name,actual_fun,args,arg_index,ds_choice) ->
+    let upd_ds_choice = List.assoc ast sel_dss in
+    let upd_actual_fun = get_actual_fun_w_sel_ds fun_name upd_ds_choice in
+    TmSeqMethod(ti,fun_name,upd_actual_fun,args,arg_index,upd_ds_choice)
+  | TmNop | TmVar _ | TmChar _ | TmFix _ | TmConst _ -> ast
+  | TmLam(ti,x,ty,tm) ->
+    let upd_tm = update_ast_w_sel_dss tm sel_dss in
+    TmLam(ti,x,ty,upd_tm)
+  | TmClos(ti,x,ty,tm,env,pm) ->
+    let upd_tm = update_ast_w_sel_dss tm sel_dss in
+    TmClos(ti,x,ty,upd_tm,env,pm)
+  | TmApp(ti,tm1,tm2) ->
+    let upd_tm1 = update_ast_w_sel_dss tm1 sel_dss in
+    let upd_tm2 = update_ast_w_sel_dss tm2 sel_dss in
+    TmApp(ti,upd_tm1,upd_tm2)
+  | TmUtest(ti,tm1,tm2,tm3) ->
+    let upd_tm1 = update_ast_w_sel_dss tm1 sel_dss in
+    let upd_tm2 = update_ast_w_sel_dss tm2 sel_dss in
+    let upd_tm3 = update_ast_w_sel_dss tm3 sel_dss in
+    TmUtest(ti,upd_tm1,upd_tm2,upd_tm3)
+  | TmIfexp(ti,tm1,tm2,tm3) ->
+    let upd_tm1 = update_ast_w_sel_dss tm1 sel_dss in
+    let upd_tm2 = update_ast_w_sel_dss tm2 sel_dss in
+    let upd_tm3 = update_ast_w_sel_dss tm3 sel_dss in
+    TmIfexp(ti,upd_tm1,upd_tm2,upd_tm3)
+  | TmMatch _ | TmUC _ | TmTyApp _ | TmTyLam _ ->
+    failwith "Not implemented"
+
 let process_ast ast =
   (*Find all terms of sequence type and sequence methods, and their internal relationships*)
   let (rls,seqs) = find_rels_and_seqs_in_ast ast [] [] in
   let rels = find_lam_var_rels seqs rls seqs in
   let _ = Printf.printf "The seqs:\n%s\n" (get_tm_list_string seqs) in
   let _ = Printf.printf "The rels:\n%s\n" (get_tm_pair_list_string rels) in
-
   (*Get the sequence constructors*)
   let seq_cons = find_seq_cons_among_seqs seqs in
   let _ = Printf.printf "The seq cons:\n%s\n" (get_tm_list_string seq_cons) in
@@ -343,4 +447,16 @@ let process_ast ast =
   (*Create Method-Frequency (MF) matrix*)
   let mf_matrix1 = create_mf_matrix rels_assoc_l3 in
   let _ = Printf.printf "The first version of the mf matrix:\n%s\n" (get_mf_count_string mf_matrix1) in
-  ast
+  (*Translate MF count to MF frequencies*)
+  let mf_matrix2 = Frequencies.translate_mf_assoc_list mf_matrix1 (get_seq_fun_names) in
+  let _ = Printf.printf "The second version of the mf matrix:\n%s\n" (get_mf_freq_string mf_matrix2) in
+  (*Data structure selection algorithm*)
+  let selected_dss = Dssa.main mf_matrix2 in
+  let _ = Printf.printf "The selected data structures are:\n%s\n" (get_selected_datastructures_string selected_dss) in
+  (*Connect selected data structure with all seqs*)
+  let sel_dss_assoc_l = connect_seqs_w_sel_dss selected_dss rels_assoc_l3 in
+  let _ = Printf.printf "The seqs with selected data structures are:\n%s\n" (get_seqs_w_selected_dss_string sel_dss_assoc_l) in
+  (*Update ast with selected data structures*)
+  let upd_ast = update_ast_w_sel_dss ast sel_dss_assoc_l in
+  let _ = Printf.printf "The updated ast is:\n%s\n" (Ustring.to_utf8 (Pprint.pprint false upd_ast)) in
+  upd_ast

@@ -146,7 +146,7 @@ and tm =
 | TmTyLam       of tinfo * ustring * kind * tm       (* Type abstraction *)
 | TmTyApp       of tinfo * tm * ty                   (* Type application *)
 | TmSeq         of tinfo * ty_ident * tm_list * sequence * ds_choice             (* Sequence constructor *)
-| TmSeqMethod   of tinfo * fun_name * actual_fun * args * arg_index * ds_choice (* Sequence method *)
+| TmSeqMethod   of tinfo * fun_name * actual_fun * args * arg_index * ds_choice (* Sequence method *) (*TODO:Is ds_choice field unnecessary?*)
 
 
 | TmChar        of tinfo * int

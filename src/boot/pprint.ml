@@ -181,7 +181,7 @@ and pprint basic t =
      | TmList(hd::tl) -> (pprint false hd) ^. us"," ^. (pprint_tm_list (TmList(tl)))) in
   let rec ppt inside t =
   match t with
-  | TmVar(_,x,n,_) -> varDebugPrint x n
+    | TmVar(_,x,n,_) -> us"TmVar(" ^. (varDebugPrint x n) ^. us")"
   | TmLam(_,x,ty,t1) -> left inside ^.
       us"lam " ^. x ^. us":" ^. pprint_ty ty ^. us". " ^. ppt false t1 ^. right inside
   | TmClos(_,x,_,t,_,false) -> left inside ^. us"clos " ^. x ^. us". " ^.
@@ -197,8 +197,8 @@ and pprint basic t =
   | TmTyApp(_,t1,ty1) ->
       left inside ^. ppt false t1 ^. us" [" ^. pprint_ty ty1 ^. us"]" ^. right inside
   | TmIfexp(_,c,t,e) -> us"if " ^. ppt false c ^. us" then " ^. ppt false t ^. us" else " ^. ppt false e
-  | TmSeq(fi,ty_ident,clist,tmseq,ds_choice) -> us"TmSeq(" ^. (pprint_tm_list clist) ^. us")" (*TODO:Print the selected data structure type ty*) (*TODO:Print the selected data structure type ty*)
-  | TmSeqMethod(fi,fun_name,actual_fun,args,arg_index,ds_choice) -> us"Seq." ^. fun_name ^. us"()" (*TODO:Print the selected data structure type ty and the arguments?*)
+  | TmSeq(fi,ty_ident,clist,tmseq,ds_choice) -> us"TmSeq(" ^. (pprint_tm_list clist) ^. us")" ^. us"(){" ^. us(string_of_int ds_choice) ^. us"}" (*TODO:Print the selected data structure type ty*) (*TODO:Print the selected data structure type ty*)
+  | TmSeqMethod(fi,fun_name,actual_fun,args,arg_index,ds_choice) -> us"Seq." ^. fun_name ^. us"(){" ^. us(string_of_int ds_choice) ^. us"}" (*TODO:Print the selected data structure type ty and the arguments?*)
   | TmChar(fi,c) -> us"'" ^. list2ustring [c] ^. us"'"
   | TmUC(fi,uct,ordered,uniqueness) -> (
     match ordered, uniqueness with

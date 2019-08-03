@@ -256,8 +256,8 @@ module Dssa = struct
       go_through_variables (i+1) mf mc updated_selected_data_structures
 
   let main mf =
-    let mc = [[Complexities.Logn; Complexities.Const; Complexities.Logn];
-              [Complexities.Logn; Complexities.Const; Complexities.Logn]] in (*TODO: Collect from file*)
+    let mc =
+      [[Complexities.Logn;Complexities.Logn;Complexities.Logn; Complexities.Logn;Complexities.Logn;Complexities.Logn;Complexities.Logn;Complexities.Logn;Complexities.Logn;Complexities.Logn;Complexities.Logn;Complexities.Logn;Complexities.Logn;Complexities.Logn;Complexities.Logn;Complexities.Logn;Complexities.Logn;Complexities.Logn;Complexities.Logn;Complexities.Logn;];] in (*TODO: Collect from file*)
     let selected_data_structures = go_through_variables 0 mf mc [] in
     selected_data_structures
 end
