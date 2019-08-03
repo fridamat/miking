@@ -20,6 +20,18 @@ let rec get_rels_assoc_list_string rels_assoc_l =
   | (hd,hdl)::tl ->
     (Ustring.to_utf8 (Pprint.pprint false hd)) ^ " is related to:\n" ^ (get_tm_list_string hdl) ^ (get_rels_assoc_list_string tl)
 
+let rec get_mf_count_string_helper mf_row =
+  match mf_row with
+  | [] -> "-------\n"
+  | (hd,hd_count)::tl ->
+    "- " ^ hd ^ " with count " ^ (string_of_int hd_count) ^ "\n" ^ (get_mf_count_string_helper tl)
+
+let rec get_mf_count_string mf_matrix =
+  match mf_matrix with
+  | [] -> "\n"
+  | hd::tl ->
+    "\n ----START---- \n" ^ (get_mf_count_string_helper hd) ^ "\n" ^ (get_mf_count_string tl)
+
 (*Help methods*)
 let rec check_if_ty_is_seq ty =
   match ty with
@@ -30,7 +42,6 @@ let rec check_if_ty_is_seq ty =
   | TyArrow(_,_,rhs_ty) ->
     check_if_ty_is_seq rhs_ty
   | _ ->
-    (*let _ = Printf.printf "%s does not have type TySeq\n" (Ustring.to_utf8 (Pprint.pprint_ty ty)) in*)
     false
 
 let rec check_if_tm_is_seq t =
@@ -44,6 +55,25 @@ let rec check_if_tm_is_seq t =
     )
   | _, ty ->
     check_if_ty_is_seq ty
+
+let rec find_related_vars lam_x seqs =
+  match seqs with
+  | [] -> []
+  | hd::tl ->
+    (match hd with
+     | TmVar(_,var_x,_,_) ->
+       if (Ustring.to_utf8 var_x) = (Ustring.to_utf8 lam_x) then
+         hd::(find_related_vars lam_x tl)
+       else
+         find_related_vars lam_x tl
+     | _ ->
+       find_related_vars lam_x tl)
+
+let rec get_lam_var_rels lam vars =
+  match vars with
+  | [] -> []
+  | hd::tl ->
+    (lam,hd)::(get_lam_var_rels lam tl)
 
 let rec find_rels_and_seqs_in_ast ast rels seqs =
   let find_rels_and_seqs_in_tmapp tm1 tm2 =
@@ -63,9 +93,6 @@ let rec find_rels_and_seqs_in_ast ast rels seqs =
        let new_rel = ((List.nth seqs_tm1 ((List.length seqs_tm1)-1)),(List.nth seqs_tm2 0)) in
        let upd_rels = List.append (new_rel::rels_tm1) rels_tm2 in
        let upd_seqs = List.append seqs_tm1 seqs_tm2 in
-       (*let _ = Printf.printf "%s with %s\n" (Ustring.to_utf8 (Pprint.pprint false tm1)) (Ustring.to_utf8 (Pprint.pprint false tm2)) in
-       let _ = Printf.printf "The LHS seqs are: %s\n" (get_tm_list_string seqs_tm1) in
-       let _ = Printf.printf "The RHS seqs are: %s\n" (get_tm_list_string seqs_tm2) in*)
        (upd_rels,upd_seqs)
      | _ ->
        let (rels_tm1,seqs_tm1) = find_rels_and_seqs_in_ast tm1 [] [] in
@@ -88,12 +115,24 @@ let rec find_rels_and_seqs_in_ast ast rels seqs =
     (rels,(ast::seqs))
   | TmNop ->
     (rels,seqs)
-  | TmVar _ | TmChar _ | TmFix _ | TmConst _ ->
+  | TmVar(ti,x,di,pm) ->
     if check_if_tm_is_seq ast then
       (rels,(ast::seqs))
     else
       (rels,seqs)
-  | TmLam(_,_,_,tm) | TmClos(_,_,_,tm,_,_) ->
+  | TmChar _ | TmFix _ | TmConst _ ->
+    if check_if_tm_is_seq ast then
+      (rels,(ast::seqs))
+    else
+      (rels,seqs)
+  | TmLam(_,x,_,tm)  ->
+    let (upd_seqs) =
+      (if check_if_tm_is_seq ast then
+         (ast::seqs)
+       else
+         seqs) in
+    find_rels_and_seqs_in_ast tm rels upd_seqs
+  | TmClos(_,_,_,tm,_,_) ->
     let upd_seqs =
       (if check_if_tm_is_seq ast then
          ast::seqs
@@ -199,15 +238,96 @@ let rec reduce_rels rels_assoc_l visited_assoc_l =
       (*Mark hd as visited*)
       let upd_visited_assoc_l1 = upd_rels_assoc_list_bool_entry hd visited_assoc_l true in
       (*Get all relatives of hd*)
-      let (hd_rel_seqs,upd_visited_assoc_l2) = find_all_related_seqs rels_assoc_l (List.assoc hd rels_assoc_l) [] visited_assoc_l [] in
+      let (hd_rel_seqs,upd_visited_assoc_l2) = find_all_related_seqs rels_assoc_l (List.assoc hd rels_assoc_l) [] upd_visited_assoc_l1 [] in
       (hd,hd_rel_seqs)::(reduce_rels rels_assoc_l upd_visited_assoc_l2)
 
+let get_seq_fun_names =
+  (*TODO: Get this from somewhere else*)
+  ["is_empty";
+   "first";
+   "last";
+   "push";
+   "pop";
+   "length";
+   "nth";
+   "append";
+   "reverse";
+   "push_last";
+   "pop_last";
+   "take";
+   "drop";
+   "map";
+   "any";
+   "seqall";
+   "find";
+   "filter";
+   "foldr";
+   "foldl"]
+
+let rec init_fun_count_assoc_list funs =
+  match funs with
+  | [] -> []
+  | hd::tl ->
+    (hd,0)::(init_fun_count_assoc_list tl)
+
+let init_mf_row =
+  let fun_names = get_seq_fun_names in
+  init_fun_count_assoc_list fun_names
+
+let rec get_seqmethods seqs =
+  match seqs with
+  | [] -> []
+  | hd::tl ->
+    (match hd with
+     | TmSeqMethod _ -> hd::(get_seqmethods tl)
+     | _ -> get_seqmethods tl
+    )
+
+let get_seqm_fun_name_string seqm =
+  match seqm with
+  | TmSeqMethod(_,fun_name,_,_,_,_) -> (Ustring.to_utf8 fun_name)
+  | _ -> failwith "Expected a TmSeqMethod"
+
+let rec fill_in_mf_row mf_row seqms =
+  match seqms with
+  | [] -> mf_row
+  | hd::tl ->
+    let fun_name = get_seqm_fun_name_string hd in
+    let curr_fun_count = List.assoc fun_name mf_row in
+    let upd_fun_count = curr_fun_count + 1 in
+    let upd_mf_row1 = List.remove_assoc fun_name mf_row in
+    let upd_mf_row2 = (fun_name,upd_fun_count)::upd_mf_row1 in
+    fill_in_mf_row upd_mf_row2 tl
+
+let rec create_mf_matrix rels_assoc_l =
+  match rels_assoc_l with
+  | [] -> []
+  | (hd,hdl)::tl ->
+    let mf_row = init_mf_row in
+    let seqms = get_seqmethods hdl in
+    let upd_mf_row = fill_in_mf_row mf_row seqms in
+    upd_mf_row::(create_mf_matrix tl)
+
+let rec find_lam_var_rels seqs rels seqs_unchanged =
+  match seqs with
+  | [] -> rels
+  | hd::tl ->
+    (match hd with
+     | TmLam(_,x,_,_) ->
+       let rel_vars = find_related_vars x seqs_unchanged in
+       let lam_var_rels = get_lam_var_rels hd (rel_vars) in
+       List.append lam_var_rels rels
+     | _ ->
+       find_lam_var_rels tl rels seqs_unchanged
+    )
+
 let process_ast ast =
-  let _ = Printf.printf "The program is %s\n" (Ustring.to_utf8 (Pprint.pprint false ast)) in
   (*Find all terms of sequence type and sequence methods, and their internal relationships*)
-  let (rels,seqs) = find_rels_and_seqs_in_ast ast [] [] in
+  let (rls,seqs) = find_rels_and_seqs_in_ast ast [] [] in
+  let rels = find_lam_var_rels seqs rls seqs in
   let _ = Printf.printf "The seqs:\n%s\n" (get_tm_list_string seqs) in
   let _ = Printf.printf "The rels:\n%s\n" (get_tm_pair_list_string rels) in
+
   (*Get the sequence constructors*)
   let seq_cons = find_seq_cons_among_seqs seqs in
   let _ = Printf.printf "The seq cons:\n%s\n" (get_tm_list_string seq_cons) in
@@ -217,6 +337,10 @@ let process_ast ast =
   (*Transfer relationships in rels to the rels assoc list*)
   let rels_assoc_l2 = transl_rels_to_rels_assoc_list2 rels rels_assoc_l1 in
   let _ = Printf.printf "The second version of the rels assoc list:\n%s\n" (get_rels_assoc_list_string rels_assoc_l2) in
+  (*Reduce relationships*)
   let rels_assoc_l3 = reduce_rels rels_assoc_l2 (init_visited_seqs_assoc_list rels_assoc_l2) in
   let _ = Printf.printf "The third version of the rels assoc list:\n%s\n" (get_rels_assoc_list_string rels_assoc_l3) in
+  (*Create Method-Frequency (MF) matrix*)
+  let mf_matrix1 = create_mf_matrix rels_assoc_l3 in
+  let _ = Printf.printf "The first version of the mf matrix:\n%s\n" (get_mf_count_string mf_matrix1) in
   ast
