@@ -428,6 +428,7 @@ let rec update_ast_w_sel_dss ast sel_dss =
     failwith "Not implemented2"
 
 let process_ast ast =
+  let _ = Printf.printf "\nThe complete program is:\n%s\n" (Ustring.to_utf8 (Pprint.pprint false ast)) in
   (*Find all terms of sequence type and sequence methods, and their internal relationships*)
   let (rls,seqs) = find_rels_and_seqs_in_ast ast [] [] in
   let rels = find_lam_var_rels seqs rls seqs in
