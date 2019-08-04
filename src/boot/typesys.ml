@@ -19,7 +19,7 @@ open Pprint
 open Errors
 
 (* Debug options *)
-let enable_debug_type_checking = true
+let enable_debug_type_checking = false
 
 
 (* Generic type checking function *)

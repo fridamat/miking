@@ -1,77 +1,77 @@
 lang mcore
 
 // is_empty
-utest true (seqmethod.is_empty (newseq [int] ()))
-utest false (seqmethod.is_empty (newseq [int] (1)))
+utest true (seqmethod.is_empty [Int] (newseq [int] ()))
+utest false (seqmethod.is_empty [Int] (newseq [int] (1)))
 
 // first
-utest 1 (seqmethod.first (newseq [int] (1)))
-utest 1 (seqmethod.first (newseq [int] (1,2)))
+utest 1 (seqmethod.first [Int] (newseq [int] (1)))
+utest 1 (seqmethod.first [Int] (newseq [int] (1,2)))
 
 // last
-utest 1 (seqmethod.last (newseq [int] (1)))
-utest 2 (seqmethod.last (newseq [int] (1,2)))
+utest 1 (seqmethod.last [Int] (newseq [int] (1)))
+utest 2 (seqmethod.last [Int] (newseq [int] (1,2)))
 
 // push
-utest (newseq [int] (1)) (seqmethod.push (newseq [int] ()) 1)
-utest (newseq [int] (1,2,3)) (seqmethod.push (newseq [int] (2,3)) 1)
+utest (newseq [int] (1)) (seqmethod.push [Int] (newseq [int] ()) 1)
+utest (newseq [int] (1,2,3)) (seqmethod.push [Int] (newseq [int] (2,3)) 1)
 
 // pop
-utest (newseq [int] ()) (seqmethod.pop (newseq [int] (1)))
-utest (newseq [int] (1,2,3)) (seqmethod.pop (newseq [int] (0,1,2,3)))
+utest (newseq [int] ()) (seqmethod.pop [Int] (newseq [int] (1)))
+utest (newseq [int] (1,2,3)) (seqmethod.pop [Int] (newseq [int] (0,1,2,3)))
 
 // length
-utest 0 (seqmethod.length (newseq [int] ()))
-utest 2 (seqmethod.length (newseq [int] (1,2)))
+utest 0 (seqmethod.length [Int] (newseq [int] ()))
+utest 2 (seqmethod.length [Int] (newseq [int] (1,2)))
 
 // nth
-utest 1 (seqmethod.nth (newseq [int] (1,2,3)) 0)
-utest 2 (seqmethod.nth (newseq [int] (1,2,3)) 1)
-utest 3 (seqmethod.nth (newseq [int] (1,2,3)) 2)
+utest 1 (seqmethod.nth [Int] (newseq [int] (1,2,3)) 0)
+utest 2 (seqmethod.nth [Int] (newseq [int] (1,2,3)) 1)
+utest 3 (seqmethod.nth [Int] (newseq [int] (1,2,3)) 2)
 
 // append
-utest (newseq [int] (1,2,3)) (seqmethod.append (newseq [int] (1)) (newseq [int] (2,3)))
-utest (newseq [int] (1,2,3)) (seqmethod.append (newseq [int] ()) (newseq [int] (1,2,3)))
+utest (newseq [int] (1,2,3)) (seqmethod.append [Int] (newseq [int] (1)) (newseq [int] (2,3)))
+utest (newseq [int] (1,2,3)) (seqmethod.append [Int] (newseq [int] ()) (newseq [int] (1,2,3)))
 
 // reverse
-utest (newseq [int] (3,2,1)) (seqmethod.reverse (newseq [int] (1,2,3)))
+utest (newseq [int] (3,2,1)) (seqmethod.reverse [Int] (newseq [int] (1,2,3)))
 
 // push_last
-utest (newseq [int] (1,2,3)) (seqmethod.push_last (newseq [int] (1,2)) 3)
+utest (newseq [int] (1,2,3)) (seqmethod.push_last [Int] (newseq [int] (1,2)) 3)
 
 // pop_last
-utest (newseq [int] (1,2,3)) (seqmethod.pop_last (newseq [int] (1,2,3,4)))
+utest (newseq [int] (1,2,3)) (seqmethod.pop_last [Int] (newseq [int] (1,2,3,4)))
 
 // take
-utest (newseq [int] (1,2)) (seqmethod.take (newseq [int] (1,2,3)) 2)
+utest (newseq [int] (1,2)) (seqmethod.take [Int] (newseq [int] (1,2,3)) 2)
 
 // drop
-utest (newseq [int] (2,3)) (seqmethod.drop (newseq [int] (1,2,3)) 1)
+utest (newseq [int] (2,3)) (seqmethod.drop [Int] (newseq [int] (1,2,3)) 1)
 
 // map
-let s1 = (seqmethod.map (lam x:Int. x) (newseq [int] (1,2)))
+let s1 = (seqmethod.map [Int] (lam x:Int. x) (newseq [int] (1,2)))
 utest (newseq [int] (1,2)) s1
 
 // any
-let b1 = (seqmethod.any (lam x:Int. true) (newseq [int] (1,2)))
+let b1 = (seqmethod.any [Int] (lam x:Int. true) (newseq [int] (1,2)))
 utest true b1
 
 // all
-let b2 = (seqmethod.seqall (lam x:Int. true) (newseq [int] (1,2)))
+let b2 = (seqmethod.seqall [Int] (lam x:Int. true) (newseq [int] (1,2)))
 utest true b2
 
 // find
-let e1 = (seqmethod.find (lam x:Int. true) (newseq [int] (1,2)))
+let e1 = (seqmethod.find [Int] (lam x:Int. true) (newseq [int] (1,2)))
 utest 1 e1
 
 // filter
-let s2 = (seqmethod.filter (lam x:Int. true) (newseq [int] (1,2)))
+let s2 = (seqmethod.filter [Int] (lam x:Int. true) (newseq [int] (1,2)))
 utest (newseq [int] (1,2)) s2
 
 // foldr
-let r1 = (seqmethod.foldr (lam x:Int. (lam y:Int. addi x y)) 1 (newseq [int] (1,2)))
+let r1 = (seqmethod.foldr [Int] (lam x:Int. (lam y:Int. addi x y)) 1 (newseq [int] (1,2)))
 utest 4 r1
 
 // foldl
-let r2 = (seqmethod.foldl (lam x:Int. (lam y:Int. addi x y)) 1 (newseq [int] (1,2)))
+let r2 = (seqmethod.foldl [Int] (lam x:Int. (lam y:Int. addi x y)) 1 (newseq [int] (1,2)))
 utest 4 r2

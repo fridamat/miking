@@ -807,7 +807,7 @@ let eval_test typecheck env t =
      else
        t
     ) in
-  eval env t
+  eval env t'
 
 (* Main function for evaluation a function. Performs lexing, parsing
    and evaluation. Does not perform any type checking *)

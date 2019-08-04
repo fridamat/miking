@@ -198,7 +198,7 @@ and pprint basic t =
       left inside ^. ppt false t1 ^. us" [" ^. pprint_ty ty1 ^. us"]" ^. right inside
   | TmIfexp(_,c,t,e) -> us"if " ^. ppt false c ^. us" then " ^. ppt false t ^. us" else " ^. ppt false e
   | TmSeq(fi,ty_ident,clist,tmseq,ds_choice) -> us"TmSeq(" ^. (pprint_tm_list clist) ^. us")" ^. us"(){" ^. us(string_of_int ds_choice) ^. us"}" (*TODO:Print the selected data structure type ty*) (*TODO:Print the selected data structure type ty*)
-  | TmSeqMethod(fi,fun_name,actual_fun,args,arg_index,ds_choice) -> us"Seq." ^. fun_name ^. us"(){" ^. us(string_of_int ds_choice) ^. us"}" (*TODO:Print the selected data structure type ty and the arguments?*)
+  | TmSeqMethod(fi,fun_name,actual_fun,args,arg_index,ds_choice) -> us"Seq." ^. fun_name ^. us"(" ^. us(pprint_seqfuntype actual_fun) ^. us"){" ^. us(string_of_int ds_choice) ^. us"}"
   | TmChar(fi,c) -> us"'" ^. list2ustring [c] ^. us"'"
   | TmUC(fi,uct,ordered,uniqueness) -> (
     match ordered, uniqueness with
@@ -271,11 +271,17 @@ and pprint_kind k =
 
 and pprint_seqfuntype seq_fun =
   match seq_fun with
-  | SeqListFun1 _ ->
-    "tm linkedlist -> tm linkedlist -> tm linkedlist"
-  | SeqListFun2 _ ->
-    "tm linkedlist -> int"
-  | SeqListFun3 _->
-    "tm linkedlist -> tm -> tm linkedlist"
-  | SeqFunNone ->
-    "No type set"
+  | SeqListFun1 _ -> "Fun 1"
+  | SeqListFun2 _ -> "Fun 2"
+  | SeqListFun3 _ -> "Fun 3"
+  | SeqListFun4 _ -> "Fun 4"
+  | SeqListFun5 _ -> "Fun 5"
+  | SeqListFun6 _ -> "Fun 6"
+  | SeqListFun7 _ -> "Fun 7"
+  | SeqListFun8 _ -> "Fun 8"
+  | SeqListFun9 _ -> "Fun 9"
+  | SeqListFun10 _ -> "Fun 10"
+  | SeqListFun11 _ -> "Fun 11"
+  | SeqListFun12 _ -> "Fun 12"
+  | SeqListFun13 _ -> "Fun 13"
+  | SeqFunNone -> "NO Fun"
