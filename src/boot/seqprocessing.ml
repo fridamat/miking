@@ -102,6 +102,7 @@ let rec get_lam_var_rels lam vars =
     (lam,hd)::(get_lam_var_rels lam tl)
 
 let rec find_rels_and_seqs_in_ast ast rels seqs =
+  (*let _ = Printf.printf "- %s with type %s\n" (Ustring.to_utf8 (Pprint.pprint false ast)) (Ustring.to_utf8 (Pprint.pprint_ty (Typesys.getType ast))) in*)
   let find_rels_and_seqs_in_tmapp tm1 tm2 =
     (match tm1, check_if_tm_is_seq tm2 with
      | TmLam(lam_ti,lam_x,lam_ty,TmNop), true ->
@@ -225,13 +226,13 @@ let upd_rels_assoc_list_list_entry key rels_assoc_l new_val =
   | (hd1,hd2)::tl ->
     let upd_rels_assoc_l = upd_rels_assoc_list_list_entry hd2 rels_assoc_l hd1 in
     transl_rels_to_rels_assoc_list tl upd_rels_assoc_l*)
-let rec transl_rels_to_rels_assoc_list2 rels rels_assoc_l =
+let rec transl_rels_to_rels_assoc_list rels rels_assoc_l =
   match rels with
   | [] -> rels_assoc_l
   | (hd1,hd2)::tl ->
     let upd_rels_assoc_l1 = upd_rels_assoc_list_list_entry hd1 rels_assoc_l hd2 in
     let upd_rels_assoc_l2 = upd_rels_assoc_list_list_entry hd2 upd_rels_assoc_l1 hd1 in
-    transl_rels_to_rels_assoc_list2 tl upd_rels_assoc_l2
+    transl_rels_to_rels_assoc_list tl upd_rels_assoc_l2
 
 let rec init_visited_seqs_assoc_list rels_assoc_l =
   match rels_assoc_l with
@@ -439,7 +440,7 @@ let process_ast ast =
   let rels_assoc_l1 = init_rels_assoc_list seqs in
   (*let _ = Printf.printf "The first version of the rels assoc list:\n%s\n" (get_rels_assoc_list_string rels_assoc_l1) in*)
   (*Transfer relationships in rels to the rels assoc list*)
-  let rels_assoc_l2 = transl_rels_to_rels_assoc_list2 rels rels_assoc_l1 in
+  let rels_assoc_l2 = transl_rels_to_rels_assoc_list rels rels_assoc_l1 in
   (*let _ = Printf.printf "The second version of the rels assoc list:\n%s\n" (get_rels_assoc_list_string rels_assoc_l2) in*)
   (*Reduce relationships*)
   let rels_assoc_l3 = reduce_rels rels_assoc_l2 (init_visited_seqs_assoc_list rels_assoc_l2) in

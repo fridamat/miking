@@ -62,7 +62,7 @@ let rec translate_mf_assoc_row mf_row fun_names =
     else
       Many::(translate_mf_assoc_row mf_row tl)
 
-let rec translate_mf_assoc_list mf_assoc_list fun_names =
+let rec translate_mf_assoc_list mf_assoc_list fun_names = (*TODO: Test*)
   match mf_assoc_list with
   | [] -> []
   | hd::tl ->

@@ -18,6 +18,7 @@ open Pprint
 open Linkedlist
 open Frequencies
 open Dssa
+open Testseqprocessing
 
 let prog_argv = ref []          (* Argv for the program that is executed *)
 
@@ -802,7 +803,7 @@ let print_test_res res res_name =
 let eval_test typecheck env t =
   let t' =
     (if typecheck then
-       (*let _ = Seqprocessing.run_tests in*)
+       let _ = Testseqprocessing.run_process_steps_test1 in
        Seqprocessing.process_ast t
      else
        t
