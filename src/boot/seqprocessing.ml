@@ -343,7 +343,8 @@ let rec find_lam_var_rels seqs rels seqs_unchanged =
      | TmLam(_,x,_,_) ->
        let rel_vars = find_related_vars x seqs_unchanged in
        let lam_var_rels = get_lam_var_rels hd (rel_vars) in
-       List.append lam_var_rels rels
+       let new_rels = List.append lam_var_rels rels in
+       find_lam_var_rels tl new_rels seqs_unchanged
      | _ ->
        find_lam_var_rels tl rels seqs_unchanged
     )
