@@ -326,8 +326,8 @@ let setType ty = function
   | TmTyLam(ti,x,kind,t1) -> TmTyLam({ti with ety = Some ty},x,kind,t1)
   | TmTyApp(ti,t1,ty2) -> TmTyApp({ti with ety = Some ty},t1,ty2)
   | TmSeq(ti,ty_ident,tmlist,tmseq,ds_choice) -> TmSeq({ti with ety = Some ty},ty_ident,tmlist,tmseq,ds_choice)
-  | TmSeqMethod(ti,fun_name,actual_fun,args,arg_index,ds_choice) ->
-    TmSeqMethod({ti with ety = Some ty},fun_name,actual_fun,args,arg_index,ds_choice)
+  | TmSeqMethod(ti,fun_name,actual_fun,args,arg_index,ds_choice,in_fix) ->
+    TmSeqMethod({ti with ety = Some ty},fun_name,actual_fun,args,arg_index,ds_choice,in_fix)
   | TmChar(ti,x) -> TmChar({ti with ety = Some ty},x)
   | TmUC(ti,tree,ord,unique) -> TmUC({ti with ety = Some ty},tree,ord,unique)
   | TmUtest(ti,t1,t2,t3) -> TmUtest({ti with ety = Some ty},t1,t2,t3)
@@ -350,7 +350,7 @@ let getType t =
   | TmTyLam({ety},_,_,_) -> extract ety
   | TmTyApp({ety},_,_) -> extract ety
   | TmSeq({ety},_,_,_,_) -> extract ety
-  | TmSeqMethod({ety},_,_,_,_,_) -> extract ety
+  | TmSeqMethod({ety},_,_,_,_,_,_) -> extract ety
 
   | TmChar({ety},_) -> extract ety
   | TmUC({ety},_,_,_) -> extract ety
@@ -522,6 +522,12 @@ let get_element_ty fi ty_ident =
   | "int" -> TyGround(NoInfo,GInt)
   | _ -> failwith "Element type not allowed yet"
 
+let rec get_tyarrow_return_type ty =
+  match ty with
+  | TyArrow(_,_,retty) ->
+    get_tyarrow_return_type retty
+  | _ -> ty
+
 (* Bidirectional type checking where type variable application is not needed.
    Main idea: propagate both types and type environment (filled will
      bindings of type vars) in both directions, merging partially filled in
@@ -608,7 +614,13 @@ let rec tc env ty t =
     | true -> true
     | _ -> failwith "Then and else has to be of the same type") in
     setType (getType updated_thn) (TmIfexp(ti,updated_cnd,updated_thn,updated_els))
-  | TmFix(ti) -> failwith "TODO TmFix (later)"
+  | TmFix(ti) ->
+    (match ty with
+     | TyArrow(_,arrty1,TyDyn) ->
+       let retty = get_tyarrow_return_type arrty1 in
+       setType (TyArrow(NoInfo,arrty1,retty)) t
+     | _ ->
+       setType ty t)
   | TmTyLam(ti,x,kind,t1) ->
     let t1' = tc (TyenvTyvar(x,kind)::env) TyDyn t1 in
     let ty1' = getType t1' in
@@ -629,8 +641,8 @@ let rec tc env ty t =
     let e_ty = get_element_ty (tm_info t) ty_ident in
     let _ = check_types_of_list updated_tmlist e_ty in
     setType (TySeq(e_ty)) (TmSeq(ti,ty_ident,TmList(updated_tmlist),tmseq,ds_choice))
-  | TmSeqMethod(ti,fun_name,actual_fun,args,arg_index,ds_choice) ->
-    setType (get_seq_fun_type fun_name (tm_info t)) (TmSeqMethod(ti,fun_name,actual_fun,args,arg_index,ds_choice))
+  | TmSeqMethod(ti,fun_name,actual_fun,args,arg_index,ds_choice,in_fix) ->
+    setType (get_seq_fun_type fun_name (tm_info t)) (TmSeqMethod(ti,fun_name,actual_fun,args,arg_index,ds_choice,in_fix))
   | TmChar(ti,x) -> failwith "TODO TmChar (later)"
   | TmUC(ti,tree,ord,unique) -> failwith "TmUC (later)"
   | TmUtest(ti,t1,t2,t3) ->

@@ -101,45 +101,48 @@ let rec get_lam_var_rels lam vars =
   | hd::tl ->
     (lam,hd)::(get_lam_var_rels lam tl)
 
-let rec find_rels_and_seqs_in_ast ast rels seqs =
+let rec find_rels_and_seqs_in_ast ast rels seqs in_fix =
   (*let _ = Printf.printf "- %s with type %s\n" (Ustring.to_utf8 (Pprint.pprint false ast)) (Ustring.to_utf8 (Pprint.pprint_ty (Typesys.getType ast))) in*)
-  let find_rels_and_seqs_in_tmapp tm1 tm2 =
+  let find_rels_and_seqs_in_tmapp tm1 tm2 in_fix' =
     (match tm1, check_if_tm_is_seq tm2 with
+     | TmFix(fix_ti), _ ->
+       find_rels_and_seqs_in_ast tm2 [] [] true
      | TmLam(lam_ti,lam_x,lam_ty,TmNop), true ->
-       let (rels_tm1,seqs_tm1) = find_rels_and_seqs_in_ast tm1 [] [] in
-       let (rels_tm2, seqs_tm2) = find_rels_and_seqs_in_ast tm2 [] [] in
+       let (rels_tm1,seqs_tm1) = find_rels_and_seqs_in_ast tm1 [] [] in_fix' in
+       let (rels_tm2, seqs_tm2) = find_rels_and_seqs_in_ast tm2 [] [] in_fix' in
        (*TODO: Failwith if seqs_tm2 is empty*)
        let new_rel = (tm1,(List.nth seqs_tm2 0)) in
        let upd_rels = List.append (new_rel::rels_tm1) rels_tm2 in
        let upd_seqs = List.append seqs_tm1 seqs_tm2 in
        (upd_rels,upd_seqs)
      | _, true ->
-       let (rels_tm1,seqs_tm1) = find_rels_and_seqs_in_ast tm1 [] [] in
-       let (rels_tm2,seqs_tm2) = find_rels_and_seqs_in_ast tm2 [] [] in
+       let (rels_tm1,seqs_tm1) = find_rels_and_seqs_in_ast tm1 [] [] in_fix' in
+       let (rels_tm2,seqs_tm2) = find_rels_and_seqs_in_ast tm2 [] [] in_fix' in
        (*TODO: Failwith if seqs_tm2 is empty*)
        let new_rel = ((List.nth seqs_tm1 ((List.length seqs_tm1)-1)),(List.nth seqs_tm2 0)) in
        let upd_rels = List.append (new_rel::rels_tm1) rels_tm2 in
        let upd_seqs = List.append seqs_tm1 seqs_tm2 in
        (upd_rels,upd_seqs)
      | _ ->
-       let (rels_tm1,seqs_tm1) = find_rels_and_seqs_in_ast tm1 [] [] in
-       let (rels_tm2,seqs_tm2) = find_rels_and_seqs_in_ast tm2 [] [] in
+       let (rels_tm1,seqs_tm1) = find_rels_and_seqs_in_ast tm1 [] [] in_fix' in
+       let (rels_tm2,seqs_tm2) = find_rels_and_seqs_in_ast tm2 [] [] in_fix' in
        let upd_rels = List.append rels_tm1 rels_tm2 in
        let upd_seqs = List.append seqs_tm1 seqs_tm2 in
        (upd_rels,upd_seqs)) in
-  let rec find_rels_and_seqs_in_ast_list l l_rels l_seqs =
+  let rec find_rels_and_seqs_in_ast_list l l_rels l_seqs l_in_fix =
     (match l with
      | [] -> (l_rels,l_seqs)
      | hd::tl ->
-       let (upd_l_rels,upd_l_seqs) = find_rels_and_seqs_in_ast hd l_rels l_seqs in
-       find_rels_and_seqs_in_ast_list tl upd_l_rels upd_l_seqs) in
+       let (upd_l_rels,upd_l_seqs) = find_rels_and_seqs_in_ast hd l_rels l_seqs l_in_fix in
+       find_rels_and_seqs_in_ast_list tl upd_l_rels upd_l_seqs l_in_fix) in
   match ast with
   | TmSeq(ti,ty_ident,tm_l,tm_seq,ds_choice) ->
     let _ = check_if_tm_is_seq ast in (*TODO:Unnecessary*)
     let upd_seqs = ast::seqs in
-    find_rels_and_seqs_in_ast_list (get_list_from_tmlist tm_l) rels upd_seqs
-  | TmSeqMethod _ ->
-    (rels,(ast::seqs))
+    find_rels_and_seqs_in_ast_list (get_list_from_tmlist tm_l) rels upd_seqs in_fix
+  | TmSeqMethod(seqm_ti,fun_name,actual_fun,args,arg_index,ds_choice,in_fix_unknown) ->
+    let upd_seqm = TmSeqMethod(seqm_ti,fun_name,actual_fun,args,arg_index,ds_choice,in_fix) in
+    (rels,(upd_seqm::seqs))
   | TmNop ->
     (rels,seqs)
   | TmVar(ti,x,di,pm) ->
@@ -158,16 +161,16 @@ let rec find_rels_and_seqs_in_ast ast rels seqs =
          (ast::seqs)
        else
          seqs) in
-    find_rels_and_seqs_in_ast tm rels upd_seqs
+    find_rels_and_seqs_in_ast tm rels upd_seqs in_fix
   | TmClos(_,_,_,tm,_,_) ->
     let upd_seqs =
       (if check_if_tm_is_seq ast then
          ast::seqs
        else
          seqs) in
-    find_rels_and_seqs_in_ast tm rels upd_seqs
+    find_rels_and_seqs_in_ast tm rels upd_seqs in_fix
   | TmApp(_,tm1,tm2) ->
-    let (app_rels,app_seqs) = find_rels_and_seqs_in_tmapp tm1 tm2 in
+    let (app_rels,app_seqs) = find_rels_and_seqs_in_tmapp tm1 tm2 in_fix in
     let upd_rels = List.append app_rels rels in
     let upd_seqs = List.append app_seqs seqs in
     (upd_rels,upd_seqs)
@@ -177,9 +180,9 @@ let rec find_rels_and_seqs_in_ast ast rels seqs =
          ast::seqs
        else
          seqs) in
-    let (upd_rels1,upd_seqs2) = find_rels_and_seqs_in_ast tm1 rels upd_seqs1 in
-    let (upd_rels2,upd_seqs3) = find_rels_and_seqs_in_ast tm2 upd_rels1 upd_seqs2 in
-    find_rels_and_seqs_in_ast tm3 upd_rels2 upd_seqs3
+    let (upd_rels1,upd_seqs2) = find_rels_and_seqs_in_ast tm1 rels upd_seqs1 in_fix in
+    let (upd_rels2,upd_seqs3) = find_rels_and_seqs_in_ast tm2 upd_rels1 upd_seqs2 in_fix in
+    find_rels_and_seqs_in_ast tm3 upd_rels2 upd_seqs3 in_fix
   | TmMatch _ | TmUC _ | TmTyApp _ | TmTyLam _ ->
     failwith "Not implemented1"
 
@@ -312,7 +315,12 @@ let rec get_seqmethods seqs =
 
 let get_seqm_fun_name_string seqm =
   match seqm with
-  | TmSeqMethod(_,fun_name,_,_,_,_) -> (Ustring.to_utf8 fun_name)
+  | TmSeqMethod(_,fun_name,_,_,_,_,_) -> (Ustring.to_utf8 fun_name)
+  | _ -> failwith "Expected a TmSeqMethod"
+
+let get_seqm_in_fix_bool seqm =
+  match seqm with
+  | TmSeqMethod(_,_,_,_,_,_,in_fix) -> in_fix
   | _ -> failwith "Expected a TmSeqMethod"
 
 let rec fill_in_mf_row mf_row seqms =
@@ -321,7 +329,11 @@ let rec fill_in_mf_row mf_row seqms =
   | hd::tl ->
     let fun_name = get_seqm_fun_name_string hd in
     let curr_fun_count = List.assoc fun_name mf_row in
-    let upd_fun_count = curr_fun_count + 1 in
+    let upd_fun_count =
+      (if get_seqm_in_fix_bool hd || (curr_fun_count == -1) then
+         -1
+       else
+         curr_fun_count + 1) in
     let upd_mf_row1 = List.remove_assoc fun_name mf_row in
     let upd_mf_row2 = (fun_name,upd_fun_count)::upd_mf_row1 in
     fill_in_mf_row upd_mf_row2 tl
@@ -388,42 +400,48 @@ let get_actual_fun_w_sel_ds fun_name sel_ds =
   | 0, "foldl" -> (SeqListFun13(Linkedlist.foldl))
   | _ -> failwith "Method not yet implemented1"
 
-let rec update_ast_w_sel_dss ast sel_dss =
-  let rec update_ast_list_w_sel_dss ast_l sel_dss' =
+let rec update_ast_w_sel_dss ast sel_dss in_fix =
+  let rec update_ast_list_w_sel_dss ast_l sel_dss' l_in_fix =
     (match ast_l with
      | [] -> []
      | hd::tl ->
-       let upd_hd = update_ast_w_sel_dss hd sel_dss' in
-       upd_hd::(update_ast_list_w_sel_dss tl sel_dss')) in
+       let upd_hd = update_ast_w_sel_dss hd sel_dss' l_in_fix in
+       upd_hd::(update_ast_list_w_sel_dss tl sel_dss' l_in_fix)) in
   match ast with
   | TmSeq(ti,ty_ident,tm_l,tm_seq,ds_choice) ->
-    let upd_tm_l = update_ast_list_w_sel_dss (get_list_from_tmlist tm_l) sel_dss in
+    let upd_tm_l = update_ast_list_w_sel_dss (get_list_from_tmlist tm_l) sel_dss in_fix in
     let upd_ds_choice = List.assoc ast sel_dss in
     TmSeq(ti,ty_ident,TmList(upd_tm_l),tm_seq,upd_ds_choice)
-  | TmSeqMethod(ti,fun_name,actual_fun,args,arg_index,ds_choice) ->
-    let upd_ds_choice = List.assoc ast sel_dss in
+  | TmSeqMethod(ti,fun_name,actual_fun,args,arg_index,ds_choice,seqm_in_fix) ->
+    let upd_seqm = TmSeqMethod(ti,fun_name,actual_fun,args,arg_index,ds_choice,in_fix) in
+    let upd_ds_choice = List.assoc upd_seqm sel_dss in
     let upd_actual_fun = get_actual_fun_w_sel_ds fun_name upd_ds_choice in
-    TmSeqMethod(ti,fun_name,upd_actual_fun,args,arg_index,upd_ds_choice)
+    TmSeqMethod(ti,fun_name,upd_actual_fun,args,arg_index,upd_ds_choice,in_fix)
   | TmNop | TmVar _ | TmChar _ | TmFix _ | TmConst _ -> ast
   | TmLam(ti,x,ty,tm) ->
-    let upd_tm = update_ast_w_sel_dss tm sel_dss in
+    let upd_tm = update_ast_w_sel_dss tm sel_dss in_fix in
     TmLam(ti,x,ty,upd_tm)
   | TmClos(ti,x,ty,tm,env,pm) ->
-    let upd_tm = update_ast_w_sel_dss tm sel_dss in
+    let upd_tm = update_ast_w_sel_dss tm sel_dss in_fix in
     TmClos(ti,x,ty,upd_tm,env,pm)
   | TmApp(ti,tm1,tm2) ->
-    let upd_tm1 = update_ast_w_sel_dss tm1 sel_dss in
-    let upd_tm2 = update_ast_w_sel_dss tm2 sel_dss in
+    let app_in_fix =
+      (match tm1 with
+       | TmFix _ -> true
+       | _ -> in_fix
+      ) in
+    let upd_tm1 = update_ast_w_sel_dss tm1 sel_dss app_in_fix in
+    let upd_tm2 = update_ast_w_sel_dss tm2 sel_dss app_in_fix in
     TmApp(ti,upd_tm1,upd_tm2)
   | TmUtest(ti,tm1,tm2,tm3) ->
-    let upd_tm1 = update_ast_w_sel_dss tm1 sel_dss in
-    let upd_tm2 = update_ast_w_sel_dss tm2 sel_dss in
-    let upd_tm3 = update_ast_w_sel_dss tm3 sel_dss in
+    let upd_tm1 = update_ast_w_sel_dss tm1 sel_dss in_fix in
+    let upd_tm2 = update_ast_w_sel_dss tm2 sel_dss in_fix in
+    let upd_tm3 = update_ast_w_sel_dss tm3 sel_dss in_fix in
     TmUtest(ti,upd_tm1,upd_tm2,upd_tm3)
   | TmIfexp(ti,tm1,tm2,tm3) ->
-    let upd_tm1 = update_ast_w_sel_dss tm1 sel_dss in
-    let upd_tm2 = update_ast_w_sel_dss tm2 sel_dss in
-    let upd_tm3 = update_ast_w_sel_dss tm3 sel_dss in
+    let upd_tm1 = update_ast_w_sel_dss tm1 sel_dss in_fix in
+    let upd_tm2 = update_ast_w_sel_dss tm2 sel_dss in_fix in
+    let upd_tm3 = update_ast_w_sel_dss tm3 sel_dss in_fix in
     TmIfexp(ti,upd_tm1,upd_tm2,upd_tm3)
   | TmMatch _ | TmUC _ | TmTyApp _ | TmTyLam _ ->
     failwith "Not implemented2"
@@ -431,35 +449,35 @@ let rec update_ast_w_sel_dss ast sel_dss =
 let process_ast ast =
   let _ = Printf.printf "\nThe complete program is:\n%s\n" (Ustring.to_utf8 (Pprint.pprint false ast)) in
   (*Find all terms of sequence type and sequence methods, and their internal relationships*)
-  let (rls,seqs) = find_rels_and_seqs_in_ast ast [] [] in
+  let (rls,seqs) = find_rels_and_seqs_in_ast ast [] [] false in
   let rels = find_lam_var_rels seqs rls seqs in
-  (*let _ = Printf.printf "The seqs:\n%s\n" (get_tm_list_string seqs) in
-  let _ = Printf.printf "The rels:\n%s\n" (get_tm_pair_list_string rels) in*)
+  let _ = Printf.printf "The seqs:\n%s\n" (get_tm_list_string seqs) in
+  let _ = Printf.printf "The rels:\n%s\n" (get_tm_pair_list_string rels) in
   (*Get the sequence constructors*)
   let seq_cons = find_seq_cons_among_seqs seqs in
-  (*let _ = Printf.printf "The seq cons:\n%s\n" (get_tm_list_string seq_cons) in*)
+  let _ = Printf.printf "The seq cons:\n%s\n" (get_tm_list_string seq_cons) in
   (*Initate association list for relationships*)
   let rels_assoc_l1 = init_rels_assoc_list seqs in
-  (*let _ = Printf.printf "The first version of the rels assoc list:\n%s\n" (get_rels_assoc_list_string rels_assoc_l1) in*)
+  let _ = Printf.printf "The first version of the rels assoc list:\n%s\n" (get_rels_assoc_list_string rels_assoc_l1) in
   (*Transfer relationships in rels to the rels assoc list*)
   let rels_assoc_l2 = transl_rels_to_rels_assoc_list rels rels_assoc_l1 in
-  (*let _ = Printf.printf "The second version of the rels assoc list:\n%s\n" (get_rels_assoc_list_string rels_assoc_l2) in*)
+  let _ = Printf.printf "The second version of the rels assoc list:\n%s\n" (get_rels_assoc_list_string rels_assoc_l2) in
   (*Reduce relationships*)
   let rels_assoc_l3 = reduce_rels rels_assoc_l2 (init_visited_seqs_assoc_list rels_assoc_l2) in
-  (*let _ = Printf.printf "The third version of the rels assoc list:\n%s\n" (get_rels_assoc_list_string rels_assoc_l3) in*)
+  let _ = Printf.printf "The third version of the rels assoc list:\n%s\n" (get_rels_assoc_list_string rels_assoc_l3) in
   (*Create Method-Frequency (MF) matrix*)
   let mf_matrix1 = create_mf_matrix rels_assoc_l3 in
-  (*let _ = Printf.printf "The first version of the mf matrix:\n%s\n" (get_mf_count_string mf_matrix1) in*)
+  let _ = Printf.printf "The first version of the mf matrix:\n%s\n" (get_mf_count_string mf_matrix1) in
   (*Translate MF count to MF frequencies*)
   let mf_matrix2 = Frequencies.translate_mf_assoc_list mf_matrix1 (get_seq_fun_names) in
-  (*let _ = Printf.printf "The second version of the mf matrix:\n%s\n" (get_mf_freq_string mf_matrix2) in*)
+  let _ = Printf.printf "The second version of the mf matrix:\n%s\n" (get_mf_freq_string mf_matrix2) in
   (*Data structure selection algorithm*)
   let selected_dss = Dssa.main mf_matrix2 in
-  (*let _ = Printf.printf "The selected data structures are:\n%s\n" (get_selected_datastructures_string selected_dss) in*)
+  let _ = Printf.printf "The selected data structures are:\n%s\n" (get_selected_datastructures_string selected_dss) in
   (*Connect selected data structure with all seqs*)
   let sel_dss_assoc_l = connect_seqs_w_sel_dss selected_dss rels_assoc_l3 in
-  (*let _ = Printf.printf "The seqs with selected data structures are:\n%s\n" (get_seqs_w_selected_dss_string sel_dss_assoc_l) in*)
+  let _ = Printf.printf "The seqs with selected data structures are:\n%s\n" (get_seqs_w_selected_dss_string sel_dss_assoc_l) in
   (*Update ast with selected data structures*)
-  let upd_ast = update_ast_w_sel_dss ast sel_dss_assoc_l in
-  (*let _ = Printf.printf "The updated ast is:\n%s\n" (Ustring.to_utf8 (Pprint.pprint false upd_ast)) in*)
+  let upd_ast = update_ast_w_sel_dss ast sel_dss_assoc_l false in
+  let _ = Printf.printf "The updated ast is:\n%s\n" (Ustring.to_utf8 (Pprint.pprint false upd_ast)) in
   upd_ast

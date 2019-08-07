@@ -57,10 +57,10 @@ let rec translate_mf_assoc_row mf_row fun_names =
     let fun_count = List.assoc hd mf_row in
     if fun_count = 0 then
       Zero::(translate_mf_assoc_row mf_row tl)
-    else if fun_count = 1 then
-      One::(translate_mf_assoc_row mf_row tl)
-    else
+    else if fun_count = -1 then
       Many::(translate_mf_assoc_row mf_row tl)
+    else
+      One::(translate_mf_assoc_row mf_row tl)
 
 let rec translate_mf_assoc_list mf_assoc_list fun_names = (*TODO: Test*)
   match mf_assoc_list with

@@ -110,6 +110,7 @@ and args = tm list
 and ds_choice = int
 and fun_name = ustring
 and ty_ident = ustring
+and in_fix = bool
 
 and tm_list =
   | TmList   of tm list
@@ -146,7 +147,7 @@ and tm =
 | TmTyLam       of tinfo * ustring * kind * tm       (* Type abstraction *)
 | TmTyApp       of tinfo * tm * ty                   (* Type application *)
 | TmSeq         of tinfo * ty_ident * tm_list * sequence * ds_choice             (* Sequence constructor *)
-| TmSeqMethod   of tinfo * fun_name * actual_fun * args * arg_index * ds_choice (* Sequence method *) (*TODO:Is ds_choice field unnecessary?*)
+| TmSeqMethod   of tinfo * fun_name * actual_fun * args * arg_index * ds_choice * in_fix (* Sequence method *) (*TODO:Is ds_choice field unnecessary?*)
 
 
 | TmChar        of tinfo * int
@@ -205,7 +206,7 @@ let tm_info t =
   | TmTyLam({fi},_,_,_) -> fi
   | TmTyApp({fi},_,_) -> fi
   | TmSeq({fi},_,_,_,_) -> fi
-  | TmSeqMethod({fi},_,_,_,_,_) -> fi
+  | TmSeqMethod({fi},_,_,_,_,_,_) -> fi
 
   | TmChar({fi},_) -> fi
   | TmUC({fi},_,_,_) -> fi
@@ -226,7 +227,7 @@ let tm_tinfo t =
   | TmTyLam(ti,_,_,_) -> ti
   | TmTyApp(ti,_,_) -> ti
   | TmSeq(ti,_,_,_,_) -> ti
-  | TmSeqMethod(ti,_,_,_,_,_) -> ti
+  | TmSeqMethod(ti,_,_,_,_,_,_) -> ti
 
   | TmChar(ti,_) -> ti
   | TmUC(ti,_,_,_) -> ti

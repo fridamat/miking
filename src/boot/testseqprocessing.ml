@@ -87,30 +87,30 @@ let rec compare_terms t1 t2 =
   | TmFix _, TmFix _ -> true
   | TmSeq(_,_,tm_l1,_,ds_choice1), TmSeq(_,_,tm_l2,_,ds_choice2) ->
     (compare_term_lists (get_list_from_tmlist tm_l1) (get_list_from_tmlist tm_l2)) && (ds_choice1 == ds_choice2)
-  | TmSeqMethod(_,fun_name1,_,_,_,ds_choice1), TmSeqMethod(_,fun_name2,_,_,_,ds_choice2) ->
-    ((Ustring.to_utf8 fun_name1) = (Ustring.to_utf8 fun_name2)) && (ds_choice1 == ds_choice2) (*TODO: Check actual_fun as well?*)
+  | TmSeqMethod(_,fun_name1,_,_,_,ds_choice1,in_fix1), TmSeqMethod(_,fun_name2,_,_,_,ds_choice2,in_fix2) ->
+    ((Ustring.to_utf8 fun_name1) = (Ustring.to_utf8 fun_name2)) && (ds_choice1 == ds_choice2) && (in_fix1 == in_fix2) (*TODO: Check actual_fun as well?*)
   | _ ->
     false
+
+let rec compare_rels2 rels1 rels2 =
+  match rels1, rels2 with
+  | [], [] -> true
+  | [], _ | _, [] -> false
+  | (hd11,hd12)::tl1, (hd21,hd22)::tl2 ->
+    if (compare_terms hd11 hd21) && (hd12 == hd22) then (*TODO: Comparer method instead, if so method for value of bool or int also needed*)
+      compare_rels2 tl1 tl2
+    else
+      false
 
 let rec compare_rels rels1 rels2 =
   match rels1, rels2 with
   | [], [] -> true
   | [], _ | _, [] -> false
   | (hd11,hd12)::tl1, (hd21,hd22)::tl2 ->
-    if (hd11 == hd21) && (hd12 == hd22) then (*TODO: Comparer method instead, if so method for value of bool or int also needed*)
+    if (compare_terms hd11 hd21) && (compare_terms hd12 hd22) then      (*TODO: Comparer method instead, if so method for value of bool or int also needed*)
       compare_rels tl1 tl2
     else
       false
-
-      let rec compare_rels rels1 rels2 =
-        match rels1, rels2 with
-        | [], [] -> true
-        | [], _ | _, [] -> false
-        | (hd11,hd12)::tl1, (hd21,hd22)::tl2 ->
-          if (hd11 == hd21) && (hd12 == hd22) then (*TODO: Comparer method instead, if so method for value of bool or int also needed*)
-            compare_rels tl1 tl2
-          else
-            false
 
 let rec compare_seqs seqs1 seqs2 =
   match seqs1, seqs2 with
@@ -175,7 +175,7 @@ let run_process_steps_test1 =
           seq1) in
   let ast = app1 in
   (*Test method "find_rels_and_seqs_in_ast"*)
-  let (rels,seqs) = find_rels_and_seqs_in_ast ast [] [] in
+  let (rels,seqs) = find_rels_and_seqs_in_ast ast [] [] false in
   let exp_rels = [(lam1,seq1)] in
   let comp_rels_res = compare_rels rels exp_rels in
   let exp_seqs = [lam1;seq1] in
@@ -195,7 +195,7 @@ let run_process_steps_test1 =
   (*Test method "init_visited_seqs_assoc_list"*)
   let vis_seqs_assoc_l = init_visited_seqs_assoc_list rels_assoc_l2 in
   let exp_vis_seqs_assoc_l = [(seq1,false);(lam1,false)] in
-  let comp_vis_seqs_assoc_l_res = compare_rels vis_seqs_assoc_l exp_vis_seqs_assoc_l in
+  let comp_vis_seqs_assoc_l_res = compare_rels2 vis_seqs_assoc_l exp_vis_seqs_assoc_l in
   (*Test method "reduce_rels"*)
   let rels_assoc_l3 = reduce_rels rels_assoc_l2 (init_visited_seqs_assoc_list rels_assoc_l2) in
   let exp_rels_assoc_l3 = [(seq1,[lam1])] in
@@ -211,9 +211,9 @@ let run_process_steps_test1 =
   (*Test method "connect_seqs_w_sel_dss"*)
   let sel_dss_assoc_l = connect_seqs_w_sel_dss selected_dss rels_assoc_l3 in
   let exp_sel_dss_assoc_l = [(seq1,0);(lam1,0)] in
-  let comp_sel_dss_assoc_l_res = compare_rels sel_dss_assoc_l exp_sel_dss_assoc_l in
+  let comp_sel_dss_assoc_l_res = compare_rels2 sel_dss_assoc_l exp_sel_dss_assoc_l in
   (*Test method "update_ast_w_sel_dss"*)
-  let upd_ast = update_ast_w_sel_dss ast sel_dss_assoc_l in
+  let upd_ast = update_ast_w_sel_dss ast sel_dss_assoc_l false in
   let upd_seq1 =
     TmSeq((create_mock_ti (get_mock_tyseq_int) (us"se1_fi1")),
           us"int",
@@ -250,7 +250,8 @@ let run_process_steps_test2 =
                   SeqFunNone,
                   [],
                   0,
-                  -1) in
+                  -1,
+                 false) in
     let app1 =
       TmApp((create_mock_ti (get_mock_gvoid) (us"app1_fi1")),
             seqm1,
@@ -266,7 +267,7 @@ let run_process_steps_test2 =
             app1) in
     let ast = app2 in
     (*Test method "find_rels_and_seqs_in_ast"*)
-    let (rels,seqs) = find_rels_and_seqs_in_ast ast [] [] in
+    let (rels,seqs) = find_rels_and_seqs_in_ast ast [] [] false in
     let exp_rels = [(seqm1,seq1)] in
     let comp_rels_res = compare_rels rels exp_rels in
     let exp_seqs = [seqm1;seq1] in
@@ -286,7 +287,7 @@ let run_process_steps_test2 =
     (*Test method "init_visited_seqs_assoc_list"*)
     let vis_seqs_assoc_l = init_visited_seqs_assoc_list rels_assoc_l2 in
     let exp_vis_seqs_assoc_l = [(seq1,false);(seqm1,false)] in
-    let comp_vis_seqs_assoc_l_res = compare_rels vis_seqs_assoc_l exp_vis_seqs_assoc_l in
+    let comp_vis_seqs_assoc_l_res = compare_rels2 vis_seqs_assoc_l exp_vis_seqs_assoc_l in
     (*Test method "reduce_rels"*)
     let rels_assoc_l3 = reduce_rels rels_assoc_l2 (init_visited_seqs_assoc_list rels_assoc_l2) in
     let exp_rels_assoc_l3 = [(seq1,[seqm1])] in
@@ -304,9 +305,9 @@ let run_process_steps_test2 =
     (*Test method "connect_seqs_w_sel_dss"*)
     let sel_dss_assoc_l = connect_seqs_w_sel_dss selected_dss rels_assoc_l3 in
     let exp_sel_dss_assoc_l = [(seq1,0);(seqm1,0)] in
-    let comp_sel_dss_assoc_l_res = compare_rels sel_dss_assoc_l exp_sel_dss_assoc_l in
+    let comp_sel_dss_assoc_l_res = compare_rels2 sel_dss_assoc_l exp_sel_dss_assoc_l in
     (*Test method "update_ast_w_sel_dss"*)
-    let upd_ast = update_ast_w_sel_dss ast sel_dss_assoc_l in
+    let upd_ast = update_ast_w_sel_dss ast sel_dss_assoc_l false in
     let upd_seq1 =
       TmSeq((create_mock_ti (get_mock_tyseq_int) (us"seq1_fi1")),
             us"int",
@@ -320,7 +321,8 @@ let run_process_steps_test2 =
                   SeqListFun2(Linkedlist.length),
                   [],
                   0,
-                  0) in
+                  0,
+                 false) in
     let upd_app1 =
       TmApp((create_mock_ti (get_mock_gvoid) (us"app1_fi1")),
             upd_seqm1,
@@ -364,7 +366,8 @@ let run_process_steps_test3 =
                 SeqFunNone,
                 [],
                 0,
-                -1) in
+                -1,
+                false) in
   let app1 =
     TmApp((create_mock_ti (get_mock_tyarrow_tyseq_int_tyseq_int) (us"app1_fi1")),
           seqm1,
@@ -384,7 +387,7 @@ let run_process_steps_test3 =
           app2) in
   let ast = app3 in
   (*Test method "find_rels_and_seqs_in_ast"*)
-  let (rels,seqs) = find_rels_and_seqs_in_ast ast [] [] in
+  let (rels,seqs) = find_rels_and_seqs_in_ast ast [] [] false in
   let exp_rels = [(lam1,seqm1);(seq2,seq1);(seqm1,seq2)] in
   let comp_rels_res = compare_rels rels exp_rels in
   let exp_seqs = [lam1;seqm1;seq2;seq1] in
@@ -404,7 +407,7 @@ let run_process_steps_test3 =
   (*Test method "init_visited_seqs_assoc_list"*)
   let vis_seqs_assoc_l = init_visited_seqs_assoc_list rels_assoc_l2 in
   let exp_vis_seqs_assoc_l = [(seq2,false);(seqm1,false);(seq1,false);(lam1,false);] in
-  let comp_vis_seqs_assoc_l_res = compare_rels vis_seqs_assoc_l exp_vis_seqs_assoc_l in
+  let comp_vis_seqs_assoc_l_res = compare_rels2 vis_seqs_assoc_l exp_vis_seqs_assoc_l in
   (*Test method "reduce_rels"*)
   let rels_assoc_l3 = reduce_rels rels_assoc_l2 (init_visited_seqs_assoc_list rels_assoc_l2) in
   let exp_rels_assoc_l3 = [(seq2,[lam1;seq1;seqm1])] in
@@ -422,9 +425,9 @@ let run_process_steps_test3 =
   (*Test method "connect_seqs_w_sel_dss"*)
   let sel_dss_assoc_l = connect_seqs_w_sel_dss selected_dss rels_assoc_l3 in
   let exp_sel_dss_assoc_l = [(seq2,0);(lam1,0);(seq1,0);(seqm1,0)] in
-  let comp_sel_dss_assoc_l_res = compare_rels sel_dss_assoc_l exp_sel_dss_assoc_l in
+  let comp_sel_dss_assoc_l_res = compare_rels2 sel_dss_assoc_l exp_sel_dss_assoc_l in
   (*Test method "update_ast_w_sel_dss"*)
-  let upd_ast = update_ast_w_sel_dss ast sel_dss_assoc_l in
+  let upd_ast = update_ast_w_sel_dss ast sel_dss_assoc_l false in
   let upd_seq1 =
     TmSeq((create_mock_ti (get_mock_tyseq_int) (us"seq1_fi1")),
           us"int",
@@ -445,7 +448,8 @@ let run_process_steps_test3 =
                 (SeqListFun1(Linkedlist.append)),
                 [],
                 0,
-                0) in
+                0,
+                false) in
   let upd_app1 =
     TmApp((create_mock_ti (get_mock_tyarrow_tyseq_int_tyseq_int) (us"app1_fi1")),
           upd_seqm1,
@@ -482,7 +486,7 @@ let run_process_steps_test3 =
                                         TmApp((Seq.length(NO Fun){-1}, TmVar(s1'1))))),
                         TmSeq(3,4)(){-1})),
           TmSeq(1,2)(){-1})*)
-let run_process_steps_test3 =
+let run_process_steps_test4 =
   (*TmSeq(1,2)(){-1} with type TySeq[Int]*)
   let seq1 =
     TmSeq((create_mock_ti (get_mock_tyseq_int) (us"seq1_fi1")),
@@ -512,7 +516,8 @@ let run_process_steps_test3 =
                 SeqFunNone,
                 [],
                 0,
-                -1) in
+                -1,
+                false) in
   (*TmApp(seqm1; var1) with type Int*)
   let app1 =
     TmApp((create_mock_ti (get_mock_gint) (us"app1_fi")),
@@ -553,7 +558,7 @@ let run_process_steps_test3 =
           seq1) in
   let ast = app4 in
   (*Test method "find_rels_and_seqs_in_ast"*)
-  let (rls,seqs) = find_rels_and_seqs_in_ast ast [] [] in
+  let (rls,seqs) = find_rels_and_seqs_in_ast ast [] [] false in
   let rels = find_lam_var_rels seqs rls seqs in (*TODO:Add this to above testcases*)
   let exp_rels = [(lam3,var1);(lam3,seq1);(lam2,seq2);(seqm1,var1)] in
   let comp_rels_res = compare_rels rels exp_rels in
@@ -574,7 +579,7 @@ let run_process_steps_test3 =
   (*Test method "init_visited_seqs_assoc_list"*)
   let vis_seqs_assoc_l = init_visited_seqs_assoc_list rels_assoc_l2 in
   let exp_vis_seqs_assoc_l = [(var1,false);(seqm1,false);(seq2,false);(lam2,false);(seq1,false);(lam3,false)] in
-  let comp_vis_seqs_assoc_l_res = compare_rels vis_seqs_assoc_l exp_vis_seqs_assoc_l in
+  let comp_vis_seqs_assoc_l_res = compare_rels2 vis_seqs_assoc_l exp_vis_seqs_assoc_l in
   (*Test method "reduce_rels"*)
   let rels_assoc_l3 = reduce_rels rels_assoc_l2 (init_visited_seqs_assoc_list rels_assoc_l2) in
   let exp_rels_assoc_l3 = [(var1,[seq1;lam3;seqm1]);(seq2,[lam2])] in
@@ -593,9 +598,9 @@ let run_process_steps_test3 =
   (*Test method "connect_seqs_w_sel_dss"*)
   let sel_dss_assoc_l = connect_seqs_w_sel_dss selected_dss rels_assoc_l3 in
   let exp_sel_dss_assoc_l = [(var1,0);(seq1,0);(lam3,0);(seqm1,0);(seq2,1);(lam2,1)] in
-  let comp_sel_dss_assoc_l_res = compare_rels sel_dss_assoc_l exp_sel_dss_assoc_l in
+  let comp_sel_dss_assoc_l_res = compare_rels2 sel_dss_assoc_l exp_sel_dss_assoc_l in
   (*Test method "update_ast_w_sel_dss"*)
-  let upd_ast = update_ast_w_sel_dss ast sel_dss_assoc_l in
+  let upd_ast = update_ast_w_sel_dss ast sel_dss_assoc_l false in
   let upd_seq1 =
     TmSeq((create_mock_ti (get_mock_tyseq_int) (us"seq1_fi1")),
           us"int",
@@ -616,7 +621,8 @@ let run_process_steps_test3 =
                 SeqListFun2(Linkedlist.length),
                 [],
                 0,
-                0) in
+                0,
+                false) in
   let upd_app1 =
     TmApp((create_mock_ti (get_mock_gint) (us"app1_fi")),
           upd_seqm1,
@@ -650,7 +656,7 @@ let run_process_steps_test3 =
   let _ = Printf.printf "Test process steps 4: %s\n" (get_test_res_string test_res) in
   true
 
-let run_process_steps_test3 =
+let run_process_steps_test5 =
   (*TmSeq(1)(){-1} with type TySeq[Int]*)
   let seq1 =
     TmSeq((create_mock_ti (get_mock_tyseq_int) (us"seq1_fi1")),
@@ -690,7 +696,8 @@ let run_process_steps_test3 =
                 SeqFunNone,
                 [],
                 0,
-                -1) in
+                -1,
+                false) in
   (*TmApp(seqm1; var3) with type (TySeq[Int]->TySeq[Int])*)
   let app1 =
     TmApp((create_mock_ti (get_mock_tyarrow_tyseq_int_tyseq_int) (us"app1_fi1")),
@@ -747,7 +754,7 @@ let run_process_steps_test3 =
           seq1) in
   let ast = app6 in
   (*Test method "find_rels_and_seqs_in_ast"*)
-  let (rls,seqs) = find_rels_and_seqs_in_ast ast [] [] in
+  let (rls,seqs) = find_rels_and_seqs_in_ast ast [] [] false in
   let rels = find_lam_var_rels seqs rls seqs in (*TODO:Add this to above testcases*)
   let exp_rels = [(lam4,var1);(lam3,var3);(lam2,var2);(lam4,seq1);(lam3,seq2);(lam2,var1);(lam1,seqm1);(var3,var2);(seqm1,var3)] in
   let comp_rels_res = compare_rels rels exp_rels in
@@ -768,7 +775,7 @@ let run_process_steps_test3 =
   (*Test method "init_visited_seqs_assoc_list"*)
   let vis_seqs_assoc_l = init_visited_seqs_assoc_list rels_assoc_l2 in
   let exp_vis_seqs_assoc_l = [(var3,false);(seqm1,false);(var2,false);(lam1,false);(var1,false);(lam2,false);(seq2,false);(lam3,false);(seq1,false);(lam4,false)] in
-  let comp_vis_seqs_assoc_l_res = compare_rels vis_seqs_assoc_l exp_vis_seqs_assoc_l in
+  let comp_vis_seqs_assoc_l_res = compare_rels2 vis_seqs_assoc_l exp_vis_seqs_assoc_l in
   (*Test method "reduce_rels"*)
   let rels_assoc_l3 = reduce_rels rels_assoc_l2 (init_visited_seqs_assoc_list rels_assoc_l2) in
   let exp_rels_assoc_l3 = [(var3,[seq1;lam4;var1;lam1;lam2;seq2;lam3;var2;seqm1])] in
@@ -786,9 +793,9 @@ let run_process_steps_test3 =
   (*Test method "connect_seqs_w_sel_dss"*)
   let sel_dss_assoc_l = connect_seqs_w_sel_dss selected_dss rels_assoc_l3 in
   let exp_sel_dss_assoc_l = [(var3,0);(seq1,0);(lam4,0);(var1,0);(lam1,0);(lam2,0);(seq2,0);(lam3,0);(var2,0);(seqm1,0)] in
-  let comp_sel_dss_assoc_l_res = compare_rels sel_dss_assoc_l exp_sel_dss_assoc_l in
+  let comp_sel_dss_assoc_l_res = compare_rels2 sel_dss_assoc_l exp_sel_dss_assoc_l in
   (*Test method "update_ast_w_sel_dss"*)
-  let upd_ast = update_ast_w_sel_dss ast sel_dss_assoc_l in
+  let upd_ast = update_ast_w_sel_dss ast sel_dss_assoc_l false in
   let upd_seq1 =
     TmSeq((create_mock_ti (get_mock_tyseq_int) (us"seq1_fi1")),
           us"int",
@@ -807,7 +814,8 @@ let run_process_steps_test3 =
                 SeqListFun1(Linkedlist.append),
                 [],
                 0,
-                0) in
+                0,
+                false) in
   let upd_app1 =
     TmApp((create_mock_ti (get_mock_tyarrow_tyseq_int_tyseq_int) (us"app1_fi1")),
           upd_seqm1,
@@ -853,3 +861,63 @@ let run_process_steps_test3 =
   let test_res =  comp_rels_res && comp_seqs_res && comp_seq_cons_res && comp_rels_assoc_l1_res && comp_rels_assoc_l2_res && comp_vis_seqs_assoc_l_res && comp_rels_assoc_l3_res && comp_mf_matrix1_res && comp_sel_dss_assoc_l_res && comp_upd_ast_res in
 let _ = Printf.printf "Test process steps 5: %s\n" (get_test_res_string test_res) in
 true
+
+let run_process_steps_test5 =
+  (*lam f2:Dyn. Nop with type (Int->Void)*)
+  let lam_f2 =
+    TmLam((create_mock_ti (get_mock_tyarrow_gint_gvoid) (us"lam_f2_fi1")),
+          us"f2",
+          TyDyn,
+          TmNop) in
+  (*TmApp((lam_f2), 2) with type Void*)
+  let app1 =
+    TmApp((create_mock_ti (get_mock_gvoid) (us"app1_fi1")),
+          lam_f2,
+          (create_mock_tmconst_int 2 (us"app1_fi2"))) in
+  let ast = app1 in
+  (*Test method "find_rels_and_seqs_in_ast"*)
+  let (rls,seqs) = find_rels_and_seqs_in_ast ast [] [] false in
+  let rels = find_lam_var_rels seqs rls seqs in (*TODO:Add this to above testcases*)
+  let exp_rels = [] in
+  let comp_rels_res = compare_rels rels exp_rels in
+  let exp_seqs = [] in
+  let comp_seqs_res = compare_seqs seqs exp_seqs in
+  (*Test method "find_seq_cons_among_seqs"*)
+  let seq_cons = find_seq_cons_among_seqs seqs in
+  let exp_seq_cons = [] in
+  let comp_seq_cons_res = compare_seqs seq_cons exp_seq_cons in
+  (*Test method "init_rels_assoc_list"*)
+  let rels_assoc_l1 = init_rels_assoc_list seqs in
+  let exp_rels_assoc_l1 = [] in
+  let comp_rels_assoc_l1_res = compare_rels_assoc_list rels_assoc_l1 exp_rels_assoc_l1 in
+  (*Test method "transl_rels_to_rels_assoc_list"*)
+  let rels_assoc_l2 = transl_rels_to_rels_assoc_list rels rels_assoc_l1 in
+  let exp_rels_assoc_l2 = [] in
+  let comp_rels_assoc_l2_res = compare_rels_assoc_list rels_assoc_l2 exp_rels_assoc_l2 in
+  (*Test method "init_visited_seqs_assoc_list"*)
+  let vis_seqs_assoc_l = init_visited_seqs_assoc_list rels_assoc_l2 in
+  let exp_vis_seqs_assoc_l = [] in
+  let comp_vis_seqs_assoc_l_res = compare_rels2 vis_seqs_assoc_l exp_vis_seqs_assoc_l in
+  (*Test method "reduce_rels"*)
+  let rels_assoc_l3 = reduce_rels rels_assoc_l2 (init_visited_seqs_assoc_list rels_assoc_l2) in
+  let exp_rels_assoc_l3 = [] in
+  let comp_rels_assoc_l3_res = compare_rels_assoc_list rels_assoc_l3 exp_rels_assoc_l3 in
+  (*Test method "create_mf_matrix"*)
+  let mf_matrix1 = create_mf_matrix rels_assoc_l3 in
+  let comp_mf_matrix1_res = compare_mf_matrix_count mf_matrix1 [] in
+  (*Run method "Frequencies.translate_mf_assoc_list" - tested in Frequencies*)
+  let mf_matrix2 = Frequencies.translate_mf_assoc_list mf_matrix1 in (*TODO: Mock mf_matrix2 instead? Also in above tests?*)
+  (*Mock algorithm step - tested in Dssa*)
+  let selected_dss = [] in
+  (*Test method "connect_seqs_w_sel_dss"*)
+  let sel_dss_assoc_l = connect_seqs_w_sel_dss selected_dss rels_assoc_l3 in
+  let exp_sel_dss_assoc_l = [] in
+  let comp_sel_dss_assoc_l_res = compare_rels sel_dss_assoc_l exp_sel_dss_assoc_l in
+  (*Test method "update_ast_w_sel_dss"*)
+  let upd_ast = update_ast_w_sel_dss ast sel_dss_assoc_l false in
+  let exp_upd_ast = ast in
+  let comp_upd_ast_res = compare_asts upd_ast exp_upd_ast in
+  (*Handle complete test result*)
+  let test_res = comp_rels_res && comp_seqs_res && comp_seq_cons_res && comp_rels_assoc_l1_res && comp_rels_assoc_l2_res && comp_vis_seqs_assoc_l_res && comp_rels_assoc_l3_res && comp_mf_matrix1_res && comp_sel_dss_assoc_l_res && comp_upd_ast_res in
+  let _ = Printf.printf "Test process steps 6: %s\n" (get_test_res_string test_res) in
+  true

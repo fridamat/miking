@@ -106,8 +106,8 @@ let rec debruijn env t =
   | TmTyApp(ti,t1,ty1) -> TmTyApp(ti,debruijn env t1, debruijnTy env ty1)
   | TmIfexp(ti,cnd,thn,els) -> TmIfexp(ti, debruijn env cnd, debruijn env thn, debruijn env els)
   | TmSeq(ti,ty_ident,clist,cseq,ds_choice) -> TmSeq(ti,ty_ident,TmList(debruijn_list env (get_list_from_tmlist clist)),cseq,ds_choice)
-  | TmSeqMethod(ti,fun_name,actual_fun,args,arg_index,ds_choice) ->
-    TmSeqMethod(ti,fun_name,actual_fun,(debruijn_list env args),arg_index,ds_choice)
+  | TmSeqMethod(ti,fun_name,actual_fun,args,arg_index,ds_choice,in_fix) ->
+    TmSeqMethod(ti,fun_name,actual_fun,(debruijn_list env args),arg_index,ds_choice,in_fix)
   | TmChar(_,_) -> t
   | TmUC(ti,uct,o,u) -> TmUC(ti, UCLeaf(List.map (debruijn env) (uct2list uct)),o,u)
   | TmUtest(ti,t1,t2,tnext)
@@ -184,7 +184,7 @@ let rec compare_term_lists l1 l2 =
      | TmFix _, TmFix _ -> true
      | TmSeq(_,_,tm_l1,seq1,ds_choice1), TmSeq(_,_,tm_l2,seq2,ds_choice2) ->
        (compare_term_lists (get_list_from_tmlist tm_l1) (get_list_from_tmlist tm_l2)) && (compare_sequences seq1 seq2)
-     | TmSeqMethod(_,fun_name1,_,_,_,_), TmSeqMethod(_,fun_name2,_,_,_,_) ->
+     | TmSeqMethod(_,fun_name1,_,_,_,_,_), TmSeqMethod(_,fun_name2,_,_,_,_,_) ->
        fun_name1 = fun_name2
      | _ -> false) in
   match l1, l2 with
@@ -715,14 +715,14 @@ let rec eval env t =
          (match eval env t2 with
          | TmClos(fi,x,_,t3,env2,_) as tt -> eval ((TmApp(ti,TmFix(ti),tt))::env2) t3
          | _ -> failwith "Incorrect CFix")
-       | TmSeqMethod(ti,fun_name,actual_fun,args,arg_index,ds_choice) ->
+       | TmSeqMethod(ti,fun_name,actual_fun,args,arg_index,ds_choice,in_fix) ->
          let updated_args = add_evaluated_term_to_args args (eval env t2) in
          let last_arg_index = get_last_arg_index ti.fi fun_name in
          if arg_index == last_arg_index then
            let res = call_seq_method ti fun_name actual_fun updated_args env in
            res
          else if arg_index < last_arg_index then
-           TmSeqMethod(ti,fun_name,actual_fun,updated_args,(arg_index+1),ds_choice)
+           TmSeqMethod(ti,fun_name,actual_fun,updated_args,(arg_index+1),ds_choice,in_fix)
          else
            raise_error ti.fi "Argument index is out of bounds."
        | _ -> raise_error ti.fi "Application to a non closure value.")

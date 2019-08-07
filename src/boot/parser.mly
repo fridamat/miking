@@ -39,7 +39,7 @@
         (match get_list_from_tmlist tm_list with
           | [] -> false
           | hd::tl -> hasx hd || hasx (TmSeq(ti,ty_ident,tm_list,tm_seq,ds_choice)))
-      | TmSeqMethod(fi,fun_name,actual_fun,args,arg_index,ds_choice) -> false
+      | TmSeqMethod(fi,fun_name,actual_fun,args,arg_index,ds_choice,in_fix) -> false
       | TmChar(_,_) -> false
       | TmUC(fi,uct,ordered,uniqueness) ->
           let rec work uc = match uc with
@@ -243,7 +243,7 @@ mc_atom:
   | FIX                  { TmFix($1.i) }
   | SEQMETHOD DOT IDENT
       { let fi = mktinfo ($1.i.fi) ($3.i.fi) in
-        TmSeqMethod(fi, $3.v, SeqFunNone, [], 0,(-1)) }
+        TmSeqMethod(fi, $3.v, SeqFunNone, [], 0, (-1), false) }
 
 
 ty:
