@@ -107,7 +107,7 @@ let rec find_rels_and_seqs_in_ast ast rels seqs in_fix =
     (match tm1, check_if_tm_is_seq tm2 with
      | TmFix(fix_ti), _ ->
        find_rels_and_seqs_in_ast tm2 [] [] true
-     | TmLam(lam_ti,lam_x,lam_ty,TmNop), true ->
+     | TmLam(lam_ti,lam_x,lam_ty,TmNop), true -> (*let s = exp of type seq*)
        let (rels_tm1,seqs_tm1) = find_rels_and_seqs_in_ast tm1 [] [] in_fix' in
        let (rels_tm2, seqs_tm2) = find_rels_and_seqs_in_ast tm2 [] [] in_fix' in
        (*TODO: Failwith if seqs_tm2 is empty*)
