@@ -14,6 +14,9 @@ let get_mock_gvoid =
 let get_mock_gint =
   TyGround(NoInfo,GInt)
 
+let get_mock_gbool =
+  TyGround(NoInfo,GBool)
+
 let get_mock_tyarrow_tyseq_int_gvoid =
   TyArrow(NoInfo,
           get_mock_tyseq_int,
@@ -40,6 +43,39 @@ let get_mock_tyarrow_tyseq_int_tyseq_int_tyseq_int =
           TyArrow(NoInfo,
                   get_mock_tyseq_int,
                   get_mock_tyseq_int))
+
+let get_mock_tyarrow_gint_gint =
+  TyArrow(NoInfo,
+          get_mock_gint,
+          get_mock_gint)
+
+let get_mock_tyarrow_gint_gbool =
+  TyArrow(NoInfo,
+          get_mock_gint,
+          get_mock_gbool)
+
+let get_mock_tyarrow_gint_gint_gint =
+  TyArrow(NoInfo,
+          get_mock_gint,
+          TyArrow(NoInfo,
+                  get_mock_gint,
+                  get_mock_gint))
+
+let get_mock_tyarrow_gint_gint_gbool =
+  TyArrow(NoInfo,
+          get_mock_gint,
+          TyArrow(NoInfo,
+                  get_mock_gint,
+                  get_mock_gbool))
+
+let get_mock_tyarrow_tyarrow_gint_gint_gint_gint =
+  TyArrow(NoInfo,
+          TyArrow(NoInfo,
+                  get_mock_gint,
+                  get_mock_gint),
+          TyArrow(NoInfo,
+                  get_mock_gint,
+                  get_mock_gint))
 
 let create_mock_fi mock_file_name =
   Msg.Info(mock_file_name,0,0,0,0)
@@ -862,7 +898,7 @@ let run_process_steps_test5 =
 let _ = Printf.printf "Test process steps 5: %s\n" (get_test_res_string test_res) in
 true
 
-let run_process_steps_test5 =
+let run_process_steps_test6 =
   (*lam f2:Dyn. Nop with type (Int->Void)*)
   let lam_f2 =
     TmLam((create_mock_ti (get_mock_tyarrow_gint_gvoid) (us"lam_f2_fi1")),
@@ -920,4 +956,224 @@ let run_process_steps_test5 =
   (*Handle complete test result*)
   let test_res = comp_rels_res && comp_seqs_res && comp_seq_cons_res && comp_rels_assoc_l1_res && comp_rels_assoc_l2_res && comp_vis_seqs_assoc_l_res && comp_rels_assoc_l3_res && comp_mf_matrix1_res && comp_sel_dss_assoc_l_res && comp_upd_ast_res in
   let _ = Printf.printf "Test process steps 6: %s\n" (get_test_res_string test_res) in
+  true
+
+let run_process_steps_test7 =
+  (*TmVar(x'0) with type Int*)
+  let var_x =
+    TmVar((create_mock_ti (get_mock_gint) (us"varx_fi1")),
+          us"x",
+          0,
+          false) in
+  (*TmVar(addi'5) with type (Int->Int->Int)*)
+  let var_addi =
+    TmVar((create_mock_ti (get_mock_tyarrow_gint_gint_gint) (us"var_addi_fi1")),
+          us"addi",
+          5,
+          false) in
+  (*TmApp(var_addi, var_x) with type (Int->Int)*)
+  let app1 =
+    TmApp((create_mock_ti (get_mock_tyarrow_gint_gint) (us"app1_fi1")),
+          var_addi,
+          var_x) in
+  (*TmApp(app1, 1) with type Int*)
+  let app2 =
+    TmApp((create_mock_ti (get_mock_gint) (us"app2_fi1")),
+          app1,
+          (create_mock_tmconst_int 1 (us"app2_fi2"))) in
+  (*TmVar(fix_test'1) with type (Int->Int)*)
+  let var_fix_test =
+    TmVar((create_mock_ti (get_mock_tyarrow_gint_gint) (us"var_fix_test_fi1")),
+          us"fix_test",
+          1,
+          false) in
+  (*TmApp(var_fix_test, app2) with type Int*)
+  let app3 =
+    TmApp((create_mock_ti (get_mock_gint) (us"app3_fi1")),
+          var_fix_test,
+          app2) in
+  (*TmSeq(var_x)(){-1} with type TySeq[Int]*)
+  let seq1 =
+    TmSeq((create_mock_ti (get_mock_tyseq_int) (us"seq1_fi1")),
+          us"int",
+          TmList([var_x]),
+          SeqNone,
+          -1) in
+  (*Seq.length(NO Fun){-1}in_fix:false with type (TySeq[Int]->Int)*)
+  let seqm_length =
+    TmSeqMethod((create_mock_ti (get_mock_tyarrow_tyseq_int_gint) (us"seqm_length_fi1")),
+                us"length",
+                SeqFunNone,
+                [],
+                0,
+                -1,
+                false) in
+  (*TmApp(seqm_length, seq1) with type Int*)
+  let app4 =
+    TmApp((create_mock_ti (get_mock_gint) (us"app4_fi1")),
+          seqm_length,
+          seq1) in
+  (*lam s:Dyn. TmVar(x'1) with type (Int->Int)*)
+  let lam_s =
+    TmLam((create_mock_ti (get_mock_tyarrow_gint_gint) (us"lam_s_fi1")),
+          us"s",
+          TyDyn,
+          var_x) in
+  (*TmApp((lam_s), app4) with type Int*)
+  let app5 =
+    TmApp((create_mock_ti (get_mock_gint) (us"app5_fi1")),
+          lam_s,
+          app4) in
+  (*TmVar(leqi'12) with type (Int->Int->Bool)*)
+  let var_leqi =
+  TmVar((create_mock_ti (get_mock_tyarrow_gint_gint_gbool) (us"var_leqi_fi1")),
+        us"leqi",
+        12,
+        false) in
+  (*TmApp(var_leqi, var_x) with type (Int->Bool)*)
+  let app6 =
+    TmApp((create_mock_ti (get_mock_tyarrow_gint_gbool) (us"app6_fi1")),
+          var_leqi,
+          var_x) in
+  (*TmApp(app6, 3) with type Bool*)
+  let app7 =
+    TmApp((create_mock_ti (get_mock_gbool) (us"app7_fi1")),
+          app6,
+          (create_mock_tmconst_int 3 (us"app7_fi2"))) in
+  (*if app7 then app5 else app3 with type Int*)
+  let if1 =
+    TmIfexp((create_mock_ti (get_mock_gint) (us"if1_fi1")),
+            app7,
+            app5,
+            app3) in
+  (*lam x:Int. if1 with type (Int->Int)*)
+  let lam_x =
+    TmLam((create_mock_ti (get_mock_tyarrow_gint_gint) (us"lam_x_fi1")),
+          us"x",
+          get_mock_gint,
+          if1) in
+  (*lam fix_test:(Int->Int). lam_x with type ((Int->Int)->Int->Int)*)
+  let lam_fix_test =
+    TmLam((create_mock_ti (get_mock_tyarrow_tyarrow_gint_gint_gint_gint) (us"lam_fix_test_fi1")),
+          us"fix_test",
+          get_mock_tyarrow_gint_gint,
+          lam_x) in
+  (*TmApp(fix, (lam_fix_test)) with type Int*)
+  let app8 =
+    TmApp((create_mock_ti (get_mock_gint) (us"app8_fi1")),
+          TmFix(create_mock_ti (get_mock_gvoid) (us"app8_fi2")),
+          lam_fix_test) in
+  (*lam fix_test:Dyn. Nop with type (Int->Void)*)
+  let lam_fix_test2 =
+    TmLam((create_mock_ti (get_mock_tyarrow_gint_gvoid) (us"lam_fix_test2_fix1")),
+          us"lam_fix_test",
+          TyDyn,
+          TmNop) in
+  (*TmApp((lam_fix_test_2), app8) with type Void*)
+  let app9 =
+    TmApp((create_mock_ti (get_mock_gvoid) (us"app9_fi1")),
+          lam_fix_test2,
+          app8) in
+  let ast = app9 in
+  (*Test method "find_rels_and_seqs_in_ast"*)
+  let (rls,seqs) = find_rels_and_seqs_in_ast ast [] [] false in
+  let rels = find_lam_var_rels seqs rls seqs in (*TODO:Add this to above testcases*)
+  let exp_upd_seqm_length =
+    TmSeqMethod((create_mock_ti (get_mock_tyarrow_tyseq_int_gint) (us"seqm_length_fi1")),
+                us"length",
+                SeqFunNone,
+                [],
+                0,
+                -1,
+                true) in
+  let exp_rels = [(exp_upd_seqm_length,seq1)] in
+  let comp_rels_res = compare_rels rels exp_rels in
+  let exp_seqs = [exp_upd_seqm_length;seq1] in
+  let comp_seqs_res = compare_seqs seqs exp_seqs in
+  (*Test method "find_seq_cons_among_seqs"*)
+  let seq_cons = find_seq_cons_among_seqs seqs in
+  let exp_seq_cons = [seq1] in
+  let comp_seq_cons_res = compare_seqs seq_cons exp_seq_cons in
+  (*Test method "init_rels_assoc_list"*)
+  let rels_assoc_l1 = init_rels_assoc_list seqs in
+  let exp_rels_assoc_l1 = [(exp_upd_seqm_length,[]);(seq1,[])] in
+  let comp_rels_assoc_l1_res = compare_rels_assoc_list rels_assoc_l1 exp_rels_assoc_l1 in
+  (*Test method "transl_rels_to_rels_assoc_list"*)
+  let rels_assoc_l2 = transl_rels_to_rels_assoc_list rels rels_assoc_l1 in
+  let exp_rels_assoc_l2 = [(seq1,[exp_upd_seqm_length]);(exp_upd_seqm_length,[seq1]);] in
+  let comp_rels_assoc_l2_res = compare_rels_assoc_list rels_assoc_l2 exp_rels_assoc_l2 in
+  (*Test method "init_visited_seqs_assoc_list"*)
+  let vis_seqs_assoc_l = init_visited_seqs_assoc_list rels_assoc_l2 in
+  let exp_vis_seqs_assoc_l = [(seq1,false);(exp_upd_seqm_length,false)] in
+  let comp_vis_seqs_assoc_l_res = compare_rels2 vis_seqs_assoc_l exp_vis_seqs_assoc_l in
+  (*Test method "reduce_rels"*)
+  let rels_assoc_l3 = reduce_rels rels_assoc_l2 (init_visited_seqs_assoc_list rels_assoc_l2) in
+  let exp_rels_assoc_l3 = [(seq1,[exp_upd_seqm_length])] in
+  let comp_rels_assoc_l3_res = compare_rels_assoc_list rels_assoc_l3 exp_rels_assoc_l3 in
+  (*Test method "create_mf_matrix"*)
+  let mf_matrix1 = create_mf_matrix rels_assoc_l3 in
+  let mf_row1 = init_mf_row in
+  let upd_mf_row11 = List.remove_assoc "length" mf_row1 in
+  let upd_mf_row12 = ("length",-1)::upd_mf_row11 in
+  let comp_mf_matrix1_res = compare_mf_matrix_count mf_matrix1 [upd_mf_row12] in
+  (*Run method "Frequencies.translate_mf_assoc_list" - tested in Frequencies*)
+  let mf_matrix2 = Frequencies.translate_mf_assoc_list mf_matrix1 in (*TODO: Mock mf_matrix2 instead? Also in above tests?*)
+  (*Mock algorithm step - tested in Dssa*)
+  let selected_dss = [[0]] in
+  (*Test method "connect_seqs_w_sel_dss"*)
+  let sel_dss_assoc_l = connect_seqs_w_sel_dss selected_dss rels_assoc_l3 in
+  let exp_sel_dss_assoc_l = [(seq1,0);(exp_upd_seqm_length,0)] in
+  let comp_sel_dss_assoc_l_res = compare_rels2 sel_dss_assoc_l exp_sel_dss_assoc_l in
+  (*Test method "update_ast_w_sel_dss"*)
+  let upd_ast = update_ast_w_sel_dss ast sel_dss_assoc_l false in
+  let upd_seq1 =
+    TmSeq((create_mock_ti (get_mock_tyseq_int) (us"seq1_fi1")),
+          us"int",
+          TmList([var_x]),
+          SeqNone,
+          0) in
+  let upd_seqm_length =
+    TmSeqMethod((create_mock_ti (get_mock_tyarrow_tyseq_int_gint) (us"seqm_length_fi1")),
+                us"length",
+                SeqFunNone,
+                [],
+                0,
+                0,
+                true) in
+  let upd_app4 =
+    TmApp((create_mock_ti (get_mock_gint) (us"app4_fi1")),
+          upd_seqm_length,
+          upd_seq1) in
+  let upd_app5 =
+    TmApp((create_mock_ti (get_mock_gint) (us"app5_fi1")),
+          lam_s,
+          upd_app4) in
+  let upd_if1 =
+    TmIfexp((create_mock_ti (get_mock_gint) (us"if1_fi1")),
+            app7,
+            upd_app5,
+            app3) in
+  let upd_lam_x =
+    TmLam((create_mock_ti (get_mock_tyarrow_gint_gint) (us"lam_x_fi1")),
+          us"x",
+          get_mock_gint,
+          upd_if1) in
+  let upd_lam_fix_test =
+    TmLam((create_mock_ti (get_mock_tyarrow_tyarrow_gint_gint_gint_gint) (us"lam_fix_test_fi1")),
+          us"fix_test",
+          get_mock_tyarrow_gint_gint,
+          upd_lam_x) in
+  let upd_app8 =
+    TmApp((create_mock_ti (get_mock_gint) (us"app8_fi1")),
+          TmFix(create_mock_ti (get_mock_gvoid) (us"app8_fi2")),
+          upd_lam_fix_test) in
+  let upd_app9 =
+    TmApp((create_mock_ti (get_mock_gvoid) (us"app9_fi1")),
+          lam_fix_test2,
+          upd_app8) in
+  let exp_upd_ast = upd_app9 in
+  let comp_upd_ast_res = compare_asts upd_ast exp_upd_ast in
+  (*Handle complete test result*)
+  let test_res = comp_rels_res && comp_seqs_res && comp_seq_cons_res && comp_rels_assoc_l1_res && comp_rels_assoc_l2_res && comp_vis_seqs_assoc_l_res && comp_rels_assoc_l3_res && comp_mf_matrix1_res && comp_sel_dss_assoc_l_res && comp_upd_ast_res in
+  let _ = Printf.printf "Test process steps 7: %s\n" (get_test_res_string test_res) in
   true
