@@ -169,7 +169,7 @@ let rec find_rels_and_seqs_in_ast ast rels seqs in_fix =
       (rels,(ast::seqs))
     else
       (rels,seqs)
-  | TmLam(_,x,_,tm) | TmClos(_,_,_,tm,_,_)  ->
+  | TmLam(_,_,_,tm) | TmClos(_,_,_,tm,_,_)  ->
     (*If the lambda/closure has type sequence, then we want to add it to our list of sequences found*)
     let (upd_seqs) =
       (if check_if_tm_has_type_tyseq ast then
@@ -452,6 +452,12 @@ let get_actual_fun_w_sel_ds fun_name sel_ds =
   | 0, "foldl" -> (SeqListFun13(Linkedlist.foldl))
   | _ -> failwith "Method not yet implemented1"
 
+let get_seq_from_list ds_choice l =
+  match ds_choice with
+  | 0 -> SeqList(Linkedlist.from_list l)
+  | 1 -> SeqList(Linkedlist.from_list l) (*TODO: Add more options*)
+  | _ -> failwith "Data structure implementation not implemented"
+
 (*Updates AST with data structure choices. This means updating the corresponding field in TmSeqs and TmSeqMethods, getting the correct function implementation in TmSeqMethods and creating the sequence from the term list in TmSeqs.*)
 let rec update_ast_w_sel_dss ast sel_dss in_fix =
   let rec update_ast_list_w_sel_dss ast_l sel_dss' l_in_fix =
@@ -464,8 +470,8 @@ let rec update_ast_w_sel_dss ast sel_dss in_fix =
   | TmSeq(ti,ty_ident,tm_l,tm_seq,ds_choice) ->
     let upd_tm_l = update_ast_list_w_sel_dss (get_list_from_tmlist tm_l) sel_dss in_fix in
     let upd_ds_choice = List.assoc ast sel_dss in
-    (*TODO: Update tm_seq*)
-    TmSeq(ti,ty_ident,TmList(upd_tm_l),tm_seq,upd_ds_choice)
+    let upd_tm_seq = get_seq_from_list upd_ds_choice (get_list_from_tmlist tm_l) in
+    TmSeq(ti,ty_ident,TmList(upd_tm_l),upd_tm_seq,upd_ds_choice)
   | TmSeqMethod(ti,fun_name,actual_fun,args,arg_index,ds_choice,seqm_in_fix) ->
     let upd_seqm = TmSeqMethod(ti,fun_name,actual_fun,args,arg_index,ds_choice,in_fix) in
     let upd_ds_choice = List.assoc upd_seqm sel_dss in

@@ -531,12 +531,6 @@ let optimize_const_app fi v1 v2 =
   (* No optimization *)
   | vv1,vv2 -> TmApp({ety = Some TyDyn; fi},vv1,vv2)
 
-(*eval helper methods*)
-let get_seq_from_list tml seq =
-  match tml, seq with
-  | TmList(l), SeqList(_) -> SeqList(Linkedlist.from_list l)
-  | _ -> failwith "Sequence type not implemented."
-
 let rec add_evaluated_term_to_args args term =
   match args with
   | [] -> term::[]
@@ -741,12 +735,11 @@ let rec eval env t =
      | _ -> raise_error ti.fi "Condition in if-expression not a bool.")
   (* Sequence constructor *)
   | TmSeq(fi,ty_ident,tmlist,tmseq,ds_choice) ->
-    (match tmseq with
-    | SeqNone ->
-      let new_tmlist = TmList(eval_tmlist env tmlist) in
-      let new_tmseq = get_seq_from_list new_tmlist tmseq in
-      TmSeq(fi,ty_ident,new_tmlist,new_tmseq,ds_choice)
-    | _ -> t)
+    let upd_tm_seq =
+      (match ds_choice, tmseq with
+       | 0, SeqList(ll) -> SeqList(Linkedlist.map (eval env) ll) (*TODO: Add more choices*)
+       | _ -> failwith "Data structure choice not implemented") in
+    TmSeq(fi,ty_ident,tmlist,upd_tm_seq,ds_choice)
   (* Sequence method*)
   | TmSeqMethod _ -> t
   (* The rest *)
