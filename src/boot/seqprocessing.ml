@@ -59,29 +59,34 @@ let rec get_seqs_w_selected_dss_string selected_ds_assoc_l =
     "- " ^ (Ustring.to_utf8 (Pprint.pprint false hd1)) ^ " with data structure " ^ (string_of_int hd2) ^ "\n" ^ (get_seqs_w_selected_dss_string tl)
 
 (*Help methods*)
-let rec check_if_ty_is_seq ty =
+let rec check_if_ty_is_tyseq ty =
   match ty with
+  (*All terms of type TySeq*)
   | TySeq _ ->
     true
+  (*All terms "returning" a term of type TySeq*)
   | TyArrow(_,_,TySeq _) ->
     true
+  (*The case of nested TyArrows*)
   | TyArrow(_,_,rhs_ty) ->
-    check_if_ty_is_seq rhs_ty
+    check_if_ty_is_tyseq rhs_ty
   | _ ->
     false
 
-let rec check_if_tm_is_seq t =
+let rec check_if_tm_has_type_tyseq t =
   match t, getType t with
   | TmLam(lam_ti,lam_x,lam_ty,lam_tm), ty ->
     (match ty with
+     (*The special case "let x = term of type TySeq"*)
      | TyArrow(_,TySeq _,TyGround(_,GVoid)) ->
        true
      | _ ->
-       check_if_ty_is_seq ty
+       check_if_ty_is_tyseq ty
     )
   | _, ty ->
-    check_if_ty_is_seq ty
+    check_if_ty_is_tyseq ty
 
+(*Finds all vars in list "seqs" that has the identifier "lam_x"*)
 let rec find_related_vars lam_x seqs =
   match seqs with
   | [] -> []
@@ -95,30 +100,38 @@ let rec find_related_vars lam_x seqs =
      | _ ->
        find_related_vars lam_x tl)
 
+(*Forms pairs between lambda "lam" and each variable in the list "vars"*)
 let rec get_lam_var_rels lam vars =
   match vars with
   | [] -> []
   | hd::tl ->
     (lam,hd)::(get_lam_var_rels lam tl)
 
+(*Goes through AST to find all terms of sequence type and their internal relationships*)
 let rec find_rels_and_seqs_in_ast ast rels seqs in_fix =
   (*let _ = Printf.printf "- %s with type %s\n" (Ustring.to_utf8 (Pprint.pprint false ast)) (Ustring.to_utf8 (Pprint.pprint_ty (Typesys.getType ast))) in*)
+  (*Processes terms from an application (TmApp)*)
   let find_rels_and_seqs_in_tmapp tm1 tm2 in_fix' =
-    (match tm1, check_if_tm_is_seq tm2 with
+    (match tm1, check_if_tm_has_type_tyseq tm2 with
+     (*If tm1 is a fix, then we want to keep track of this when processing tm2 and therefore call find_rels_and_seqs_in_ast with in_fix (last arg) set to true*)
      | TmFix(fix_ti), _ ->
        find_rels_and_seqs_in_ast tm2 [] [] true
-     | TmLam(lam_ti,lam_x,lam_ty,TmNop), true -> (*let s = exp of type seq*)
+     (*The case "let x = exp of type seq"*)
+     | TmLam(lam_ti,lam_x,lam_ty,TmNop), true ->
        let (rels_tm1,seqs_tm1) = find_rels_and_seqs_in_ast tm1 [] [] in_fix' in
        let (rels_tm2, seqs_tm2) = find_rels_and_seqs_in_ast tm2 [] [] in_fix' in
        (*TODO: Failwith if seqs_tm2 is empty*)
+       (*Lambda term (tm1) and the first sequence in tm2 are related*)
        let new_rel = (tm1,(List.nth seqs_tm2 0)) in
        let upd_rels = List.append (new_rel::rels_tm1) rels_tm2 in
        let upd_seqs = List.append seqs_tm1 seqs_tm2 in
        (upd_rels,upd_seqs)
+     (*The case "tm1 tm2" where tm2 has type sequence*)
      | _, true ->
        let (rels_tm1,seqs_tm1) = find_rels_and_seqs_in_ast tm1 [] [] in_fix' in
        let (rels_tm2,seqs_tm2) = find_rels_and_seqs_in_ast tm2 [] [] in_fix' in
-       (*TODO: Failwith if seqs_tm2 is empty*)
+       (*TODO: Failwith if seqs_tm2 is empty, check if they contain sequences at all...*)
+       (*The last sequence found in tm1 is related to the first sequence found in tm2*)
        let new_rel = ((List.nth seqs_tm1 ((List.length seqs_tm1)-1)),(List.nth seqs_tm2 0)) in
        let upd_rels = List.append (new_rel::rels_tm1) rels_tm2 in
        let upd_seqs = List.append seqs_tm1 seqs_tm2 in
@@ -129,6 +142,7 @@ let rec find_rels_and_seqs_in_ast ast rels seqs in_fix =
        let upd_rels = List.append rels_tm1 rels_tm2 in
        let upd_seqs = List.append seqs_tm1 seqs_tm2 in
        (upd_rels,upd_seqs)) in
+  (*Processes terms in a list (TmList) as found in a sequence constructor (TmSeq)*)
   let rec find_rels_and_seqs_in_ast_list l l_rels l_seqs l_in_fix =
     (match l with
      | [] -> (l_rels,l_seqs)
@@ -137,55 +151,55 @@ let rec find_rels_and_seqs_in_ast ast rels seqs in_fix =
        find_rels_and_seqs_in_ast_list tl upd_l_rels upd_l_seqs l_in_fix) in
   match ast with
   | TmSeq(ti,ty_ident,tm_l,tm_seq,ds_choice) ->
-    let _ = check_if_tm_is_seq ast in (*TODO:Unnecessary*)
+    (*TmSeq always has type TySeq*)
     let upd_seqs = ast::seqs in
+    (*Process elements (terms) of the sequence*)
     find_rels_and_seqs_in_ast_list (get_list_from_tmlist tm_l) rels upd_seqs in_fix
   | TmSeqMethod(seqm_ti,fun_name,actual_fun,args,arg_index,ds_choice,in_fix_unknown) ->
+    (*We want to keep track of whether the sequence method is contained within a recursive method (application of TmFix), and therefore update the in_fix field of the TmSeqMethod*)
     let upd_seqm = TmSeqMethod(seqm_ti,fun_name,actual_fun,args,arg_index,ds_choice,in_fix) in
-    (rels,(upd_seqm::seqs))
-  | TmNop ->
+    (*We always consider a sequence method as an instance of sequence, even if it doesn't return a sequence*)
+    let upd_seqs = upd_seqm::seqs in
+    (rels,upd_seqs)
+  | TmNop | TmChar _ | TmFix _ | TmConst _ ->
     (rels,seqs)
   | TmVar(ti,x,di,pm) ->
-    if check_if_tm_is_seq ast then
+    (*If the variable has type sequence, then we want to add it to our list of sequences found*)
+    if check_if_tm_has_type_tyseq ast then
       (rels,(ast::seqs))
     else
       (rels,seqs)
-  | TmChar _ | TmFix _ | TmConst _ ->
-    if check_if_tm_is_seq ast then
-      (rels,(ast::seqs))
-    else
-      (rels,seqs)
-  | TmLam(_,x,_,tm)  ->
+  | TmLam(_,x,_,tm) | TmClos(_,_,_,tm,_,_)  ->
+    (*If the lambda/closure has type sequence, then we want to add it to our list of sequences found*)
     let (upd_seqs) =
-      (if check_if_tm_is_seq ast then
+      (if check_if_tm_has_type_tyseq ast then
          (ast::seqs)
        else
          seqs) in
-    find_rels_and_seqs_in_ast tm rels upd_seqs in_fix
-  | TmClos(_,_,_,tm,_,_) ->
-    let upd_seqs =
-      (if check_if_tm_is_seq ast then
-         ast::seqs
-       else
-         seqs) in
+    (*We also want to process the term found within the lambda/closure*)
     find_rels_and_seqs_in_ast tm rels upd_seqs in_fix
   | TmApp(_,tm1,tm2) ->
+    (*We want to process the two terms within the application to determine how they relate to each other*)
     let (app_rels,app_seqs) = find_rels_and_seqs_in_tmapp tm1 tm2 in_fix in
     let upd_rels = List.append app_rels rels in
     let upd_seqs = List.append app_seqs seqs in
     (upd_rels,upd_seqs)
   | TmUtest(_,tm1,tm2,tm3) | TmIfexp(_,tm1,tm2,tm3) ->
+    (*If the test/if expression has type sequence, then we want to add it to our list of sequences found*)
     let (upd_seqs1) =
-      (if check_if_tm_is_seq ast then
+      (if check_if_tm_has_type_tyseq ast then
          ast::seqs
        else
          seqs) in
+    (*We also want to process the terms found within the test/if expression*)
     let (upd_rels1,upd_seqs2) = find_rels_and_seqs_in_ast tm1 rels upd_seqs1 in_fix in
     let (upd_rels2,upd_seqs3) = find_rels_and_seqs_in_ast tm2 upd_rels1 upd_seqs2 in_fix in
     find_rels_and_seqs_in_ast tm3 upd_rels2 upd_seqs3 in_fix
+  (*Cases not yet implemented*)
   | TmMatch _ | TmUC _ | TmTyApp _ | TmTyLam _ ->
     failwith "Not implemented1"
 
+(*Find the sequence constructors - that is, TmSeq terms - in a list of terms*)
 let rec find_seq_cons_among_seqs seqs =
   match seqs with
   | [] -> []
@@ -197,12 +211,14 @@ let rec find_seq_cons_among_seqs seqs =
        find_seq_cons_among_seqs tl
     )
 
+(*Initialize an association list where they key is a term and the value is an empty list.*)
 let rec init_rels_assoc_list seqs =
   match seqs with
   | [] -> []
   | hd::tl ->
     (hd,[])::(init_rels_assoc_list tl)
 
+(*Update an association list entry where they key is a term and the value is a list. The argument "new_val" is the value we want to add to the list associated with "key".*)
 let upd_rels_assoc_list_list_entry key rels_assoc_l new_val =
   let upd_rels_assoc_l1 =
     (if List.mem_assoc key rels_assoc_l then
@@ -214,50 +230,68 @@ let upd_rels_assoc_list_list_entry key rels_assoc_l new_val =
   let upd_rels_assoc_l2 = List.remove_assoc key upd_rels_assoc_l1 in
   (key,upd_val)::upd_rels_assoc_l2
 
-  let upd_rels_assoc_list_bool_entry key rels_assoc_l new_val =
-    let upd_rels_assoc_l1 =
-      (if List.mem_assoc key rels_assoc_l then
-         rels_assoc_l
-       else
-         (key,false)::rels_assoc_l) in
-    let upd_rels_assoc_l2 = List.remove_assoc key upd_rels_assoc_l1 in
-    (key,new_val)::upd_rels_assoc_l2
+(*Update an association list entry where they key is a term and the value is a boolean. The argument "new_val" is the new boolean value we want to associate with "key".*)
+let upd_rels_assoc_list_bool_entry key rels_assoc_l new_val =
+  let upd_rels_assoc_l1 =
+    (if List.mem_assoc key rels_assoc_l then
+       rels_assoc_l
+     else
+       (key,false)::rels_assoc_l) in
+  let upd_rels_assoc_l2 = List.remove_assoc key upd_rels_assoc_l1 in
+  (key,new_val)::upd_rels_assoc_l2
 
-(*let rec transl_rels_to_rels_assoc_list rels rels_assoc_l =
-  match rels with
-  | [] -> rels_assoc_l
-  | (hd1,hd2)::tl ->
-    let upd_rels_assoc_l = upd_rels_assoc_list_list_entry hd2 rels_assoc_l hd1 in
-    transl_rels_to_rels_assoc_list tl upd_rels_assoc_l*)
+(*Translates a list of relationships - that is, term pairs - to an association list where they key is a term and the value is a list of its related terms. "rels" is the list of relationships and "rels_assoc_l" is an initialized association list.*)
 let rec transl_rels_to_rels_assoc_list rels rels_assoc_l =
   match rels with
   | [] -> rels_assoc_l
   | (hd1,hd2)::tl ->
+    (*Add relationship (hd1,hd2) to association list*)
     let upd_rels_assoc_l1 = upd_rels_assoc_list_list_entry hd1 rels_assoc_l hd2 in
+    (*Add relationship (hd2,hd1) to association list*)
     let upd_rels_assoc_l2 = upd_rels_assoc_list_list_entry hd2 upd_rels_assoc_l1 hd1 in
     transl_rels_to_rels_assoc_list tl upd_rels_assoc_l2
 
+(*Initializes an association list for keeping track of which terms have been visited. The key is a term and the value, which is a boolean, is initially set to false.*)
 let rec init_visited_seqs_assoc_list rels_assoc_l =
   match rels_assoc_l with
   | [] -> []
   | (hd,_)::tl ->
     (hd,false)::(init_visited_seqs_assoc_list tl)
 
+(*Dives further down into the association list for relationships to find all terms related to "curr_seqs".
+  Input:
+  - "rels_assoc_l" is an association list where the key is a term and the value is a list with all its related terms
+  - "curr_seqs" is the list of sequences for which we currently want to find all relatives
+  - "new_seqs" is a list of sequences recently found for which we later want to find all relatives
+  - "visited_assoc_l" is an association list where the key is a term and the value is a boolean, which is used to keep track of which terms have been visited
+  - "all_seqs" is a list containing all related terms found so far
+  Returns:
+  - "all_seqs"
+  - "visited_assoc_l"
+*)
 let rec find_all_related_seqs rels_assoc_l curr_seqs new_seqs visited_assoc_l all_seqs =
   match curr_seqs, new_seqs with
+  (*All related terms have been found*)
   | [], [] -> (all_seqs,visited_assoc_l)
+  (*All terms in "curr_seqs" have been visited, so we start to visit the terms in "new_seqs" instead*)
   | [], _ -> find_all_related_seqs rels_assoc_l new_seqs [] visited_assoc_l all_seqs
   | (hd::tl), _ ->
     if List.assoc hd visited_assoc_l then
+      (*If term hd has already been visited, we continue on to the next element of the list "curr_seqs"*)
       find_all_related_seqs rels_assoc_l tl new_seqs visited_assoc_l all_seqs
     else
       (*Mark hd as visited*)
       let upd_visited_assoc_l = upd_rels_assoc_list_bool_entry hd visited_assoc_l true in
+      (*Find the terms directly related to term hd*)
       let hd_rel_seqs = List.assoc hd rels_assoc_l in
+      (*Add hd's related terms to the list for terms to study later*)
       let upd_new_seqs = List.append hd_rel_seqs new_seqs in
+      (*Add hd to the list containing all related terms*)
       let upd_all_seqs = hd::all_seqs in
+      (*Continue on to the next element of the list "curr_seqs"*)
       find_all_related_seqs rels_assoc_l tl upd_new_seqs upd_visited_assoc_l upd_all_seqs
 
+(**)
 let rec reduce_rels rels_assoc_l visited_assoc_l =
   match rels_assoc_l with
   | [] -> []
@@ -267,8 +301,9 @@ let rec reduce_rels rels_assoc_l visited_assoc_l =
     else
       (*Mark hd as visited*)
       let upd_visited_assoc_l1 = upd_rels_assoc_list_bool_entry hd visited_assoc_l true in
-      (*Get all relatives of hd*)
+      (*Get all hd's related terms*)
       let (hd_rel_seqs,upd_visited_assoc_l2) = find_all_related_seqs rels_assoc_l (List.assoc hd rels_assoc_l) [] upd_visited_assoc_l1 [] in
+      (*Add new entry with hd as key and all hd's related terms as value, and recursively continue building list for the next term in "rels_assoc_l"*)
       (hd,hd_rel_seqs)::(reduce_rels rels_assoc_l upd_visited_assoc_l2)
 
 let get_seq_fun_names =
@@ -294,16 +329,19 @@ let get_seq_fun_names =
    "foldr";
    "foldl"]
 
+(*Initialize an association list where the key is a function name and the value is a count, which is initially set to zero.*)
 let rec init_fun_count_assoc_list funs =
   match funs with
   | [] -> []
   | hd::tl ->
     (hd,0)::(init_fun_count_assoc_list tl)
 
+(*Initialize an mf matrix row, where the keys are function names and the values are the count for that function, which is intially set to zero.*)
 let init_mf_row =
   let fun_names = get_seq_fun_names in
   init_fun_count_assoc_list fun_names
 
+(*Finds all sequence methods - that is, TmSeqMethod - in a list of terms of type sequence.*)
 let rec get_seqmethods seqs =
   match seqs with
   | [] -> []
@@ -313,16 +351,19 @@ let rec get_seqmethods seqs =
      | _ -> get_seqmethods tl
     )
 
+(*Get the function name from a sequence method term (TmSeqMethod).*)
 let get_seqm_fun_name_string seqm =
   match seqm with
   | TmSeqMethod(_,fun_name,_,_,_,_,_) -> (Ustring.to_utf8 fun_name)
   | _ -> failwith "Expected a TmSeqMethod"
 
+(*Get the "in_fix" boolean field from a sequence method term (TmSeqMethod).*)
 let get_seqm_in_fix_bool seqm =
   match seqm with
   | TmSeqMethod(_,_,_,_,_,_,in_fix) -> in_fix
   | _ -> failwith "Expected a TmSeqMethod"
 
+(*Fills in an mf matrix row "mf_row" with the count from a list of sequence methods "seqms"*)
 let rec fill_in_mf_row mf_row seqms =
   match seqms with
   | [] -> mf_row
@@ -335,9 +376,11 @@ let rec fill_in_mf_row mf_row seqms =
        else
          curr_fun_count + 1) in
     let upd_mf_row1 = List.remove_assoc fun_name mf_row in
+    (*Add entry with incremented count for the current function name*)
     let upd_mf_row2 = (fun_name,upd_fun_count)::upd_mf_row1 in
     fill_in_mf_row upd_mf_row2 tl
 
+(*Creates a mf matrix with one row for each entry in the "rels_assoc_l". Each row is an association list where they keys are function names and the values are the counts corresponding to function used in the code.*)
 let rec create_mf_matrix rels_assoc_l =
   match rels_assoc_l with
   | [] -> []
@@ -347,35 +390,44 @@ let rec create_mf_matrix rels_assoc_l =
     let upd_mf_row = fill_in_mf_row mf_row seqms in
     upd_mf_row::(create_mf_matrix tl)
 
+(*Connects lambda expressions in the list of sequences "seqs" with variables with the same identifier also found in "seqs".*)
 let rec find_lam_var_rels seqs rels seqs_unchanged =
   match seqs with
   | [] -> rels
   | hd::tl ->
     (match hd with
      | TmLam(_,x,_,_) ->
+       (*Find all related variables with the same identifier "x" in the list of sequences "seqs_unchanged"*)
        let rel_vars = find_related_vars x seqs_unchanged in
+       (*Form relationships between the lambda and each related variable - that is, term pairs*)
        let lam_var_rels = get_lam_var_rels hd (rel_vars) in
-       let new_rels = List.append lam_var_rels rels in
-       find_lam_var_rels tl new_rels seqs_unchanged
+       (*Add the newly formed relationships to the list containing all relationships found so far*)
+       let upd_rels = List.append lam_var_rels rels in
+       find_lam_var_rels tl upd_rels seqs_unchanged
      | _ ->
        find_lam_var_rels tl rels seqs_unchanged
     )
 
+(*Associates sequences in "seq_l" with a selected data structure "sel_ds"*)
 let rec connect_seqs_list_w_sel_ds sel_ds seq_l =
   match seq_l with
   | [] -> []
   | hd::tl ->
     (hd,sel_ds)::(connect_seqs_list_w_sel_ds sel_ds tl)
 
+(*Takes in a list of selected data structures where each index represents a sequence and an association list with reduced relationships. Associates each sequence with the corresponding selected data structure.*)
 let rec connect_seqs_w_sel_dss selected_dss rels_assoc_l =
   match selected_dss, rels_assoc_l with
   | [], [] -> []
   | [], _ | _, [] -> failwith "The lists should have the same length"
   | (hd1::tl1), ((hd2,hdl2)::tl2) ->
-    let new_entry = (hd2,(List.nth hd1 0)) in
+    (*Connect the key (hd) in the "rels_assoc_l" with the current selected data structure*)
+    let new_entry = (hd2,(List.nth hd1 0)) in (*TODO:Collect from selected_dss, also below*)
+    (*Connect all hd's related terms with the current selected data structure*)
     let new_entries = connect_seqs_list_w_sel_ds (List.nth hd1 0) hdl2 in
     List.append (new_entry::new_entries) (connect_seqs_w_sel_dss tl1 tl2)
 
+(*Returns a function implementation given a fnuction name and a data structrue choice.*)
 let get_actual_fun_w_sel_ds fun_name sel_ds =
   match sel_ds, (Ustring.to_utf8 fun_name) with
   | 0, "is_empty" -> (SeqListFun4(Linkedlist.is_empty))
@@ -400,6 +452,7 @@ let get_actual_fun_w_sel_ds fun_name sel_ds =
   | 0, "foldl" -> (SeqListFun13(Linkedlist.foldl))
   | _ -> failwith "Method not yet implemented1"
 
+(*Updates AST with data structure choices. This means updating the corresponding field in TmSeqs and TmSeqMethods, getting the correct function implementation in TmSeqMethods and creating the sequence from the term list in TmSeqs.*)
 let rec update_ast_w_sel_dss ast sel_dss in_fix =
   let rec update_ast_list_w_sel_dss ast_l sel_dss' l_in_fix =
     (match ast_l with
@@ -411,6 +464,7 @@ let rec update_ast_w_sel_dss ast sel_dss in_fix =
   | TmSeq(ti,ty_ident,tm_l,tm_seq,ds_choice) ->
     let upd_tm_l = update_ast_list_w_sel_dss (get_list_from_tmlist tm_l) sel_dss in_fix in
     let upd_ds_choice = List.assoc ast sel_dss in
+    (*TODO: Update tm_seq*)
     TmSeq(ti,ty_ident,TmList(upd_tm_l),tm_seq,upd_ds_choice)
   | TmSeqMethod(ti,fun_name,actual_fun,args,arg_index,ds_choice,seqm_in_fix) ->
     let upd_seqm = TmSeqMethod(ti,fun_name,actual_fun,args,arg_index,ds_choice,in_fix) in
