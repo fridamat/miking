@@ -41,7 +41,7 @@ let rec tyShift d c ty =
   | TyLam(fi,x,kind,ty1) -> TyLam(fi,x,kind, tyShift d (c+1) ty1)
   | TyApp(fi,ty1,ty2) -> TyApp(fi, tyShift d c ty1, tyShift d c ty2)
   | TyDyn -> TyDyn
-  | TySeq(seq_ty) -> TySeq(tyShift d c seq_ty) (*TODO???*)
+  | TySeq(seq_ty) -> TySeq(tyShift d c seq_ty)
 
 
 (* Substitutes type [tys] in ty *)
@@ -681,7 +681,7 @@ let rec erase t =
   | TmIfexp(ti,cnd,thn,els) -> TmIfexp(ti, cnd, erase thn, erase els)
   | TmSeq(ti,ty_ident,tm_list,tm_seq,ds_choice) ->
     let upd_tm_list = TmList(erase_list (get_list_from_tmlist tm_list)) in
-    TmSeq(ti,ty_ident,upd_tm_list,tm_seq,ds_choice) (*TODO???*)
+    TmSeq(ti,ty_ident,upd_tm_list,tm_seq,ds_choice)
   | TmSeqMethod _ ->
     t
   | TmFix(ti) -> t

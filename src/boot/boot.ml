@@ -81,7 +81,7 @@ let rec debruijn env t =
     | TyLam(fi,x,kind,ty1) -> TyLam(fi,x,kind, debruijnTy (VarTy(x)::env) ty1)
     | TyApp(fi,ty1,ty2) -> TyApp(fi, debruijnTy env ty1, debruijnTy env ty2)
     | TyDyn -> TyDyn
-    | TySeq(seq_ty) -> TySeq((debruijnTy env seq_ty)) (*TODO???*)
+    | TySeq(seq_ty) -> TySeq((debruijnTy env seq_ty))
     )
   in
   let rec debruijn_list env l =
@@ -561,7 +561,7 @@ let get_arg_types_length_dummy fi fun_name =
   | _ -> raise_error fi "Sequence method not implemented."
 
 let get_last_arg_index fun_name =
-  (*!TODO: Check length of arg types in sequence function table*)
+  (*!TODO: Collect from file*)
   get_arg_types_length_dummy fun_name
 
 (*author: Alfrida*)
@@ -579,20 +579,6 @@ let check_element_type t1 t2 =
     true
   else
     failwith "Element types have to be the same"
-
-let get_ds_choice ti =
-  let ds_choice =
-    (match ti with
-     | {ety} ->
-       (match ety with
-        | Some(TySeq(ty)) ->
-          0 (*TODO:Change*)
-        | Some(TyArrow(fi,TySeq(ty), b_ty)) ->
-          0 (*TODO:Change*)
-        | _ -> failwith "It is not of the right type"
-       )
-    ) in
-  ds_choice
 
 (* Main evaluation loop of a term. Evaluates using big-step semantics *)
 let rec eval env t =

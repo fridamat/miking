@@ -106,7 +106,6 @@ let rec compare_terms t1 t2 =
        else
          false
      | _ -> false) in
-  (*TODO:Method for comparing variables such as x*)
   match t1, t2 with
   | TmChar(_,n1),TmChar(_,n2) -> n1 = n2
   | TmConst(_,c1),TmConst(_,c2) -> c1 = c2
@@ -122,19 +121,19 @@ let rec compare_terms t1 t2 =
     (compare_terms tm11 tm21) && (compare_terms tm12 tm22) && (compare_terms tm13 tm23)
   | TmFix _, TmFix _ -> true
   | TmSeq(_,_,tm_l1,_,ds_choice1), TmSeq(_,_,tm_l2,_,ds_choice2) ->
-    (compare_term_lists (get_list_from_tmlist tm_l1) (get_list_from_tmlist tm_l2)) && (ds_choice1 == ds_choice2)
+    (compare_term_lists (get_list_from_tmlist tm_l1) (get_list_from_tmlist tm_l2)) && (ds_choice1 == ds_choice2) (*TODO: Check tmseq as well?*)
   | TmSeqMethod(_,fun_name1,_,_,_,ds_choice1,in_fix1), TmSeqMethod(_,fun_name2,_,_,_,ds_choice2,in_fix2) ->
     ((Ustring.to_utf8 fun_name1) = (Ustring.to_utf8 fun_name2)) && (ds_choice1 == ds_choice2) && (in_fix1 == in_fix2) (*TODO: Check actual_fun as well?*)
   | _ ->
     false
 
-let rec compare_rels2 rels1 rels2 =
+let rec compare_tm_const_pair_list rels1 rels2 =
   match rels1, rels2 with
   | [], [] -> true
   | [], _ | _, [] -> false
   | (hd11,hd12)::tl1, (hd21,hd22)::tl2 ->
-    if (compare_terms hd11 hd21) && (hd12 == hd22) then (*TODO: Comparer method instead, if so method for value of bool or int also needed*)
-      compare_rels2 tl1 tl2
+    if (compare_terms hd11 hd21) && (hd12 == hd22) then
+      compare_tm_const_pair_list tl1 tl2
     else
       false
 
@@ -143,7 +142,7 @@ let rec compare_rels rels1 rels2 =
   | [], [] -> true
   | [], _ | _, [] -> false
   | (hd11,hd12)::tl1, (hd21,hd22)::tl2 ->
-    if (compare_terms hd11 hd21) && (compare_terms hd12 hd22) then      (*TODO: Comparer method instead, if so method for value of bool or int also needed*)
+    if (compare_terms hd11 hd21) && (compare_terms hd12 hd22) then
       compare_rels tl1 tl2
     else
       false
@@ -231,7 +230,7 @@ let run_process_steps_test1 =
   (*Test method "init_visited_seqs_assoc_list"*)
   let vis_seqs_assoc_l = init_visited_seqs_assoc_list rels_assoc_l2 in
   let exp_vis_seqs_assoc_l = [(seq1,false);(lam1,false)] in
-  let comp_vis_seqs_assoc_l_res = compare_rels2 vis_seqs_assoc_l exp_vis_seqs_assoc_l in
+  let comp_vis_seqs_assoc_l_res = compare_tm_const_pair_list vis_seqs_assoc_l exp_vis_seqs_assoc_l in
   (*Test method "reduce_rels"*)
   let rels_assoc_l3 = reduce_rels rels_assoc_l2 (init_visited_seqs_assoc_list rels_assoc_l2) in
   let exp_rels_assoc_l3 = [(seq1,[lam1])] in
@@ -247,7 +246,7 @@ let run_process_steps_test1 =
   (*Test method "connect_seqs_w_sel_dss"*)
   let sel_dss_assoc_l = connect_seqs_w_sel_dss selected_dss rels_assoc_l3 in
   let exp_sel_dss_assoc_l = [(seq1,0);(lam1,0)] in
-  let comp_sel_dss_assoc_l_res = compare_rels2 sel_dss_assoc_l exp_sel_dss_assoc_l in
+  let comp_sel_dss_assoc_l_res = compare_tm_const_pair_list sel_dss_assoc_l exp_sel_dss_assoc_l in
   (*Test method "update_ast_w_sel_dss"*)
   let upd_ast = update_ast_w_sel_dss ast sel_dss_assoc_l false in
   let upd_seq1 =
@@ -323,7 +322,7 @@ let run_process_steps_test2 =
     (*Test method "init_visited_seqs_assoc_list"*)
     let vis_seqs_assoc_l = init_visited_seqs_assoc_list rels_assoc_l2 in
     let exp_vis_seqs_assoc_l = [(seq1,false);(seqm1,false)] in
-    let comp_vis_seqs_assoc_l_res = compare_rels2 vis_seqs_assoc_l exp_vis_seqs_assoc_l in
+    let comp_vis_seqs_assoc_l_res = compare_tm_const_pair_list vis_seqs_assoc_l exp_vis_seqs_assoc_l in
     (*Test method "reduce_rels"*)
     let rels_assoc_l3 = reduce_rels rels_assoc_l2 (init_visited_seqs_assoc_list rels_assoc_l2) in
     let exp_rels_assoc_l3 = [(seq1,[seqm1])] in
@@ -341,7 +340,7 @@ let run_process_steps_test2 =
     (*Test method "connect_seqs_w_sel_dss"*)
     let sel_dss_assoc_l = connect_seqs_w_sel_dss selected_dss rels_assoc_l3 in
     let exp_sel_dss_assoc_l = [(seq1,0);(seqm1,0)] in
-    let comp_sel_dss_assoc_l_res = compare_rels2 sel_dss_assoc_l exp_sel_dss_assoc_l in
+    let comp_sel_dss_assoc_l_res = compare_tm_const_pair_list sel_dss_assoc_l exp_sel_dss_assoc_l in
     (*Test method "update_ast_w_sel_dss"*)
     let upd_ast = update_ast_w_sel_dss ast sel_dss_assoc_l false in
     let upd_seq1 =
@@ -443,7 +442,7 @@ let run_process_steps_test3 =
   (*Test method "init_visited_seqs_assoc_list"*)
   let vis_seqs_assoc_l = init_visited_seqs_assoc_list rels_assoc_l2 in
   let exp_vis_seqs_assoc_l = [(seq2,false);(seqm1,false);(seq1,false);(lam1,false);] in
-  let comp_vis_seqs_assoc_l_res = compare_rels2 vis_seqs_assoc_l exp_vis_seqs_assoc_l in
+  let comp_vis_seqs_assoc_l_res = compare_tm_const_pair_list vis_seqs_assoc_l exp_vis_seqs_assoc_l in
   (*Test method "reduce_rels"*)
   let rels_assoc_l3 = reduce_rels rels_assoc_l2 (init_visited_seqs_assoc_list rels_assoc_l2) in
   let exp_rels_assoc_l3 = [(seq2,[lam1;seq1;seqm1])] in
@@ -461,7 +460,7 @@ let run_process_steps_test3 =
   (*Test method "connect_seqs_w_sel_dss"*)
   let sel_dss_assoc_l = connect_seqs_w_sel_dss selected_dss rels_assoc_l3 in
   let exp_sel_dss_assoc_l = [(seq2,0);(lam1,0);(seq1,0);(seqm1,0)] in
-  let comp_sel_dss_assoc_l_res = compare_rels2 sel_dss_assoc_l exp_sel_dss_assoc_l in
+  let comp_sel_dss_assoc_l_res = compare_tm_const_pair_list sel_dss_assoc_l exp_sel_dss_assoc_l in
   (*Test method "update_ast_w_sel_dss"*)
   let upd_ast = update_ast_w_sel_dss ast sel_dss_assoc_l false in
   let upd_seq1 =
@@ -615,7 +614,7 @@ let run_process_steps_test4 =
   (*Test method "init_visited_seqs_assoc_list"*)
   let vis_seqs_assoc_l = init_visited_seqs_assoc_list rels_assoc_l2 in
   let exp_vis_seqs_assoc_l = [(var1,false);(seqm1,false);(seq2,false);(lam2,false);(seq1,false);(lam3,false)] in
-  let comp_vis_seqs_assoc_l_res = compare_rels2 vis_seqs_assoc_l exp_vis_seqs_assoc_l in
+  let comp_vis_seqs_assoc_l_res = compare_tm_const_pair_list vis_seqs_assoc_l exp_vis_seqs_assoc_l in
   (*Test method "reduce_rels"*)
   let rels_assoc_l3 = reduce_rels rels_assoc_l2 (init_visited_seqs_assoc_list rels_assoc_l2) in
   let exp_rels_assoc_l3 = [(var1,[seq1;lam3;seqm1]);(seq2,[lam2])] in
@@ -634,7 +633,7 @@ let run_process_steps_test4 =
   (*Test method "connect_seqs_w_sel_dss"*)
   let sel_dss_assoc_l = connect_seqs_w_sel_dss selected_dss rels_assoc_l3 in
   let exp_sel_dss_assoc_l = [(var1,0);(seq1,0);(lam3,0);(seqm1,0);(seq2,1);(lam2,1)] in
-  let comp_sel_dss_assoc_l_res = compare_rels2 sel_dss_assoc_l exp_sel_dss_assoc_l in
+  let comp_sel_dss_assoc_l_res = compare_tm_const_pair_list sel_dss_assoc_l exp_sel_dss_assoc_l in
   (*Test method "update_ast_w_sel_dss"*)
   let upd_ast = update_ast_w_sel_dss ast sel_dss_assoc_l false in
   let upd_seq1 =
@@ -811,7 +810,7 @@ let run_process_steps_test5 =
   (*Test method "init_visited_seqs_assoc_list"*)
   let vis_seqs_assoc_l = init_visited_seqs_assoc_list rels_assoc_l2 in
   let exp_vis_seqs_assoc_l = [(var3,false);(seqm1,false);(var2,false);(lam1,false);(var1,false);(lam2,false);(seq2,false);(lam3,false);(seq1,false);(lam4,false)] in
-  let comp_vis_seqs_assoc_l_res = compare_rels2 vis_seqs_assoc_l exp_vis_seqs_assoc_l in
+  let comp_vis_seqs_assoc_l_res = compare_tm_const_pair_list vis_seqs_assoc_l exp_vis_seqs_assoc_l in
   (*Test method "reduce_rels"*)
   let rels_assoc_l3 = reduce_rels rels_assoc_l2 (init_visited_seqs_assoc_list rels_assoc_l2) in
   let exp_rels_assoc_l3 = [(var3,[seq1;lam4;var1;lam1;lam2;seq2;lam3;var2;seqm1])] in
@@ -829,7 +828,7 @@ let run_process_steps_test5 =
   (*Test method "connect_seqs_w_sel_dss"*)
   let sel_dss_assoc_l = connect_seqs_w_sel_dss selected_dss rels_assoc_l3 in
   let exp_sel_dss_assoc_l = [(var3,0);(seq1,0);(lam4,0);(var1,0);(lam1,0);(lam2,0);(seq2,0);(lam3,0);(var2,0);(seqm1,0)] in
-  let comp_sel_dss_assoc_l_res = compare_rels2 sel_dss_assoc_l exp_sel_dss_assoc_l in
+  let comp_sel_dss_assoc_l_res = compare_tm_const_pair_list sel_dss_assoc_l exp_sel_dss_assoc_l in
   (*Test method "update_ast_w_sel_dss"*)
   let upd_ast = update_ast_w_sel_dss ast sel_dss_assoc_l false in
   let upd_seq1 =
@@ -933,7 +932,7 @@ let run_process_steps_test6 =
   (*Test method "init_visited_seqs_assoc_list"*)
   let vis_seqs_assoc_l = init_visited_seqs_assoc_list rels_assoc_l2 in
   let exp_vis_seqs_assoc_l = [] in
-  let comp_vis_seqs_assoc_l_res = compare_rels2 vis_seqs_assoc_l exp_vis_seqs_assoc_l in
+  let comp_vis_seqs_assoc_l_res = compare_tm_const_pair_list vis_seqs_assoc_l exp_vis_seqs_assoc_l in
   (*Test method "reduce_rels"*)
   let rels_assoc_l3 = reduce_rels rels_assoc_l2 (init_visited_seqs_assoc_list rels_assoc_l2) in
   let exp_rels_assoc_l3 = [] in
@@ -1105,7 +1104,7 @@ let run_process_steps_test7 =
   (*Test method "init_visited_seqs_assoc_list"*)
   let vis_seqs_assoc_l = init_visited_seqs_assoc_list rels_assoc_l2 in
   let exp_vis_seqs_assoc_l = [(seq1,false);(exp_upd_seqm_length,false)] in
-  let comp_vis_seqs_assoc_l_res = compare_rels2 vis_seqs_assoc_l exp_vis_seqs_assoc_l in
+  let comp_vis_seqs_assoc_l_res = compare_tm_const_pair_list vis_seqs_assoc_l exp_vis_seqs_assoc_l in
   (*Test method "reduce_rels"*)
   let rels_assoc_l3 = reduce_rels rels_assoc_l2 (init_visited_seqs_assoc_list rels_assoc_l2) in
   let exp_rels_assoc_l3 = [(seq1,[exp_upd_seqm_length])] in
@@ -1123,7 +1122,7 @@ let run_process_steps_test7 =
   (*Test method "connect_seqs_w_sel_dss"*)
   let sel_dss_assoc_l = connect_seqs_w_sel_dss selected_dss rels_assoc_l3 in
   let exp_sel_dss_assoc_l = [(seq1,0);(exp_upd_seqm_length,0)] in
-  let comp_sel_dss_assoc_l_res = compare_rels2 sel_dss_assoc_l exp_sel_dss_assoc_l in
+  let comp_sel_dss_assoc_l_res = compare_tm_const_pair_list sel_dss_assoc_l exp_sel_dss_assoc_l in
   (*Test method "update_ast_w_sel_dss"*)
   let upd_ast = update_ast_w_sel_dss ast sel_dss_assoc_l false in
   let upd_seq1 =

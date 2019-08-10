@@ -197,7 +197,7 @@ and pprint basic t =
   | TmTyApp(_,t1,ty1) ->
       left inside ^. ppt false t1 ^. us" [" ^. pprint_ty ty1 ^. us"]" ^. right inside
   | TmIfexp(_,c,t,e) -> us"if " ^. ppt false c ^. us" then " ^. ppt false t ^. us" else " ^. ppt false e
-  | TmSeq(fi,ty_ident,clist,tmseq,ds_choice) -> us"TmSeq(" ^. (pprint_tm_list clist) ^. us")" ^. us"(){" ^. us(string_of_int ds_choice) ^. us"}" (*TODO:Print the selected data structure type ty*) (*TODO:Print the selected data structure type ty*)
+  | TmSeq(fi,ty_ident,clist,tmseq,ds_choice) -> us"TmSeq(" ^. (pprint_tm_list clist) ^. us")" ^. us"(){" ^. us(string_of_int ds_choice) ^. us"}"
   | TmSeqMethod(fi,fun_name,actual_fun,args,arg_index,ds_choice,in_fix) -> us"Seq." ^. fun_name ^. us"(" ^. us(pprint_seqfuntype actual_fun) ^. us"){" ^. us(string_of_int ds_choice) ^. us"}" ^. us"in_fix:" ^. (ustring_of_bool in_fix)
   | TmChar(fi,c) -> us"'" ^. list2ustring [c] ^. us"'"
   | TmUC(fi,uct,ordered,uniqueness) -> (

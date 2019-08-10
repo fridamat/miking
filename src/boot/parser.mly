@@ -64,12 +64,6 @@ let mkopkind fi op =
   | None -> KindStar(fi)
   | Some(k) -> k
 
-(*!TODO: Remove method from here?*)
-let init_seq tm_l =
-  match tm_l with
-  | TmList([]) -> SeqList(Linkedlist.empty)
-  | TmList(l) -> SeqList(Linkedlist.from_list l)
-
 %}
 
 /* Misc tokens */
@@ -203,8 +197,7 @@ mc_term:
         TmIfexp(fi, $2, $4, $6) }
   | SEQ LSQUARE IDENT RSQUARE LPAREN mc_list
       { let fi = mktinfo $1.i.fi $4.i.fi in
-        (*!TODO: You should not init_seq here, but later*)
-        TmSeq(fi, $3.v, $6, (init_seq $6),(-1)) }
+        TmSeq(fi, $3.v, $6, SeqNone, (-1)) }
 
 mc_list:
   | RPAREN

@@ -128,7 +128,7 @@ and actual_fun =
   | SeqListFun6 of ((tm Linkedlist.sequence) -> (tm Linkedlist.sequence))
   | SeqListFun7 of ((tm Linkedlist.sequence) -> int -> tm)
   | SeqListFun8 of ((tm Linkedlist.sequence) -> int -> (tm Linkedlist.sequence))
-  | SeqListFun9 of ((tm -> tm) -> (tm Linkedlist.sequence) -> (tm Linkedlist.sequence)) (*TODO: Should the first argument be TmLam?*)
+  | SeqListFun9 of ((tm -> tm) -> (tm Linkedlist.sequence) -> (tm Linkedlist.sequence))
   | SeqListFun10 of ((tm -> bool) -> (tm Linkedlist.sequence) -> bool)
   | SeqListFun11 of ((tm -> bool) -> (tm Linkedlist.sequence) -> (tm option))
   | SeqListFun12 of ((tm -> bool) -> (tm Linkedlist.sequence) -> (tm Linkedlist.sequence))
@@ -147,7 +147,7 @@ and tm =
 | TmTyLam       of tinfo * ustring * kind * tm       (* Type abstraction *)
 | TmTyApp       of tinfo * tm * ty                   (* Type application *)
 | TmSeq         of tinfo * ty_ident * tm_list * sequence * ds_choice             (* Sequence constructor *)
-| TmSeqMethod   of tinfo * fun_name * actual_fun * args * arg_index * ds_choice * in_fix (* Sequence method *) (*TODO:Is ds_choice field unnecessary?*)
+| TmSeqMethod   of tinfo * fun_name * actual_fun * args * arg_index * ds_choice * in_fix (* Sequence method *)
 
 
 | TmChar        of tinfo * int
