@@ -1,0 +1,24 @@
+lang mcore
+
+// Replicate the elements of a list a given number of times. (medium)
+let replicate_first_element = lam x:TySeqInt. let el0 = seqmethod.first [Int] x in let x2 = seqmethod.push [Int] x el0 in x2
+let s2 = replicate_first_element (newseq [int] (1,2))
+utest (newseq [int] (1,1,2)) s2
+
+let empty_list_now = fix (lam empty_list_now:(TySeqInt->TySeqInt). lam x:TySeqInt.
+   if (seqmethod.is_empty [Int] x) then
+      (x)
+  else
+      let x2 = seqmethod.pop [Int] x in
+      empty_list_now x2
+)
+let s = empty_list_now (newseq [int] ())
+utest (newseq [int] ()) (s)
+
+
+//let pow = fix (lam pow:(Int->Int->Int). lam x:Int. lam n:Int.
+  //         if (leqi n 1) then
+    //          (x)
+      //     else
+        //      (muli x (pow x (subi n 1)))
+          // )

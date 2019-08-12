@@ -1,0 +1,30 @@
+lang mcore
+
+//AST: TmApp((lam s:Dyn. Nop), TmSeq(1))
+//let s = newseq [int] (1)
+//utest (newseq [int] (1)) (s)
+
+//TmApp((lam i:Dyn. Nop), TmApp((Seq.length(), TmSeq(1))))
+//let i = (seqmethod.length [Int]) (newseq [int] (1,2))
+
+//TmApp((lam s:Dyn. Nop), TmApp((TmApp((Seq.append(), TmSeq(1,2))), TmSeq(3,4))))
+//let s = (seqmethod.append [Int]) (newseq [int] (1,2)) (newseq [int] (3,4))
+
+// Two different vars (unrelated)
+//let s1 = newseq [int] (1,2)
+//let s2 = newseq [int] (3,4)
+//let l = seqmethod.length [Int] s1
+
+// Circular relationship
+//let s1 = newseq [int] (1)
+//let s2 = newseq [int] (2)
+//let s3 = s1
+//let s4 = seqmethod.append [Int] s2 s3
+
+// No sequences
+//let f1 = 1
+//let f2 = 2
+
+// Method TODO
+
+// Functions with fix point

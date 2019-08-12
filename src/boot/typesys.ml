@@ -591,14 +591,28 @@ let rec tc env ty t =
              | None -> errorFuncAppMismatch (tm_info t2) ty11 ty22s
              | Some(ty11',substEnv) ->
                let res = substAll substEnv ty12 in
-             res)
+               let res2 =
+                 (match t1' with
+                  | TmFix _ ->
+                    (match ty1' with
+                     | TyArrow(_,arrty1,arrty2) ->
+                       (match arrty1 with
+                        | TyArrow(_,arrty1',arrty2') ->
+                          arrty1'
+                        | _ -> res)
+                     | _ -> res
+                    )
+                  | _ -> res
+                 ) in
+             res2)
         | TyAll(fi,x,ki,ty4) ->
           let ty' = dive ty4 ty2' env (s+1) in
           if isTyVarFree ty' then
             TyAll(fi,x,ki,ty')
           else
             ty'
-        | _ -> errorNotFunctionType (tm_info t1) ty1')
+        | _ ->
+          errorNotFunctionType (tm_info t1) ty1')
       in
       let resTy = dive ty1' ty2' env 0 in
       setType resTy (TmApp(ti, t1', t2'))

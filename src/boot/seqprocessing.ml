@@ -131,6 +131,11 @@ let rec find_rels_and_seqs_in_ast ast rels seqs in_fix =
        let (rels_tm1,seqs_tm1) = find_rels_and_seqs_in_ast tm1 [] [] in_fix' in
        let (rels_tm2,seqs_tm2) = find_rels_and_seqs_in_ast tm2 [] [] in_fix' in
        (*TODO: Failwith if seqs_tm2 is empty, check if they contain sequences at all...*)
+       let _ =
+         (if (List.length seqs_tm1) == 0 then
+            failwith "Too short"
+          else
+            false) in
        (*The last sequence found in tm1 is related to the first sequence found in tm2*)
        let new_rel = ((List.nth seqs_tm1 ((List.length seqs_tm1)-1)),(List.nth seqs_tm2 0)) in
        let upd_rels = List.append (new_rel::rels_tm1) rels_tm2 in
@@ -196,8 +201,14 @@ let rec find_rels_and_seqs_in_ast ast rels seqs in_fix =
     let (upd_rels2,upd_seqs3) = find_rels_and_seqs_in_ast tm2 upd_rels1 upd_seqs2 in_fix in
     find_rels_and_seqs_in_ast tm3 upd_rels2 upd_seqs3 in_fix
   (*Cases not yet implemented*)
-  | TmMatch _ | TmUC _ | TmTyApp _ | TmTyLam _ ->
+  | TmMatch _ ->
     failwith "Not implemented1"
+  | TmUC _ ->
+    failwith "Not implemented2"
+  | TmTyApp(app_ti,app_tm,app_ty) ->
+    failwith "Not implemented3"
+  | TmTyLam _ ->
+    failwith "Not implemented4"
 
 (*Find the sequence constructors - that is, TmSeq terms - in a list of terms*)
 let rec find_seq_cons_among_seqs seqs =
@@ -506,38 +517,57 @@ let rec update_ast_w_sel_dss ast sel_dss in_fix =
   | TmMatch _ | TmUC _ | TmTyApp _ | TmTyLam _ ->
     failwith "Not implemented2"
 
+let rec write_test1 n =
+  match n > 1000 with
+  | true -> false
+  | _ ->
+    let _ = Printf.printf "let q%d = seqmethod.push_last [Int] q%d 1 \n" (n) (n-1) in
+    let _ = Printf.printf "let q%d = seqmethod.push_last [Int] q%d 1 \n" (n+1) (n) in
+    let _ = Printf.printf "let q%d = seqmethod.push_last [Int] q%d 1 \n" (n+2) (n+1) in
+    let _ = Printf.printf "let q%d = seqmethod.push_last [Int] q%d 1 \n" (n+3) (n+2) in
+    let _ = Printf.printf "let q%d = seqmethod.push_last [Int] q%d 1 \n" (n+4) (n+3) in
+    let _ = Printf.printf "let q%d = seqmethod.push_last [Int] q%d 1 \n" (n+5) (n+4) in
+    let _ = Printf.printf "let q%d = seqmethod.pop [Int] q%d \n" (n+6) (n+5) in
+    let _ = Printf.printf "let q%d = seqmethod.pop [Int] q%d \n" (n+7) (n+6) in
+    let _ = Printf.printf "let q%d = seqmethod.pop [Int] q%d \n" (n+8) (n+7) in
+    let _ = Printf.printf "let q%d = seqmethod.pop [Int] q%d \n" (n+9) (n+8) in
+    let _ = Printf.printf "let q%d = seqmethod.pop [Int] q%d \n" (n+10) (n+9) in
+    write_test1 (n+11)
+
 let process_ast ast =
-  let _ = Printf.printf "\nThe complete program is:\n%s\n" (Ustring.to_utf8 (Pprint.pprint false ast)) in
+  (*let _ = Printf.printf "\nThe complete program is:\n%s\n" (Ustring.to_utf8 (Pprint.pprint false ast)) in*)
+  (*-Pre-processing-*)
   (*Find all terms of sequence type and sequence methods, and their internal relationships*)
   let (rls,seqs) = find_rels_and_seqs_in_ast ast [] [] false in
   let rels = find_lam_var_rels seqs rls seqs in
-  let _ = Printf.printf "The seqs:\n%s\n" (get_tm_list_string seqs) in
-  let _ = Printf.printf "The rels:\n%s\n" (get_tm_pair_list_string rels) in
-  (*Get the sequence constructors*)
+  (*let _ = Printf.printf "The seqs:\n%s\n" (get_tm_list_string seqs) in
+  let _ = Printf.printf "The rels:\n%s\n" (get_tm_pair_list_string rels) in*)
+  (*Get the sequence constructors*) (*TODO: Remove this step?*)
   let seq_cons = find_seq_cons_among_seqs seqs in
-  let _ = Printf.printf "The seq cons:\n%s\n" (get_tm_list_string seq_cons) in
+  (*let _ = Printf.printf "The seq cons:\n%s\n" (get_tm_list_string seq_cons) in*)
   (*Initate association list for relationships*)
   let rels_assoc_l1 = init_rels_assoc_list seqs in
-  let _ = Printf.printf "The first version of the rels assoc list:\n%s\n" (get_rels_assoc_list_string rels_assoc_l1) in
+  (*let _ = Printf.printf "The first version of the rels assoc list:\n%s\n" (get_rels_assoc_list_string rels_assoc_l1) in*)
   (*Transfer relationships in rels to the rels assoc list*)
   let rels_assoc_l2 = transl_rels_to_rels_assoc_list rels rels_assoc_l1 in
-  let _ = Printf.printf "The second version of the rels assoc list:\n%s\n" (get_rels_assoc_list_string rels_assoc_l2) in
+  (*let _ = Printf.printf "The second version of the rels assoc list:\n%s\n" (get_rels_assoc_list_string rels_assoc_l2) in*)
   (*Reduce relationships*)
   let rels_assoc_l3 = reduce_rels rels_assoc_l2 (init_visited_seqs_assoc_list rels_assoc_l2) in
-  let _ = Printf.printf "The third version of the rels assoc list:\n%s\n" (get_rels_assoc_list_string rels_assoc_l3) in
+  (*let _ = Printf.printf "The third version of the rels assoc list:\n%s\n" (get_rels_assoc_list_string rels_assoc_l3) in*)
   (*Create Method-Frequency (MF) matrix*)
   let mf_matrix1 = create_mf_matrix rels_assoc_l3 in
-  let _ = Printf.printf "The first version of the mf matrix:\n%s\n" (get_mf_count_string mf_matrix1) in
+  (*let _ = Printf.printf "The first version of the mf matrix:\n%s\n" (get_mf_count_string mf_matrix1) in*)
   (*Translate MF count to MF frequencies*)
   let mf_matrix2 = Frequencies.translate_mf_assoc_list mf_matrix1 (get_seq_fun_names) in
-  let _ = Printf.printf "The second version of the mf matrix:\n%s\n" (get_mf_freq_string mf_matrix2) in
-  (*Data structure selection algorithm*)
+  (*let _ = Printf.printf "The second version of the mf matrix:\n%s\n" (get_mf_freq_string mf_matrix2) in*)
+  (*-Data structure selection algorithm-*)
   let selected_dss = Dssa.main mf_matrix2 in
-  let _ = Printf.printf "The selected data structures are:\n%s\n" (get_selected_datastructures_string selected_dss) in
+  (*let _ = Printf.printf "The selected data structures are:\n%s\n" (get_selected_datastructures_string selected_dss) in*)
+  (*-Post-processing-*)
   (*Connect selected data structure with all seqs*)
   let sel_dss_assoc_l = connect_seqs_w_sel_dss selected_dss rels_assoc_l3 in
-  let _ = Printf.printf "The seqs with selected data structures are:\n%s\n" (get_seqs_w_selected_dss_string sel_dss_assoc_l) in
+  (*let _ = Printf.printf "The seqs with selected data structures are:\n%s\n" (get_seqs_w_selected_dss_string sel_dss_assoc_l) in*)
   (*Update ast with selected data structures*)
   let upd_ast = update_ast_w_sel_dss ast sel_dss_assoc_l false in
-  let _ = Printf.printf "The updated ast is:\n%s\n" (Ustring.to_utf8 (Pprint.pprint false upd_ast)) in
+  (*let _ = Printf.printf "The updated ast is:\n%s\n" (Ustring.to_utf8 (Pprint.pprint false upd_ast)) in*)
   upd_ast

@@ -268,6 +268,7 @@ ty_atom:
        | "Float" -> TyGround($1.i.fi,GFloat)
        | "String" -> TyGround($1.i.fi,GVoid)  (* TODO *)
        | "Void" -> TyGround($1.i.fi,GVoid)
+       | "TySeqInt" -> TySeq(TyGround($1.i.fi,GInt)) (*TODO:Add more options?*)
        | _ -> TyVar($1.i.fi,$1.v,-1)
       }
   | LPAREN ty RPAREN
