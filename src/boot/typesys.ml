@@ -630,12 +630,12 @@ let rec tc env ty t =
     let t1' = tc env TyDyn t1 in
     let ty1' = getType t1' in
     (match ty1' with
-    | TyAll(fi2,x,ki11,ty1) ->
-      let ki12 = kindof env ty2 in
-      let resTy = if kindEqual ki11 ki12 then tySubstTop ty2 ty1
-                  else errorKindMismatch  (ty_info ty2) ki11 ki12 in
-      setType resTy (TmTyApp(ti,t1',ty2))
-    | ty -> errorExpectsUniversal (tm_info t1) ty)
+     | TyAll(fi2,x,ki11,ty1) ->
+       let ki12 = kindof env ty2 in
+       let resTy = if kindEqual ki11 ki12 then tySubstTop ty2 ty1
+         else errorKindMismatch  (ty_info ty2) ki11 ki12 in
+       setType resTy (TmTyApp(ti,t1',ty2))
+     | ty -> errorExpectsUniversal (tm_info t1) ty)
   | TmSeq(ti,ty_ident,tmlist,tmseq,ds_choice) ->
     let updated_tmlist = tc_list (Ast.get_list_from_tmlist tmlist) in
     let e_ty = get_element_ty (tm_info t) ty_ident in
@@ -678,7 +678,7 @@ let rec erase t =
     let upd_app = TmApp(ti, erase t1, erase t2) in
     upd_app
   | TmConst(ti,c) -> t
-  | TmIfexp(ti,cnd,thn,els) -> TmIfexp(ti, cnd, erase thn, erase els)
+  | TmIfexp(ti,cnd,thn,els) -> TmIfexp(ti, erase cnd, erase thn, erase els)
   | TmSeq(ti,ty_ident,tm_list,tm_seq,ds_choice) ->
     let upd_tm_list = TmList(erase_list (get_list_from_tmlist tm_list)) in
     TmSeq(ti,ty_ident,upd_tm_list,tm_seq,ds_choice)
