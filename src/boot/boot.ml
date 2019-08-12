@@ -565,20 +565,19 @@ let get_last_arg_index fun_name =
   get_arg_types_length_dummy fun_name
 
 (*author: Alfrida*)
-let check_element_type t1 t2 =
-  let res =
-    (match (Typesys.getType t1), (Typesys.getType t2) with
-     | TySeq(el_ty1), TySeq(el_ty2) ->
-       Typesys.tyequal el_ty1 el_ty2
-     | TySeq(el_ty1), el_ty2 ->
-       Typesys.tyequal el_ty1 el_ty2
-     | el_ty1, TySeq(el_ty2) ->
-       Typesys.tyequal el_ty1 el_ty2
-     | _ -> failwith "Expected a comparison with a sequence") in
-  if res then
-    true
-  else
-    failwith "Element types have to be the same"
+let rec check_element_type ty1 ty2 =
+  match ty1, ty2 with
+  | TySeq(el_ty1), TySeq(el_ty2) ->
+    Typesys.tyequal el_ty1 el_ty2
+  | TySeq(el_ty1), el_ty2 ->
+    Typesys.tyequal el_ty1 el_ty2
+  | el_ty1, TySeq(el_ty2) ->
+    Typesys.tyequal el_ty1 el_ty2
+  | TyArrow(_,_,tyarr1), el_ty2 ->
+    check_element_type tyarr1 el_ty2
+  | el_ty1, TyArrow(_,_,tyarr2) ->
+    check_element_type el_ty1 tyarr2
+  | _ -> failwith "Expected a comparison with a sequence"
 
 (* Main evaluation loop of a term. Evaluates using big-step semantics *)
 let rec eval env t =
@@ -591,7 +590,7 @@ let rec eval env t =
     | "last", SeqListFun5(f), [TmSeq(ti,ty_ident,tm_list,SeqList(l),ds_choice)] ->
       f l
     | "push", SeqListFun3(f), [TmSeq(seq_ti,ty_ident,tm_l,SeqList(l),ds_choice); e] ->
-      let _ = check_element_type (TmSeq(seq_ti,ty_ident,tm_l,SeqList(l),ds_choice)) e in
+      let _ = check_element_type (Typesys.getType (TmSeq(seq_ti,ty_ident,tm_l,SeqList(l),ds_choice))) (Typesys.getType e) in
       TmSeq(ti,ty_ident,tm_l,SeqList(f l e),ds_choice)
     | "pop", SeqListFun6(f), [TmSeq(ti,ty_ident,tm_list,SeqList(l),ds_choice)] ->
       TmSeq(ti,ty_ident,tm_list,SeqList(f l),ds_choice)
@@ -600,12 +599,12 @@ let rec eval env t =
     | "nth", SeqListFun7(f), [TmSeq(seq_ti,ty_ident,tm_list,SeqList(l),ds_choice); TmConst(const_ty,CInt(n))] ->
       f l n
     | "append", SeqListFun1(f), [TmSeq(ti1,ty_ident1,tmlist1,SeqList(l1),ds_choice1); TmSeq(ti2,ty_ident2,tmlist2,SeqList(l2),ds_choice2)] ->
-      let _ = check_element_type (TmSeq(ti1,ty_ident1,tmlist1,SeqList(l1),ds_choice1)) (TmSeq(ti2,ty_ident2,tmlist2,SeqList(l2),ds_choice2)) in
+      let _ = check_element_type (Typesys.getType (TmSeq(ti1,ty_ident1,tmlist1,SeqList(l1),ds_choice1))) (Typesys.getType (TmSeq(ti2,ty_ident2,tmlist2,SeqList(l2),ds_choice2))) in
       TmSeq(ti,ty_ident1,tmlist1,SeqList(f l1 l2),ds_choice1)
     | "reverse", SeqListFun6(f), [TmSeq(ti,ty_ident,tm_list,SeqList(l),ds_choice)] ->
       TmSeq(ti,ty_ident,tm_list,SeqList(f l),ds_choice)
     | "push_last", SeqListFun3(f), [TmSeq(seq_ti,ty_ident,tm_l,SeqList(l),ds_choice); e] ->
-      let _ = check_element_type (TmSeq(seq_ti,ty_ident,tm_l,SeqList(l),ds_choice)) e in
+      let _ = check_element_type (Typesys.getType (TmSeq(seq_ti,ty_ident,tm_l,SeqList(l),ds_choice))) (Typesys.getType e) in
       TmSeq(ti,ty_ident,tm_l,SeqList(f l e),ds_choice)
     | "pop_last", SeqListFun6(f), [TmSeq(ti,ty_ident,tm_list,SeqList(l),ds_choice)] ->
       TmSeq(ti,ty_ident,tm_list,SeqList(f l),ds_choice)
