@@ -121,7 +121,7 @@ let rec compare_terms t1 t2 =
     (compare_terms tm11 tm21) && (compare_terms tm12 tm22) && (compare_terms tm13 tm23)
   | TmFix _, TmFix _ -> true
   | TmSeq(_,_,tm_l1,_,ds_choice1), TmSeq(_,_,tm_l2,_,ds_choice2) ->
-    (compare_term_lists (get_list_from_tmlist tm_l1) (get_list_from_tmlist tm_l2)) && (ds_choice1 == ds_choice2) (*TODO: Check tmseq as well?*)
+    (compare_term_lists (get_list_from_tmlist tm_l1) (get_list_from_tmlist tm_l2)) && (ds_choice1 == ds_choice2) (*TODO: Check tmseq as well*)
   | TmSeqMethod(_,fun_name1,_,_,_,ds_choice1,in_fix1), TmSeqMethod(_,fun_name2,_,_,_,ds_choice2,in_fix2) ->
     ((Ustring.to_utf8 fun_name1) = (Ustring.to_utf8 fun_name2)) && (ds_choice1 == ds_choice2) && (in_fix1 == in_fix2) (*TODO: Check actual_fun as well?*)
   | _ ->
@@ -252,8 +252,8 @@ let run_process_steps_test1 =
   let upd_seq1 =
     TmSeq((create_mock_ti (get_mock_tyseq_int) (us"se1_fi1")),
           us"int",
-          TmList([(create_mock_tmconst_int 1 (us"seq1_fi2"))]),
-          SeqNone,
+          TmList([]),
+          SeqList(Linkedlist.from_list [(create_mock_tmconst_int 1 (us"seq1_fi2"))]),
           0) in
   let upd_app1 =
     TmApp((create_mock_ti (get_mock_gvoid) (us"app1_fi1")),
@@ -346,9 +346,8 @@ let run_process_steps_test2 =
     let upd_seq1 =
       TmSeq((create_mock_ti (get_mock_tyseq_int) (us"seq1_fi1")),
             us"int",
-            TmList([(create_mock_tmconst_int 1 (us"seq1_fi2"));
-                    (create_mock_tmconst_int 2 (us"seq1_fi3"))]),
-            SeqNone,
+            TmList([]),
+            SeqList(Linkedlist.from_list [(create_mock_tmconst_int 1 (us"seq1_fi2")); (create_mock_tmconst_int 2 (us"seq1_fi3"))]),
             0) in
     let upd_seqm1 =
       TmSeqMethod((create_mock_ti (get_mock_tyseq_int) (us"seqm1_fi1")),
@@ -466,16 +465,14 @@ let run_process_steps_test3 =
   let upd_seq1 =
     TmSeq((create_mock_ti (get_mock_tyseq_int) (us"seq1_fi1")),
           us"int",
-          TmList([(create_mock_tmconst_int 3 (us"seq1_fi2"));
-                  (create_mock_tmconst_int 4 (us"seq1_fi3"))]),
-          SeqNone, (*TODO: Is this set? Check in other tests as well.*)
+          TmList([]),
+          SeqList(Linkedlist.from_list [(create_mock_tmconst_int 3 (us"seq1_fi2")); (create_mock_tmconst_int 4 (us"seq1_fi3"))]), (*TODO: Is this set? Check in other tests as well.*)
           0) in
   let upd_seq2 =
     TmSeq((create_mock_ti (get_mock_tyseq_int) (us"seq2_fi1")),
           us"int",
-          TmList([(create_mock_tmconst_int 1 (us"seq2_fi2"));
-                  (create_mock_tmconst_int 2 (us"seq2_fi3"))]),
-          SeqNone,
+          TmList([]),
+          SeqList(Linkedlist.from_list [(create_mock_tmconst_int 1 (us"seq2_fi2")); (create_mock_tmconst_int 2 (us"seq2_fi3"))]),
           0) in
   let upd_seqm1 =
     TmSeqMethod((create_mock_ti (get_mock_tyarrow_tyseq_int_tyseq_int_tyseq_int) (us"seqm1_fi1")),
@@ -639,16 +636,14 @@ let run_process_steps_test4 =
   let upd_seq1 =
     TmSeq((create_mock_ti (get_mock_tyseq_int) (us"seq1_fi1")),
           us"int",
-          TmList([(create_mock_tmconst_int 1 (us"seq1_fi2"));
-                  (create_mock_tmconst_int 2 (us"seq1_fi3"));]),
-          SeqNone,
+          TmList([]),
+          SeqList(Linkedlist.from_list [(create_mock_tmconst_int 1 (us"seq1_fi2")); (create_mock_tmconst_int 2 (us"seq1_fi3"));]),
           0) in
   let upd_seq2 =
     TmSeq((create_mock_ti (get_mock_tyseq_int) (us"seq2_fi1")),
           us"int",
-          TmList([(create_mock_tmconst_int 3 (us"seq2_fi2"));
-                  (create_mock_tmconst_int 4 (us"seq2_fi3"));]),
-          SeqNone,
+          TmList([]),
+          SeqList(Linkedlist.from_list [(create_mock_tmconst_int 3 (us"seq2_fi2")); (create_mock_tmconst_int 4 (us"seq2_fi3"));]),
           1) in
   let upd_seqm1 =
     TmSeqMethod((create_mock_ti (get_mock_tyarrow_tyseq_int_gint) (us"seqm1_fi1")),
@@ -834,14 +829,14 @@ let run_process_steps_test5 =
   let upd_seq1 =
     TmSeq((create_mock_ti (get_mock_tyseq_int) (us"seq1_fi1")),
           us"int",
-          TmList([(create_mock_tmconst_int 1 (us"seq1_fi2"))]),
-          SeqNone,
+          TmList([]),
+          SeqList(Linkedlist.from_list [(create_mock_tmconst_int 1 (us"seq1_fi2"))]),
           0) in
   let upd_seq2 =
     TmSeq((create_mock_ti (get_mock_tyseq_int) (us"seq2_fi1")),
           us"int",
-          TmList([(create_mock_tmconst_int 2 (us"seq2_fi2"))]),
-          SeqNone,
+          TmList([]),
+          SeqList(Linkedlist.from_list [(create_mock_tmconst_int 2 (us"seq2_fi2"))]),
           0) in
   let upd_seqm1 =
     TmSeqMethod((create_mock_ti (get_mock_tyarrow_tyseq_int_tyseq_int_tyseq_int) (us"seqm1_fi1")),
@@ -1128,8 +1123,8 @@ let run_process_steps_test7 =
   let upd_seq1 =
     TmSeq((create_mock_ti (get_mock_tyseq_int) (us"seq1_fi1")),
           us"int",
-          TmList([var_x]),
-          SeqNone,
+          TmList([]),
+          SeqList(Linkedlist.from_list [var_x]),
           0) in
   let upd_seqm_length =
     TmSeqMethod((create_mock_ti (get_mock_tyarrow_tyseq_int_gint) (us"seqm_length_fi1")),
