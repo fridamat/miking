@@ -690,7 +690,6 @@ let rec eval env t =
   match t with
   (* Variables using debruijn indices. Need to evaluate because fix point. *)
   | TmVar(ti,x,n,_) -> eval env (List.nth env n)
-    res
   (* Lambda and closure conversions *)
   | TmLam(ti,x,ty,t1) -> TmClos(ti,x,ty,t1,env,false)
   | TmClos(ti,x,_,t1,env2,_) -> t
