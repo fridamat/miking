@@ -1,0 +1,72 @@
+lang mcore
+
+// Return the last element of a list
+let return_last_element = lam x:TySeqInt. (seqmethod.last [Int] x)
+utest 0 (return_last_element (newseq [int] (0)))
+utest 1 (return_last_element (newseq [int] (0,1)))
+
+// Return the last element but one
+let return_last_element_but_one = lam x:TySeqInt. (
+  let last_index_but_one = (subi (seqmethod.length [Int] x) 2) in
+  seqmethod.nth [Int] x last_index_but_one
+)
+utest 0 (return_last_element_but_one (newseq [int] (0,1)))
+utest 1 (return_last_element_but_one (newseq [int] (0,1,2)))
+
+// Return the nth element
+let nth = lam x:TySeqInt. lam n:Int. (seqmethod.nth [Int] x n)
+utest 0 (nth (newseq [int] (0,1)) 0)
+utest 1 (nth (newseq [int] (0,1)) 1)
+
+// Return the length
+let length = lam x:TySeqInt. (seqmethod.length [Int] x)
+utest 0 (length (newseq [int] ()))
+utest 1 (length (newseq [int] (0)))
+
+// Return the reverse
+let reverse = lam x:TySeqInt. (seqmethod.reverse [Int] x)
+utest (newseq [int] (3,2,1)) (reverse (newseq [int] (1,2,3)))
+
+// Return palindrome result
+let compare_elements = fix (lam compare_elements:(TySeqInt->TySeqInt->Bool). lam seq1:TySeqInt. lam seq2:TySeqInt.
+  if (and (seqmethod.is_empty [Int] seq1) (seqmethod.is_empty [Int] seq2)) then
+    true
+  else if (or (seqmethod.is_empty [Int] seq1) (seqmethod.is_empty [Int] seq2)) then
+   false
+  else
+    if (eqi (seqmethod.first [Int] seq1) (seqmethod.first [Int] seq2)) then
+      compare_elements (seqmethod.drop [Int] seq1 1) (seqmethod.drop [Int] seq2 1)
+    else
+      false
+)
+
+let check_if_palindrome = lam x:TySeqInt. (
+  let rev_x = seqmethod.reverse [Int] x in
+  compare_elements x rev_x
+)
+utest true (check_if_palindrome (newseq [int] (1,2,3,2,1)))
+utest false (check_if_palindrome (newseq [int] (1,2,3)))
+
+// Eliminate consecutive duplicates (TODO)
+
+// Pack consecutive duplicates of list elements into sublists. (medium)
+
+// Duplicate elements
+let duplicate_list = fix (lam duplicate_list:(TySeqInt->TySeqInt). lam x:TySeqInt.
+  if (seqmethod.is_empty [Int] x) then
+    newseq [int] ()
+  else
+    let currhd = seqmethod.first [Int] x in
+    let currtl = seqmethod.drop [Int] x 1 in
+    let newl = newseq [int] (currhd,currhd) in
+    seqmethod.append [Int] (newl) (duplicate_list currtl)
+)
+utest (newseq [int] (1,1,2,2)) (duplicate_list (newseq [int] (1,2)))
+
+
+//let pow = fix (lam pow:(Int->Int->Int). lam x:Int. lam n:Int.
+  //         if (leqi n 1) then
+    //          (x)
+      //     else
+        //      (muli x (pow x (subi n 1)))
+          // )
