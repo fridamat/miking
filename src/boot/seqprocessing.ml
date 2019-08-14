@@ -130,17 +130,14 @@ let rec find_rels_and_seqs_in_ast ast rels seqs in_fix =
      | _, true ->
        let (rels_tm1,seqs_tm1) = find_rels_and_seqs_in_ast tm1 [] [] in_fix' in
        let (rels_tm2,seqs_tm2) = find_rels_and_seqs_in_ast tm2 [] [] in_fix' in
-       (*TODO: Failwith if seqs_tm2 is empty, check if they contain sequences at all...*)
-       let _ =
-         (if (List.length seqs_tm1) == 0 then
-            failwith "Too short"
-          else
-            false) in
-       (*The last sequence found in tm1 is related to the first sequence found in tm2*)
-       let new_rel = ((List.nth seqs_tm1 ((List.length seqs_tm1)-1)),(List.nth seqs_tm2 0)) in
-       let upd_rels = List.append (new_rel::rels_tm1) rels_tm2 in
+       let upd_rels = List.append rels_tm1 rels_tm2 in
        let upd_seqs = List.append seqs_tm1 seqs_tm2 in
-       (upd_rels,upd_seqs)
+       if ((List.length seqs_tm1) == 0) || ((List.length seqs_tm2) == 0) then
+         (upd_rels,upd_seqs)
+       else
+         (*The last sequence found in tm1 is related to the first sequence found in tm2*)
+         let new_rel = ((List.nth seqs_tm1 ((List.length seqs_tm1)-1)),(List.nth seqs_tm2 0)) in
+         ((new_rel::upd_rels),upd_seqs)
      | _ ->
        let (rels_tm1,seqs_tm1) = find_rels_and_seqs_in_ast tm1 [] [] in_fix' in
        let (rels_tm2,seqs_tm2) = find_rels_and_seqs_in_ast tm2 [] [] in_fix' in
