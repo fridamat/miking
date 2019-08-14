@@ -94,6 +94,15 @@ module Linkedlist : Sequence = struct
   let rec foldl f acc = function
     | Nil -> acc
     | Cons(hd, tl) -> foldl f (f acc hd) tl
+  let rec equals l1 l2 =
+    match l1, l2 with
+    | Nil, Nil -> true
+    | Nil, _ | _, Nil -> false
+    | Cons(hd1,tl1), Cons(hd2,tl2) ->
+      if hd1 == hd2 then
+        equals tl1 tl2
+      else
+        false
 end
 
 open Linkedlist

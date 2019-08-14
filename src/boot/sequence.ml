@@ -28,5 +28,6 @@ module type Sequence = sig
   val filter : ('a -> bool) -> 'a sequence -> 'a sequence
   val foldr : ('a -> 'b -> 'b) -> 'b -> 'a sequence -> 'b
   val foldl : ('b -> 'a -> 'b) -> 'b -> 'a sequence -> 'b
-  (*copy - is it needed with to_list and from_list translations*)
+
+  val equals : 'a sequence -> 'a sequence -> bool
 end
