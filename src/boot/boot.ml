@@ -221,7 +221,7 @@ let rec val_equal v1 v2 =
         | _ -> false
       in o1 = o2 && u1 = u2 && eql (uct2revlist t1) (uct2revlist t2)
   | TmNop,TmNop -> true
-  | TmSeq(_,_,tml1,seq1,ds_choice1), TmSeq(_,_,tml2,seq2,ds_choice2) ->
+  | TmSeq(_,_,_,seq1,ds_choice1), TmSeq(_,_,_,seq2,ds_choice2) ->
     compare_sequences seq1 seq2
   | _ -> false
 
@@ -674,10 +674,23 @@ let rec eval env t =
      | TmList([]) -> []
      | TmList(hd::tl) -> (eval env hd)::(eval_tmlist env (TmList(tl)))
     ) in
+  let rec eval_linkedlist_elements ll upd_ll =
+    (if (Linkedlist.length ll) > 0 then
+       let upd_first = eval env (Linkedlist.first ll) in
+       let upd_ll' = Linkedlist.push_last upd_ll upd_first in
+       let tl = Linkedlist.drop ll 1 in
+       eval_linkedlist_elements tl upd_ll'
+     else
+       upd_ll) in
+  let eval_sequence_elements seq =
+    (match seq with
+     | SeqList(ll) -> eval_linkedlist_elements ll (Linkedlist.empty)
+     | _ -> failwith "Not implemented yet") in
   debug_eval env t;
   match t with
   (* Variables using debruijn indices. Need to evaluate because fix point. *)
   | TmVar(ti,x,n,_) -> eval env (List.nth env n)
+    res
   (* Lambda and closure conversions *)
   | TmLam(ti,x,ty,t1) -> TmClos(ti,x,ty,t1,env,false)
   | TmClos(ti,x,_,t1,env2,_) -> t
@@ -720,11 +733,8 @@ let rec eval env t =
      | _ -> raise_error ti.fi "Condition in if-expression not a bool.")
   (* Sequence constructor *)
   | TmSeq(fi,ty_ident,tmlist,tmseq,ds_choice) ->
-    let upd_tm_seq =
-      (match ds_choice, tmseq with
-       | 0, SeqList(ll) -> SeqList(Linkedlist.map (eval env) ll) (*TODO: Add more choices*)
-       | _ -> failwith "Data structure choice not implemented") in
-    TmSeq(fi,ty_ident,tmlist,upd_tm_seq,ds_choice)
+    let upd_tmseq = eval_sequence_elements tmseq in
+    TmSeq(fi,ty_ident,tmlist,SeqList(upd_tmseq),ds_choice)
   (* Sequence method*)
   | TmSeqMethod _ -> t
   (* The rest *)
@@ -739,7 +749,7 @@ let rec eval env t =
         unittest_failed ti.fi v1 v2;
         utest_fail := !utest_fail + 1;
         utest_fail_local := !utest_fail_local + 1)
-     end;
+    end;
     eval env tnext
   | TmMatch(ti,t1,cases) -> (
      let v1 = make_tm_for_match (eval env t1) in
@@ -781,7 +791,7 @@ let print_test_res res res_name =
 let eval_test typecheck env t =
   let t' =
     (if typecheck then
-       let _ = Testseqprocessing.run_process_steps_test1 in
+       (*let _ = Testseqprocessing.run_process_steps_test1 in*)
        Seqprocessing.process_ast t
      else
        t

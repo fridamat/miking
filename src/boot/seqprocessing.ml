@@ -476,10 +476,10 @@ let rec update_ast_w_sel_dss ast sel_dss in_fix =
        upd_hd::(update_ast_list_w_sel_dss tl sel_dss' l_in_fix)) in
   match ast with
   | TmSeq(ti,ty_ident,tm_l,tm_seq,ds_choice) ->
-    let upd_tm_l = update_ast_list_w_sel_dss (get_list_from_tmlist tm_l) sel_dss in_fix in
+    let upd_tml = update_ast_list_w_sel_dss (get_list_from_tmlist tm_l) sel_dss in_fix in
     let upd_ds_choice = List.assoc ast sel_dss in
-    let upd_tm_seq = get_seq_from_list upd_ds_choice (get_list_from_tmlist tm_l) in
-    TmSeq(ti,ty_ident,TmList(upd_tm_l),upd_tm_seq,upd_ds_choice)
+    let upd_tm_seq = get_seq_from_list upd_ds_choice upd_tml in
+    TmSeq(ti,ty_ident,TmList([]),upd_tm_seq,upd_ds_choice)
   | TmSeqMethod(ti,fun_name,actual_fun,args,arg_index,ds_choice,seqm_in_fix) ->
     let upd_seqm = TmSeqMethod(ti,fun_name,actual_fun,args,arg_index,ds_choice,in_fix) in
     let upd_ds_choice = List.assoc upd_seqm sel_dss in
