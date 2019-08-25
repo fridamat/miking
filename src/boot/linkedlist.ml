@@ -21,7 +21,7 @@ module Linkedlist : Sequence = struct
     | Cons(hd,tl) -> hd::(to_list tl)
 
   (* Helper methods *)
-    let rec reverse_helper l rev_l = match l with (*TODO error if Linkedlist is empty from beginning?*)
+    let rec reverse_helper l rev_l = match l with
     | Nil -> rev_l
     | Cons(hd, tl) -> reverse_helper tl (Cons(hd, rev_l))
 
@@ -45,7 +45,7 @@ module Linkedlist : Sequence = struct
     | Cons(_, tl) -> 1 + length tl
   let rec nth l n = match (l, n) with (*TODO Check if n <= 0*)
     | (Nil, _) -> raise IndexOutOfBounds
-    | (Cons(hd,_), 0) -> hd (*TODO: Should this be indexed by zero?*)
+    | (Cons(hd,_), 0) -> hd
     | (Cons(_,tl), _) -> nth tl (n-1)
   let rec append l1 l2 = match l1 with
     | Nil -> l2

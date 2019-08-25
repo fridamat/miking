@@ -1,5 +1,3 @@
-(*TODO: Should get_top_data_structures return a list of top elements or just the one?*)
-
 open Complexities
 open Costterms
 open Frequencies
@@ -12,18 +10,15 @@ exception NoDataStructureOptions
 module Dssa = struct
   (*--- Print methods ---*)
 
-  (*TODO: Write comment*)
   let pair_to_string (a,b) =
     (Costterms.to_string a) ^ " with count " ^ (Pervasives.string_of_int b) ^ ", "
 
-  (*TODO: Write comment*)
   let rec get_cost_record_string cost_record =
     match cost_record with
     | [] -> "\n"
     | hd::tl ->
       (pair_to_string hd) ^ (get_cost_record_string tl)
 
-  (*TODO: Write comment*)
   let print_cost_record cost_record =
     Printf.printf "The cost record:\n%s" (get_cost_record_string cost_record)
 
@@ -211,7 +206,7 @@ module Dssa = struct
     let cost_terms = build_cost_terms Frequencies.get_frequencies Complexities.get_complexities in init_cost_record_helper cost_terms
 
   (*Initiates a cost term.*)
-  let init_cost_term = (Complexities.None, Frequencies.None) (*TODO: Make into its own method in Costterms?*)
+  let init_cost_term = (Complexities.None, Frequencies.None)
 
   (*--- Main methods ---*)
 
@@ -235,13 +230,13 @@ module Dssa = struct
       (best_max_cost_term, best_data_structures, costs)
     else
       (*Get the max cost term and cost record for data structure j*)
-      let (max_cost_term_j, cost_record_j) = go_through_methods 0 mf_row_i (List.nth mc j) (init_cost_term) (init_cost_record) (*TODO: Create an init_count method?*) in
+      let (max_cost_term_j, cost_record_j) = go_through_methods 0 mf_row_i (List.nth mc j) (init_cost_term) (init_cost_record) in
       let updated_costs = add_to_end_of_list costs cost_record_j in (*TODO: Make costs into an assoc list?*)
       (*Check if data structure j is the best option for variable i so far given its cost term*)
       let (new_best_max_cost_term, new_best_data_structures) = get_new_best_max_cost_term_and_best_data_structures best_max_cost_term best_data_structures max_cost_term_j j in
       go_through_data_structures (j+1) mf_row_i mc new_best_max_cost_term new_best_data_structures updated_costs
 
-  (*Takes in a variable index (i), the method frequency matrix (mf), the method complexity matrix (mc) and a list of the selected data structures for variables so far. Goes through all data structures for variable i to get the best max cost term, the corresponding list of best data structures and a list of the cost records for all data structures. Then calls a comparer function to get the top data structures from the list of data structures found in the previous step. Then, adds this top data structures as the selected ones for variable i by adding it to the list of selected data structures. This list is then returned when we've gone through all variables.*)(*TODO:Test*)
+  (*Takes in a variable index (i), the method frequency matrix (mf), the method complexity matrix (mc) and a list of the selected data structures for variables so far. Goes through all data structures for variable i to get the best max cost term, the corresponding list of best data structures and a list of the cost records for all data structures. Then calls a comparer function to get the top data structures from the list of data structures found in the previous step. Then, adds this top data structures as the selected ones for variable i by adding it to the list of selected data structures. This list is then returned when we've gone through all variables.*)
   let rec go_through_variables i mf mc selected_data_structures =
     (*Check if we've gone through all variables*)
     if i == List.length mf then
@@ -256,8 +251,7 @@ module Dssa = struct
       go_through_variables (i+1) mf mc updated_selected_data_structures
 
   let main mf =
-    let mc =
-      [[Complexities.Logn;Complexities.Logn;Complexities.Logn; Complexities.Logn;Complexities.Logn;Complexities.Logn;Complexities.Logn;Complexities.Logn;Complexities.Logn;Complexities.Logn;Complexities.Logn;Complexities.Logn;Complexities.Logn;Complexities.Logn;Complexities.Logn;Complexities.Logn;Complexities.Logn;Complexities.Logn;Complexities.Logn;Complexities.Logn;];] in (*TODO: Collect from file*)
+    let mc = Sequenceinfo.get_mc in
     let selected_data_structures = go_through_variables 0 mf mc [] in
     selected_data_structures
 end

@@ -25,7 +25,7 @@ let get_complexity_rank complexity =
 let get_next_lower_complexity complexity =
   let complexity_rank = get_complexity_rank complexity in
   match complexity_rank with
-  | 0 -> None (*TODO: Make enum*)
+  | 0 -> None
   | _ -> List.nth get_complexities (complexity_rank-1)
 
 (*Takes in two complexities (complexity_1 and complexity_2) and compares their ranks (complexity_rank_1 and complexity_rank_2). Returns 1 if complexity_rank_1 > complexity_rank_2, returns -1 if complexity_rank_1 < complexity_rank_2 and 0 if complexity_rank_1 = complexity_rank_2.*)

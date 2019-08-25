@@ -314,29 +314,6 @@ let rec reduce_rels rels_assoc_l visited_assoc_l =
       (*Add new entry with hd as key and all hd's related terms as value, and recursively continue building list for the next term in "rels_assoc_l"*)
       (hd,hd_rel_seqs)::(reduce_rels rels_assoc_l upd_visited_assoc_l2)
 
-let get_seq_fun_names =
-  (*TODO: Get this from somewhere else*)
-  ["is_empty";
-   "first";
-   "last";
-   "push";
-   "pop";
-   "length";
-   "nth";
-   "append";
-   "reverse";
-   "push_last";
-   "pop_last";
-   "take";
-   "drop";
-   "map";
-   "any";
-   "seqall";
-   "find";
-   "filter";
-   "foldr";
-   "foldl"]
-
 (*Initialize an association list where the key is a function name and the value is a count, which is initially set to zero.*)
 let rec init_fun_count_assoc_list funs =
   match funs with
@@ -346,7 +323,7 @@ let rec init_fun_count_assoc_list funs =
 
 (*Initialize an mf matrix row, where the keys are function names and the values are the count for that function, which is intially set to zero.*)
 let init_mf_row =
-  let fun_names = get_seq_fun_names in
+  let fun_names = Sequenceinfo.get_seq_fun_names in
   init_fun_count_assoc_list fun_names
 
 (*Finds all sequence methods - that is, TmSeqMethod - in a list of terms of type sequence.*)
@@ -555,7 +532,7 @@ let process_ast ast =
   let mf_matrix1 = create_mf_matrix rels_assoc_l3 in
   (*let _ = Printf.printf "The first version of the mf matrix:\n%s\n" (get_mf_count_string mf_matrix1) in*)
   (*Translate MF count to MF frequencies*)
-  let mf_matrix2 = Frequencies.translate_mf_assoc_list mf_matrix1 (get_seq_fun_names) in
+  let mf_matrix2 = Frequencies.translate_mf_assoc_list mf_matrix1 (Sequenceinfo.get_seq_fun_names) in
   (*let _ = Printf.printf "The second version of the mf matrix:\n%s\n" (get_mf_freq_string mf_matrix2) in*)
   (*-Data structure selection algorithm-*)
   let selected_dss = Dssa.main mf_matrix2 in

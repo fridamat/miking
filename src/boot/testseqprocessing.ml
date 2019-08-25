@@ -121,9 +121,9 @@ let rec compare_terms t1 t2 =
     (compare_terms tm11 tm21) && (compare_terms tm12 tm22) && (compare_terms tm13 tm23)
   | TmFix _, TmFix _ -> true
   | TmSeq(_,_,tm_l1,_,ds_choice1), TmSeq(_,_,tm_l2,_,ds_choice2) ->
-    (compare_term_lists (get_list_from_tmlist tm_l1) (get_list_from_tmlist tm_l2)) && (ds_choice1 == ds_choice2) (*TODO: Check tmseq as well*)
+    (compare_term_lists (get_list_from_tmlist tm_l1) (get_list_from_tmlist tm_l2)) && (ds_choice1 == ds_choice2)
   | TmSeqMethod(_,fun_name1,_,_,_,ds_choice1,in_fix1), TmSeqMethod(_,fun_name2,_,_,_,ds_choice2,in_fix2) ->
-    ((Ustring.to_utf8 fun_name1) = (Ustring.to_utf8 fun_name2)) && (ds_choice1 == ds_choice2) && (in_fix1 == in_fix2) (*TODO: Check actual_fun as well?*)
+    ((Ustring.to_utf8 fun_name1) = (Ustring.to_utf8 fun_name2)) && (ds_choice1 == ds_choice2) && (in_fix1 == in_fix2)
   | _ ->
     false
 

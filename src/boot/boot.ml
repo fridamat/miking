@@ -536,33 +536,8 @@ let rec add_evaluated_term_to_args args term =
   | [] -> term::[]
   | hd::tl -> hd::(add_evaluated_term_to_args tl term)
 
-let get_arg_types_length_dummy fi fun_name =
-  match Ustring.to_utf8 fun_name with
-  | "is_empty" -> 0
-  | "first" -> 0
-  | "last" -> 0
-  | "push" -> 1
-  | "pop" -> 0
-  | "length" -> 0
-  | "nth" -> 1
-  | "append" -> 1
-  | "reverse" -> 0
-  | "push_last" -> 1
-  | "pop_last" -> 0
-  | "take" -> 1
-  | "drop" -> 1
-  | "map" -> 1
-  | "any" -> 1
-  | "seqall" -> 1
-  | "find" -> 1
-  | "filter" -> 1
-  | "foldr" -> 2
-  | "foldl" -> 2
-  | _ -> raise_error fi "Sequence method not implemented."
-
 let get_last_arg_index fun_name =
-  (*!TODO: Collect from file*)
-  get_arg_types_length_dummy fun_name
+  (Sequenceinfo.get_exp_args_length fun_name) - 1
 
 (*author: Alfrida*)
 let rec check_element_type ty1 ty2 =
@@ -667,7 +642,7 @@ let rec eval env t =
       let str = "No method type has been set" in
       failwith str
     | _ ->
-      let str = "Method" ^ (Ustring.to_utf8 fun_name) ^ "not implemented" in
+      let str = "Method " ^ (Ustring.to_utf8 fun_name) ^ " not implemented" in
       failwith str) in
   let rec eval_tmlist env tm_l =
     (match tm_l with
@@ -708,7 +683,7 @@ let rec eval env t =
          | _ -> failwith "Incorrect CFix")
        | TmSeqMethod(ti,fun_name,actual_fun,args,arg_index,ds_choice,in_fix) ->
          let updated_args = add_evaluated_term_to_args args (eval env t2) in
-         let last_arg_index = get_last_arg_index ti.fi fun_name in
+         let last_arg_index = get_last_arg_index fun_name in
          if arg_index == last_arg_index then
            let res = call_seq_method ti fun_name actual_fun updated_args env in
            res

@@ -25,7 +25,7 @@ let get_frequency_rank frequency =
 let get_next_lower_frequency frequency =
   let frequency_rank = get_frequency_rank frequency in
   match frequency_rank with
-  | 0 -> None (*TODO: Make enum*)
+  | 0 -> None
   | _ -> List.nth get_frequencies (frequency_rank-1)
 
 (*Takes in two frequencies (frequency_1 and frequency_2) and compares their ranks (frequency_rank_1 and frequency_rank_2). Returns 1 if frequency_rank_1 > frequency_rank_2, returns -1 if frequency_rank_1 < frequency_rank_2 and 0 if frequency_rank_1 = frequency_rank_2.*)
@@ -62,7 +62,7 @@ let rec translate_mf_assoc_row mf_row fun_names =
     else
       One::(translate_mf_assoc_row mf_row tl)
 
-let rec translate_mf_assoc_list mf_assoc_list fun_names = (*TODO: Test*)
+let rec translate_mf_assoc_list mf_assoc_list fun_names =
   match mf_assoc_list with
   | [] -> []
   | hd::tl ->
