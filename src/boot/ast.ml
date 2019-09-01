@@ -131,7 +131,7 @@ and actual_fun =
   | SeqListFun9 of ((tm -> tm) -> (tm Linkedlist.sequence) -> (tm Linkedlist.sequence))
   | SeqListFun10 of ((tm -> bool) -> (tm Linkedlist.sequence) -> bool)
   | SeqListFun11 of ((tm -> bool) -> (tm Linkedlist.sequence) -> (tm option))
-  | SeqListFun12 of ((tm -> bool) -> (tm Linkedlist.sequence) -> (tm Linkedlist.sequence))
+  | SeqListFun12 of ((tm -> bool) -> (tm Linkedlist.sequence) -> tm)
   | SeqListFun13 of ((tm -> tm -> tm) -> tm -> (tm Linkedlist.sequence) -> tm)
   | SeqFunNone
 

@@ -476,7 +476,7 @@ let get_seq_fun_type fun_name fi =
                           TyGround(fi,GBool)),
                   TyArrow(fi,
                           TySeq(TyVar(fi,us"a",0)),
-                          TySeq(TyVar(fi,us"a",0)))))
+                          TyVar(fi,us"a",0))))
   | "foldr" ->
     TyAll(fi,us"a",KindStar(fi),
           TyAll(fi,us"b",KindStar(fi),

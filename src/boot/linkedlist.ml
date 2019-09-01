@@ -2,6 +2,7 @@ open Sequence
 
 exception Empty
 exception IndexOutOfBounds
+exception NotFound
 
 module Linkedlist : Sequence = struct
   (* Constructors *)
@@ -83,10 +84,10 @@ module Linkedlist : Sequence = struct
        | true -> Some hd
        | false -> find p tl)
   let rec filter p = function
-    | Nil -> Nil
+    | Nil -> raise NotFound
     | Cons(hd, tl) ->
       (match p hd with
-       | true -> Cons(hd, filter p tl)
+       | true -> hd
        | false -> filter p tl)
   let rec foldr f acc = function
     | Nil -> acc
