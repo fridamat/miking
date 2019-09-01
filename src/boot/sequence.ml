@@ -24,8 +24,8 @@ module type Sequence = sig
   val map : ('a -> 'b) -> 'a sequence -> 'b sequence
   val any : ('a -> bool) -> 'a sequence -> bool
   val all : ('a -> bool) -> 'a sequence -> bool
-  val find : ('a -> bool) -> 'a sequence -> 'a option
-  val filter : ('a -> bool) -> 'a sequence -> 'a
+  val find : ('a -> bool) -> 'a sequence -> 'a
+  val filter : ('a -> bool) -> 'a sequence -> 'a sequence
   val foldr : ('a -> 'b -> 'b) -> 'b -> 'a sequence -> 'b
   val foldl : ('b -> 'a -> 'b) -> 'b -> 'a sequence -> 'b
 

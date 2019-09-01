@@ -78,16 +78,16 @@ module Linkedlist : Sequence = struct
     | Nil -> true
     | Cons(hd, tl) -> p hd && all p tl
   let rec find p = function
-    | Nil -> None (*raise NotFound?*) (*TODO: Should we get something else???*)
-    | Cons(hd, tl) ->
-      (match p hd with
-       | true -> Some hd
-       | false -> find p tl)
-  let rec filter p = function
     | Nil -> raise NotFound
     | Cons(hd, tl) ->
       (match p hd with
        | true -> hd
+       | false -> find p tl)
+  let rec filter p = function
+    | Nil -> Nil
+    | Cons(hd, tl) ->
+      (match p hd with
+       | true -> Cons(hd, filter p tl)
        | false -> filter p tl)
   let rec foldr f acc = function
     | Nil -> acc

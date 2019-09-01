@@ -1,6 +1,7 @@
 open Ast
 open Dssa
 open Linkedlist
+open Queue
 open Typesys
 
 (*Print methods*)
@@ -435,12 +436,32 @@ let get_actual_fun_w_sel_ds fun_name sel_ds =
   | 0, "filter" -> (SeqListFun12(Linkedlist.filter))
   | 0, "foldr" -> (SeqListFun13(Linkedlist.foldr))
   | 0, "foldl" -> (SeqListFun13(Linkedlist.foldl))
+  | 1, "is_empty" -> (SeqQueueFun4(Queue.is_empty))
+  | 1, "first" -> (SeqQueueFun5(Queue.first))
+  | 1, "last" -> (SeqQueueFun5(Queue.last))
+  | 1, "push" -> (SeqQueueFun3(Queue.push))
+  | 1, "pop" -> (SeqQueueFun6(Queue.pop))
+  | 1, "length" -> (SeqQueueFun2(Queue.length))
+  | 1, "nth" -> (SeqQueueFun7(Queue.nth))
+  | 1, "append" -> (SeqQueueFun1(Queue.append))
+  | 1, "reverse" -> (SeqQueueFun6(Queue.reverse))
+  | 1, "push_last" -> (SeqQueueFun3(Queue.push_last))
+  | 1, "pop_last" -> (SeqQueueFun6(Queue.pop_last))
+  | 1, "take" -> (SeqQueueFun8(Queue.take))
+  | 1, "drop" -> (SeqQueueFun8(Queue.drop))
+  | 1, "map" -> (SeqQueueFun9(Queue.map))
+  | 1, "any" -> (SeqQueueFun10(Queue.any))
+  | 1, "seqall" -> (SeqQueueFun10(Queue.all))
+  | 1, "find" -> (SeqQueueFun11(Queue.find))
+  | 1, "filter" -> (SeqQueueFun12(Queue.filter))
+  | 1, "foldr" -> (SeqQueueFun13(Queue.foldr))
+  | 1, "foldl" -> (SeqQueueFun13(Queue.foldl))
   | _ -> failwith "Method not yet implemented1"
 
 let get_seq_from_list ds_choice l =
   match ds_choice with
   | 0 -> SeqList(Linkedlist.from_list l)
-  | 1 -> SeqList(Linkedlist.from_list l) (*TODO: Add more options*)
+  | 1 -> SeqQueue(Queue.from_list l)
   | _ -> failwith "Data structure implementation not implemented"
 
 (*Updates AST with data structure choices. This means updating the corresponding field in TmSeqs and TmSeqMethods, getting the correct function implementation in TmSeqMethods and creating the sequence from the term list in TmSeqs.*)

@@ -9,6 +9,7 @@
 open Ustring.Op
 open Msg
 open Linkedlist
+open Queue
 
 
 
@@ -117,6 +118,7 @@ and tm_list =
 
 and sequence =
   | SeqList  of tm Linkedlist.sequence
+  | SeqQueue of tm Queue.sequence
   | SeqNone
 
 and actual_fun =
@@ -130,9 +132,22 @@ and actual_fun =
   | SeqListFun8 of ((tm Linkedlist.sequence) -> int -> (tm Linkedlist.sequence))
   | SeqListFun9 of ((tm -> tm) -> (tm Linkedlist.sequence) -> (tm Linkedlist.sequence))
   | SeqListFun10 of ((tm -> bool) -> (tm Linkedlist.sequence) -> bool)
-  | SeqListFun11 of ((tm -> bool) -> (tm Linkedlist.sequence) -> (tm option))
-  | SeqListFun12 of ((tm -> bool) -> (tm Linkedlist.sequence) -> tm)
+  | SeqListFun11 of ((tm -> bool) -> (tm Linkedlist.sequence) -> tm)
+  | SeqListFun12 of ((tm -> bool) -> (tm Linkedlist.sequence) -> (tm Linkedlist.sequence))
   | SeqListFun13 of ((tm -> tm -> tm) -> tm -> (tm Linkedlist.sequence) -> tm)
+  | SeqQueueFun1 of ((tm Queue.sequence) -> (tm Queue.sequence) -> (tm Queue.sequence))
+  | SeqQueueFun2 of ((tm Queue.sequence) -> int)
+  | SeqQueueFun3 of ((tm Queue.sequence) -> tm -> (tm Queue.sequence))
+  | SeqQueueFun4 of ((tm Queue.sequence) -> bool)
+  | SeqQueueFun5 of ((tm Queue.sequence) -> tm)
+  | SeqQueueFun6 of ((tm Queue.sequence) -> (tm Queue.sequence))
+  | SeqQueueFun7 of ((tm Queue.sequence) -> int -> tm)
+  | SeqQueueFun8 of ((tm Queue.sequence) -> int -> (tm Queue.sequence))
+  | SeqQueueFun9 of ((tm -> tm) -> (tm Queue.sequence) -> (tm Queue.sequence))
+  | SeqQueueFun10 of ((tm -> bool) -> (tm Queue.sequence) -> bool)
+  | SeqQueueFun11 of ((tm -> bool) -> (tm Queue.sequence) -> tm)
+  | SeqQueueFun12 of ((tm -> bool) -> (tm Queue.sequence) -> (tm Queue.sequence))
+  | SeqQueueFun13 of ((tm -> tm -> tm) -> tm -> (tm Queue.sequence) -> tm)
   | SeqFunNone
 
 (* Terms / expressions *)

@@ -616,12 +616,7 @@ let rec eval env t =
            b
          | _ -> failwith "Wrong return type of any function"
       ) in
-      let res =
-        (match f find_f l with
-         | Some(e) -> e
-         | None -> failwith "Element did not exist in list" (*TODO: How should I handle this...*)
-        ) in
-      res
+      f find_f l
     | "filter", SeqListFun12(f), [TmClos(clos_ti,x,clos_ty,clos_tm,clos_env,clos_pemode); TmSeq(seq_ti,ty_ident,tm_list,SeqList(l),ds_choice)] ->
       let filter_f e =
         (match eval env' (TmApp(seq_ti,TmLam(clos_ti,x,clos_ty,clos_tm),e)) with
