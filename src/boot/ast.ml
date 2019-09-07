@@ -10,6 +10,7 @@ open Ustring.Op
 open Msg
 open Linkedlist
 open Queue
+open Realtimequeue
 
 
 
@@ -119,6 +120,7 @@ and tm_list =
 and sequence =
   | SeqList  of tm Linkedlist.sequence
   | SeqQueue of tm Queue.sequence
+  | SeqRTQueue of tm Realtimequeue.sequence
   | SeqNone
 
 and actual_fun =
@@ -148,6 +150,19 @@ and actual_fun =
   | SeqQueueFun11 of ((tm -> bool) -> (tm Queue.sequence) -> tm)
   | SeqQueueFun12 of ((tm -> bool) -> (tm Queue.sequence) -> (tm Queue.sequence))
   | SeqQueueFun13 of ((tm -> tm -> tm) -> tm -> (tm Queue.sequence) -> tm)
+  | SeqRTQueueFun1 of ((tm Realtimequeue.sequence) -> (tm Realtimequeue.sequence) -> (tm Realtimequeue.sequence))
+  | SeqRTQueueFun2 of ((tm Realtimequeue.sequence) -> int)
+  | SeqRTQueueFun3 of ((tm Realtimequeue.sequence) -> tm -> (tm Realtimequeue.sequence))
+  | SeqRTQueueFun4 of ((tm Realtimequeue.sequence) -> bool)
+  | SeqRTQueueFun5 of ((tm Realtimequeue.sequence) -> tm)
+  | SeqRTQueueFun6 of ((tm Realtimequeue.sequence) -> (tm Realtimequeue.sequence))
+  | SeqRTQueueFun7 of ((tm Realtimequeue.sequence) -> int -> tm)
+  | SeqRTQueueFun8 of ((tm Realtimequeue.sequence) -> int -> (tm Realtimequeue.sequence))
+  | SeqRTQueueFun9 of ((tm -> tm) -> (tm Realtimequeue.sequence) -> (tm Realtimequeue.sequence))
+  | SeqRTQueueFun10 of ((tm -> bool) -> (tm Realtimequeue.sequence) -> bool)
+  | SeqRTQueueFun11 of ((tm -> bool) -> (tm Realtimequeue.sequence) -> tm)
+  | SeqRTQueueFun12 of ((tm -> bool) -> (tm Realtimequeue.sequence) -> (tm Realtimequeue.sequence))
+  | SeqRTQueueFun13 of ((tm -> tm -> tm) -> tm -> (tm Realtimequeue.sequence) -> tm)
   | SeqFunNone
 
 (* Terms / expressions *)
