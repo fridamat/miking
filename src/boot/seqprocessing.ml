@@ -2,6 +2,7 @@ open Ast
 open Dssa
 open Linkedlist
 open Ocamlarray
+open Ocamlqueue
 open Okasakiqueue
 open Typesys
 
@@ -477,6 +478,26 @@ let get_actual_fun_w_sel_ds fun_name sel_ds =
   | 2, "filter" -> (SeqOArrayFun12(Ocamlarray.filter))
   | 2, "foldr" -> (SeqOArrayFun13(Ocamlarray.foldr))
   | 2, "foldl" -> (SeqOArrayFun13(Ocamlarray.foldl))
+  | 3, "is_empty" -> (SeqOQueueFun4(Ocamlqueue.is_empty))
+  | 3, "first" -> (SeqOQueueFun5(Ocamlqueue.first))
+  | 3, "last" -> (SeqOQueueFun5(Ocamlqueue.last))
+  | 3, "push" -> (SeqOQueueFun3(Ocamlqueue.push))
+  | 3, "pop" -> (SeqOQueueFun6(Ocamlqueue.pop))
+  | 3, "length" -> (SeqOQueueFun2(Ocamlqueue.length))
+  | 3, "nth" -> (SeqOQueueFun7(Ocamlqueue.nth))
+  | 3, "append" -> (SeqOQueueFun1(Ocamlqueue.append))
+  | 3, "reverse" -> (SeqOQueueFun6(Ocamlqueue.reverse))
+  | 3, "push_last" -> (SeqOQueueFun3(Ocamlqueue.push_last))
+  | 3, "pop_last" -> (SeqOQueueFun6(Ocamlqueue.pop_last))
+  | 3, "take" -> (SeqOQueueFun8(Ocamlqueue.take))
+  | 3, "drop" -> (SeqOQueueFun8(Ocamlqueue.drop))
+  | 3, "map" -> (SeqOQueueFun9(Ocamlqueue.map))
+  | 3, "any" -> (SeqOQueueFun10(Ocamlqueue.any))
+  | 3, "seqall" -> (SeqOQueueFun10(Ocamlqueue.all))
+  | 3, "find" -> (SeqOQueueFun11(Ocamlqueue.find))
+  | 3, "filter" -> (SeqOQueueFun12(Ocamlqueue.filter))
+  | 3, "foldr" -> (SeqOQueueFun13(Ocamlqueue.foldr))
+  | 3, "foldl" -> (SeqOQueueFun13(Ocamlqueue.foldl))
   | _ -> failwith "Method not yet implemented1"
 
 let get_seq_from_list ds_choice l =
@@ -484,6 +505,7 @@ let get_seq_from_list ds_choice l =
   | 0 -> SeqList(Linkedlist.from_list l)
   | 1 -> SeqQueue(Okasakiqueue.from_list l)
   | 2 -> SeqOArray(Ocamlarray.from_list l)
+  | 3 -> SeqOQueue(Ocamlqueue.from_list l)
   | _ -> failwith "Data structure implementation not implemented"
 
 (*Updates AST with data structure choices. This means updating the corresponding field in TmSeqs and TmSeqMethods, getting the correct function implementation in TmSeqMethods and creating the sequence from the term list in TmSeqs.*)

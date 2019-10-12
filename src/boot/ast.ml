@@ -10,6 +10,7 @@ open Ustring.Op
 open Msg
 open Linkedlist
 open Ocamlarray
+open Ocamlqueue
 open Okasakiqueue
 
 let utest = ref false           (* Set to true if unit testing is enabled *)
@@ -118,6 +119,7 @@ and sequence =
   | SeqList  of tm Linkedlist.sequence
   | SeqQueue of tm Okasakiqueue.sequence
   | SeqOArray of tm Ocamlarray.sequence
+  | SeqOQueue of tm Ocamlqueue.sequence
   | SeqNone
 
 and actual_fun =
@@ -160,6 +162,19 @@ and actual_fun =
   | SeqOArrayFun11 of ((tm -> bool) -> (tm Ocamlarray.sequence) -> tm)
   | SeqOArrayFun12 of ((tm -> bool) -> (tm Ocamlarray.sequence) -> (tm Ocamlarray.sequence))
   | SeqOArrayFun13 of ((tm -> tm -> tm) -> tm -> (tm Ocamlarray.sequence) -> tm)
+  | SeqOQueueFun1 of ((tm Ocamlqueue.sequence) -> (tm Ocamlqueue.sequence) -> (tm Ocamlqueue.sequence))
+  | SeqOQueueFun2 of ((tm Ocamlqueue.sequence) -> int)
+  | SeqOQueueFun3 of ((tm Ocamlqueue.sequence) -> tm -> (tm Ocamlqueue.sequence))
+  | SeqOQueueFun4 of ((tm Ocamlqueue.sequence) -> bool)
+  | SeqOQueueFun5 of ((tm Ocamlqueue.sequence) -> tm)
+  | SeqOQueueFun6 of ((tm Ocamlqueue.sequence) -> (tm Ocamlqueue.sequence))
+  | SeqOQueueFun7 of ((tm Ocamlqueue.sequence) -> int -> tm)
+  | SeqOQueueFun8 of ((tm Ocamlqueue.sequence) -> int -> (tm Ocamlqueue.sequence))
+  | SeqOQueueFun9 of ((tm -> tm) -> (tm Ocamlqueue.sequence) -> (tm Ocamlqueue.sequence))
+  | SeqOQueueFun10 of ((tm -> bool) -> (tm Ocamlqueue.sequence) -> bool)
+  | SeqOQueueFun11 of ((tm -> bool) -> (tm Ocamlqueue.sequence) -> tm)
+  | SeqOQueueFun12 of ((tm -> bool) -> (tm Ocamlqueue.sequence) -> (tm Ocamlqueue.sequence))
+  | SeqOQueueFun13 of ((tm -> tm -> tm) -> tm -> (tm Ocamlqueue.sequence) -> tm)
   | SeqFunNone
 
 (* Terms / expressions *)
