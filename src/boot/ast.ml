@@ -9,11 +9,8 @@
 open Ustring.Op
 open Msg
 open Linkedlist
+open Ocamlarray
 open Queue
-open Realtimequeue
-
-
-
 
 let utest = ref false           (* Set to true if unit testing is enabled *)
 let utest_ok = ref 0            (* Counts the number of successful unit tests *)
@@ -120,7 +117,7 @@ and tm_list =
 and sequence =
   | SeqList  of tm Linkedlist.sequence
   | SeqQueue of tm Queue.sequence
-  | SeqRTQueue of tm Realtimequeue.sequence
+  | SeqOArray of tm Ocamlarray.sequence
   | SeqNone
 
 and actual_fun =
@@ -150,19 +147,19 @@ and actual_fun =
   | SeqQueueFun11 of ((tm -> bool) -> (tm Queue.sequence) -> tm)
   | SeqQueueFun12 of ((tm -> bool) -> (tm Queue.sequence) -> (tm Queue.sequence))
   | SeqQueueFun13 of ((tm -> tm -> tm) -> tm -> (tm Queue.sequence) -> tm)
-  | SeqRTQueueFun1 of ((tm Realtimequeue.sequence) -> (tm Realtimequeue.sequence) -> (tm Realtimequeue.sequence))
-  | SeqRTQueueFun2 of ((tm Realtimequeue.sequence) -> int)
-  | SeqRTQueueFun3 of ((tm Realtimequeue.sequence) -> tm -> (tm Realtimequeue.sequence))
-  | SeqRTQueueFun4 of ((tm Realtimequeue.sequence) -> bool)
-  | SeqRTQueueFun5 of ((tm Realtimequeue.sequence) -> tm)
-  | SeqRTQueueFun6 of ((tm Realtimequeue.sequence) -> (tm Realtimequeue.sequence))
-  | SeqRTQueueFun7 of ((tm Realtimequeue.sequence) -> int -> tm)
-  | SeqRTQueueFun8 of ((tm Realtimequeue.sequence) -> int -> (tm Realtimequeue.sequence))
-  | SeqRTQueueFun9 of ((tm -> tm) -> (tm Realtimequeue.sequence) -> (tm Realtimequeue.sequence))
-  | SeqRTQueueFun10 of ((tm -> bool) -> (tm Realtimequeue.sequence) -> bool)
-  | SeqRTQueueFun11 of ((tm -> bool) -> (tm Realtimequeue.sequence) -> tm)
-  | SeqRTQueueFun12 of ((tm -> bool) -> (tm Realtimequeue.sequence) -> (tm Realtimequeue.sequence))
-  | SeqRTQueueFun13 of ((tm -> tm -> tm) -> tm -> (tm Realtimequeue.sequence) -> tm)
+  | SeqOArrayFun1 of ((tm Ocamlarray.sequence) -> (tm Ocamlarray.sequence) -> (tm Ocamlarray.sequence))
+  | SeqOArrayFun2 of ((tm Ocamlarray.sequence) -> int)
+  | SeqOArrayFun3 of ((tm Ocamlarray.sequence) -> tm -> (tm Ocamlarray.sequence))
+  | SeqOArrayFun4 of ((tm Ocamlarray.sequence) -> bool)
+  | SeqOArrayFun5 of ((tm Ocamlarray.sequence) -> tm)
+  | SeqOArrayFun6 of ((tm Ocamlarray.sequence) -> (tm Ocamlarray.sequence))
+  | SeqOArrayFun7 of ((tm Ocamlarray.sequence) -> int -> tm)
+  | SeqOArrayFun8 of ((tm Ocamlarray.sequence) -> int -> (tm Ocamlarray.sequence))
+  | SeqOArrayFun9 of ((tm -> tm) -> (tm Ocamlarray.sequence) -> (tm Ocamlarray.sequence))
+  | SeqOArrayFun10 of ((tm -> bool) -> (tm Ocamlarray.sequence) -> bool)
+  | SeqOArrayFun11 of ((tm -> bool) -> (tm Ocamlarray.sequence) -> tm)
+  | SeqOArrayFun12 of ((tm -> bool) -> (tm Ocamlarray.sequence) -> (tm Ocamlarray.sequence))
+  | SeqOArrayFun13 of ((tm -> tm -> tm) -> tm -> (tm Ocamlarray.sequence) -> tm)
   | SeqFunNone
 
 (* Terms / expressions *)

@@ -1,8 +1,8 @@
 open Ast
 open Dssa
 open Linkedlist
+open Ocamlarray
 open Queue
-open Realtimequeue
 open Typesys
 
 (*Print methods*)
@@ -457,33 +457,33 @@ let get_actual_fun_w_sel_ds fun_name sel_ds =
   | 1, "filter" -> (SeqQueueFun12(Queue.filter))
   | 1, "foldr" -> (SeqQueueFun13(Queue.foldr))
   | 1, "foldl" -> (SeqQueueFun13(Queue.foldl))
-  | 2, "is_empty" -> (SeqRTQueueFun4(Realtimequeue.is_empty))
-  | 2, "first" -> (SeqRTQueueFun5(Realtimequeue.first))
-  | 2, "last" -> (SeqRTQueueFun5(Realtimequeue.last))
-  | 2, "push" -> (SeqRTQueueFun3(Realtimequeue.push))
-  | 2, "pop" -> (SeqRTQueueFun6(Realtimequeue.pop))
-  | 2, "length" -> (SeqRTQueueFun2(Realtimequeue.length))
-  | 2, "nth" -> (SeqRTQueueFun7(Realtimequeue.nth))
-  | 2, "append" -> (SeqRTQueueFun1(Realtimequeue.append))
-  | 2, "reverse" -> (SeqRTQueueFun6(Realtimequeue.reverse))
-  | 2, "push_last" -> (SeqRTQueueFun3(Realtimequeue.push_last))
-  | 2, "pop_last" -> (SeqRTQueueFun6(Realtimequeue.pop_last))
-  | 2, "take" -> (SeqRTQueueFun8(Realtimequeue.take))
-  | 2, "drop" -> (SeqRTQueueFun8(Realtimequeue.drop))
-  | 2, "map" -> (SeqRTQueueFun9(Realtimequeue.map))
-  | 2, "any" -> (SeqRTQueueFun10(Realtimequeue.any))
-  | 2, "seqall" -> (SeqRTQueueFun10(Realtimequeue.all))
-  | 2, "find" -> (SeqRTQueueFun11(Realtimequeue.find))
-  | 2, "filter" -> (SeqRTQueueFun12(Realtimequeue.filter))
-  | 2, "foldr" -> (SeqRTQueueFun13(Realtimequeue.foldr))
-  | 2, "foldl" -> (SeqRTQueueFun13(Realtimequeue.foldl))
+  | 2, "is_empty" -> (SeqOArrayFun4(Ocamlarray.is_empty))
+  | 2, "first" -> (SeqOArrayFun5(Ocamlarray.first))
+  | 2, "last" -> (SeqOArrayFun5(Ocamlarray.last))
+  | 2, "push" -> (SeqOArrayFun3(Ocamlarray.push))
+  | 2, "pop" -> (SeqOArrayFun6(Ocamlarray.pop))
+  | 2, "length" -> (SeqOArrayFun2(Ocamlarray.length))
+  | 2, "nth" -> (SeqOArrayFun7(Ocamlarray.nth))
+  | 2, "append" -> (SeqOArrayFun1(Ocamlarray.append))
+  | 2, "reverse" -> (SeqOArrayFun6(Ocamlarray.reverse))
+  | 2, "push_last" -> (SeqOArrayFun3(Ocamlarray.push_last))
+  | 2, "pop_last" -> (SeqOArrayFun6(Ocamlarray.pop_last))
+  | 2, "take" -> (SeqOArrayFun8(Ocamlarray.take))
+  | 2, "drop" -> (SeqOArrayFun8(Ocamlarray.drop))
+  | 2, "map" -> (SeqOArrayFun9(Ocamlarray.map))
+  | 2, "any" -> (SeqOArrayFun10(Ocamlarray.any))
+  | 2, "seqall" -> (SeqOArrayFun10(Ocamlarray.all))
+  | 2, "find" -> (SeqOArrayFun11(Ocamlarray.find))
+  | 2, "filter" -> (SeqOArrayFun12(Ocamlarray.filter))
+  | 2, "foldr" -> (SeqOArrayFun13(Ocamlarray.foldr))
+  | 2, "foldl" -> (SeqOArrayFun13(Ocamlarray.foldl))
   | _ -> failwith "Method not yet implemented1"
 
 let get_seq_from_list ds_choice l =
   match ds_choice with
   | 0 -> SeqList(Linkedlist.from_list l)
   | 1 -> SeqQueue(Queue.from_list l)
-  | 2 -> SeqRTQueue(Realtimequeue.from_list l)
+  | 2 -> SeqOArray(Ocamlarray.from_list l)
   | _ -> failwith "Data structure implementation not implemented"
 
 (*Updates AST with data structure choices. This means updating the corresponding field in TmSeqs and TmSeqMethods, getting the correct function implementation in TmSeqMethods and creating the sequence from the term list in TmSeqs.*)

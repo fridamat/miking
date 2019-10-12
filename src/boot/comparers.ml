@@ -1,7 +1,7 @@
 open Ast
 open Linkedlist
+open Ocamlarray
 open Queue
-open Realtimequeue
 
 let compare_tm_terms tm1 tm2 =
   match tm1, tm2 with
@@ -52,8 +52,8 @@ let rec compare_term_lists l1 l2 =
           ((Linkedlist.to_list ll1), (Linkedlist.to_list ll2))
         | SeqQueue(q1), SeqQueue(q2) ->
           ((Queue.to_list q1), (Queue.to_list q2))
-        | SeqRTQueue(rtq1), SeqRTQueue(rtq2) ->
-          ((Realtimequeue.to_list rtq1), (Realtimequeue.to_list rtq2))
+        | SeqOArray(a1), SeqOArray(a2) ->
+          ((Ocamlarray.to_list a1), (Ocamlarray.to_list a2))
         | SeqNone, SeqNone -> ([], [])
         | _ -> failwith "Comparison of sequence type not implemented.") in
      compare_term_lists l1 l2) in
