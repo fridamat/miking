@@ -7,8 +7,8 @@ exception NotFound
 module Linkedlist : Sequence = struct
   (* Constructors *)
   type 'a linkedlist =
-   | Nil
-   | Cons of 'a * 'a linkedlist
+    | Nil
+    | Cons of 'a * 'a linkedlist
 
   type 'a sequence = 'a linkedlist
 
@@ -22,7 +22,7 @@ module Linkedlist : Sequence = struct
     | Cons(hd,tl) -> hd::(to_list tl)
 
   (* Helper methods *)
-    let rec reverse_helper l rev_l = match l with
+  let rec reverse_helper l rev_l = match l with
     | Nil -> rev_l
     | Cons(hd, tl) -> reverse_helper tl (Cons(hd, rev_l))
 
@@ -44,7 +44,7 @@ module Linkedlist : Sequence = struct
   let rec length = function
     | Nil -> 0
     | Cons(_, tl) -> 1 + length tl
-  let rec nth l n = match (l, n) with (*TODO Check if n <= 0*)
+  let rec nth l n = match (l, n) with
     | (Nil, _) -> raise IndexOutOfBounds
     | (Cons(hd,_), 0) -> hd
     | (Cons(_,tl), _) -> nth tl (n-1)
@@ -95,15 +95,6 @@ module Linkedlist : Sequence = struct
   let rec foldl f acc = function
     | Nil -> acc
     | Cons(hd, tl) -> foldl f (f acc hd) tl
-  let rec equals l1 l2 =
-    match l1, l2 with
-    | Nil, Nil -> true
-    | Nil, _ | _, Nil -> false
-    | Cons(hd1,tl1), Cons(hd2,tl2) ->
-      if hd1 == hd2 then
-        equals tl1 tl2
-      else
-        false
 end
 
 open Linkedlist

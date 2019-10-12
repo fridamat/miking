@@ -152,10 +152,6 @@ module Queue : Sequence = struct
       let rev_r = Linkedlist.reverse r in
       let l = Linkedlist.append f rev_r in
       Linkedlist.foldl fn acc l
-  let equals l1 l2 =
-    match l1, l2 with
-    | QueueCons(f1, r1), QueueCons(f2, r2) ->
-      (Linkedlist.equals f1 f2) && (Linkedlist.equals r1 r2)
 end
 
 open Queue
