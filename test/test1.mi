@@ -27,4 +27,13 @@ lang mcore
 
 // Method TODO
 
-// Functions with fix point
+// Functions with fix point TODO
+let empty_list_now = fix (lam empty_list_now:(TySeqInt->TySeqInt). lam x:TySeqInt.
+   if (seqmethod.is_empty [Int] x) then
+      (x)
+  else
+      let x2 = seqmethod.pop [Int] x in
+      empty_list_now x2
+)
+let s = empty_list_now (newseq [int] (1))
+utest (newseq [int] ()) (s)
