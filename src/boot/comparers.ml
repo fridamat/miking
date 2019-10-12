@@ -1,7 +1,7 @@
 open Ast
 open Linkedlist
 open Ocamlarray
-open Queue
+open Okasakiqueue
 
 let compare_tm_terms tm1 tm2 =
   match tm1, tm2 with
@@ -51,7 +51,7 @@ let rec compare_term_lists l1 l2 =
         | SeqList(ll1), SeqList(ll2) ->
           ((Linkedlist.to_list ll1), (Linkedlist.to_list ll2))
         | SeqQueue(q1), SeqQueue(q2) ->
-          ((Queue.to_list q1), (Queue.to_list q2))
+          ((Okasakiqueue.to_list q1), (Okasakiqueue.to_list q2))
         | SeqOArray(a1), SeqOArray(a2) ->
           ((Ocamlarray.to_list a1), (Ocamlarray.to_list a2))
         | SeqNone, SeqNone -> ([], [])

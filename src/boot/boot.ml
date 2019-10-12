@@ -19,7 +19,7 @@ open Linkedlist
 open Frequencies
 open Dssa
 (*open Testseqprocessing*)
-open Queue
+open Okasakiqueue
 open Ocamlarray
 open Comparers
 
@@ -126,7 +126,7 @@ let get_list_from_seqlist seql =
   | SeqList(ll) ->
     Linkedlist.to_list ll
   | SeqQueue(q) ->
-    Queue.to_list q
+    Okasakiqueue.to_list q
   | SeqOArray(a) ->
     Ocamlarray.to_list a
   | _ -> failwith "Sequence type not implemented"
@@ -719,12 +719,12 @@ let rec eval env t =
        let ll_tl = Linkedlist.drop ll 1 in
        eval_linkedlist_elements ll_tl (Linkedlist.push_last upd_ll upd_first)) in
   let rec eval_queue_elements q upd_q =
-    (if Queue.is_empty q then
+    (if Okasakiqueue.is_empty q then
        upd_q
      else
-       let upd_first = eval env (Queue.first q) in
-       let q_tl = Queue.drop q 1 in
-       eval_queue_elements q_tl (Queue.push_last upd_q upd_first)) in
+       let upd_first = eval env (Okasakiqueue.first q) in
+       let q_tl = Okasakiqueue.drop q 1 in
+       eval_queue_elements q_tl (Okasakiqueue.push_last upd_q upd_first)) in
   let rec eval_oarray_elements a upd_a =
     (if Ocamlarray.is_empty a then
        upd_a
@@ -735,7 +735,7 @@ let rec eval env t =
   let eval_sequence_elements seq =
     (match seq with
      | SeqList(ll) -> SeqList(eval_linkedlist_elements ll (Linkedlist.empty))
-     | SeqQueue(q) -> SeqQueue(eval_queue_elements q (Queue.empty))
+     | SeqQueue(q) -> SeqQueue(eval_queue_elements q (Okasakiqueue.empty))
      | SeqOArray(a) -> SeqOArray(eval_oarray_elements a (Ocamlarray.empty))
      | _ -> failwith "Not implemented yet") in
   debug_eval env t;
