@@ -1,7 +1,5 @@
 open Ast
 open Linkedlist
-open Queue
-open Realtimequeue
 
 let compare_tm_terms tm1 tm2 =
   match tm1, tm2 with
@@ -50,10 +48,6 @@ let compare_sequences seq1 seq2 =
      (match seq1, seq2 with
       | SeqList(ll1), SeqList(ll2) ->
         ((Linkedlist.to_list ll1), (Linkedlist.to_list ll2))
-      | SeqQueue(q1), SeqQueue(q2) ->
-        ((Queue.to_list q1), (Queue.to_list q2))
-      | SeqRTQueue(rtq1), SeqRTQueue(rtq2) ->
-        ((Realtimequeue.to_list rtq1), (Realtimequeue.to_list rtq2))
       | SeqNone, SeqNone ->
         ([], [])
       | _ -> failwith "Comparison of sequence type not implemented.") in
