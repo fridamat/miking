@@ -3,6 +3,7 @@ open Dssa
 open Linkedlist
 open Ocamlarray
 open Ocamlqueue
+open Ocamlstack
 open Okasakiqueue
 open Typesys
 
@@ -498,6 +499,26 @@ let get_actual_fun_w_sel_ds fun_name sel_ds =
   | 3, "filter" -> (SeqOQueueFun12(Ocamlqueue.filter))
   | 3, "foldr" -> (SeqOQueueFun13(Ocamlqueue.foldr))
   | 3, "foldl" -> (SeqOQueueFun13(Ocamlqueue.foldl))
+  | 4, "is_empty" -> (SeqOStackFun4(Ocamlstack.is_empty))
+  | 4, "first" -> (SeqOStackFun5(Ocamlstack.first))
+  | 4, "last" -> (SeqOStackFun5(Ocamlstack.last))
+  | 4, "push" -> (SeqOStackFun3(Ocamlstack.push))
+  | 4, "pop" -> (SeqOStackFun6(Ocamlstack.pop))
+  | 4, "length" -> (SeqOStackFun2(Ocamlstack.length))
+  | 4, "nth" -> (SeqOStackFun7(Ocamlstack.nth))
+  | 4, "append" -> (SeqOStackFun1(Ocamlstack.append))
+  | 4, "reverse" -> (SeqOStackFun6(Ocamlstack.reverse))
+  | 4, "push_last" -> (SeqOStackFun3(Ocamlstack.push_last))
+  | 4, "pop_last" -> (SeqOStackFun6(Ocamlstack.pop_last))
+  | 4, "take" -> (SeqOStackFun8(Ocamlstack.take))
+  | 4, "drop" -> (SeqOStackFun8(Ocamlstack.drop))
+  | 4, "map" -> (SeqOStackFun9(Ocamlstack.map))
+  | 4, "any" -> (SeqOStackFun10(Ocamlstack.any))
+  | 4, "seqall" -> (SeqOStackFun10(Ocamlstack.all))
+  | 4, "find" -> (SeqOStackFun11(Ocamlstack.find))
+  | 4, "filter" -> (SeqOStackFun12(Ocamlstack.filter))
+  | 4, "foldr" -> (SeqOStackFun13(Ocamlstack.foldr))
+  | 4, "foldl" -> (SeqOStackFun13(Ocamlstack.foldl))
   | _ -> failwith "Method not yet implemented1"
 
 let get_seq_from_list ds_choice l =
@@ -506,6 +527,7 @@ let get_seq_from_list ds_choice l =
   | 1 -> SeqQueue(Okasakiqueue.from_list l)
   | 2 -> SeqOArray(Ocamlarray.from_list l)
   | 3 -> SeqOQueue(Ocamlqueue.from_list l)
+  | 4 -> SeqOStack(Ocamlstack.from_list l)
   | _ -> failwith "Data structure implementation not implemented"
 
 (*Updates AST with data structure choices. This means updating the corresponding field in TmSeqs and TmSeqMethods, getting the correct function implementation in TmSeqMethods and creating the sequence from the term list in TmSeqs.*)

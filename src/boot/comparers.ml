@@ -2,6 +2,7 @@ open Ast
 open Linkedlist
 open Ocamlarray
 open Ocamlqueue
+open Ocamlstack
 open Okasakiqueue
 
 let compare_tm_terms tm1 tm2 =
@@ -57,6 +58,8 @@ let rec compare_term_lists l1 l2 =
           ((Ocamlarray.to_list a1), (Ocamlarray.to_list a2))
         | SeqOQueue(q1), SeqOQueue(q2) ->
           ((Ocamlqueue.to_list q1), (Ocamlqueue.to_list q2))
+        | SeqOStack(s1), SeqOStack(s2) ->
+          ((Ocamlstack.to_list s1), (Ocamlstack.to_list s2))
         | SeqNone, SeqNone -> ([], [])
         | _ -> failwith "Comparison of sequence type not implemented.") in
      compare_term_lists l1 l2) in

@@ -22,6 +22,7 @@ open Dssa
 open Okasakiqueue
 open Ocamlarray
 open Ocamlqueue
+open Ocamlstack
 open Comparers
 
 let prog_argv = ref []          (* Argv for the program that is executed *)
@@ -132,6 +133,8 @@ let get_list_from_seqlist seql =
     Ocamlarray.to_list a
   | SeqOQueue(q) ->
     Ocamlqueue.to_list q
+  | SeqOStack(s) ->
+    Ocamlstack.to_list s
   | _ -> failwith "Sequence type not implemented"
 
 (* Check if two value terms are equal *)
@@ -742,12 +745,20 @@ let rec eval env t =
        let upd_first = eval env (Ocamlqueue.first q) in
        let q_tl = Ocamlqueue.drop q 1 in
        eval_oqueue_elements q_tl (Ocamlqueue.push_last upd_q upd_first)) in
+  let rec eval_ostack_elements s upd_s =
+    (if Ocamlstack.is_empty s then
+       upd_s
+     else
+       let upd_first = eval env (Ocamlstack.first s) in
+       let s_tl = Ocamlstack.drop s 1 in
+       eval_ostack_elements s_tl (Ocamlstack.push_last upd_s upd_first)) in
   let eval_sequence_elements seq =
     (match seq with
      | SeqList(ll) -> SeqList(eval_linkedlist_elements ll (Linkedlist.empty))
      | SeqQueue(q) -> SeqQueue(eval_queue_elements q (Okasakiqueue.empty))
      | SeqOArray(a) -> SeqOArray(eval_oarray_elements a (Ocamlarray.empty))
      | SeqOQueue(q) -> SeqOQueue(eval_oqueue_elements q (Ocamlqueue.empty))
+     | SeqOStack(s) -> SeqOStack(eval_ostack_elements s (Ocamlstack.empty))
      | _ -> failwith "Not implemented yet") in
   debug_eval env t;
   match t with
