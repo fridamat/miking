@@ -48,8 +48,30 @@ utest true (check_if_palindrome (newseq [int] (1,2,3,2,1)))
 utest false (check_if_palindrome (newseq [int] (1,2,3)))
 
 // Eliminate consecutive duplicates (TODO)
-
-// Pack consecutive duplicates of list elements into sublists. (medium)
+let eliminate_duplicates_helper = fix (lam eliminate_duplicates_helper:(Int->TySeqInt->TySeqInt->TySeqInt). lam e:Int. lam l:TySeqInt. lam newl:TySeqInt. (
+  if (seqmethod.is_empty [Int] l) then
+    seqmethod.push_last [Int] newl e
+  else (
+    let hd = seqmethod.first [Int] l in
+    let tl = seqmethod.drop [Int] l 1 in
+    if (eqi e hd) then
+      eliminate_duplicates_helper e tl newl
+    else
+      let newl2 = seqmethod.push_last [Int] newl e in
+      eliminate_duplicates_helper hd tl newl2
+    )
+))
+let eliminate_duplicates = lam x:TySeqInt. (
+  if (seqmethod.is_empty [Int] x) then
+    x
+  else
+    let hd = seqmethod.first [Int] x in
+    let tl = seqmethod.drop [Int] x 1 in
+    let newl = newseq [int] () in
+    eliminate_duplicates_helper hd tl newl
+)
+utest (newseq [int] (1)) (eliminate_duplicates (newseq [int] (1,1)))
+utest (newseq [int] (1,2,3)) (eliminate_duplicates (newseq [int] (1,1,2,3,3)))
 
 // Duplicate elements
 let duplicate_list = fix (lam duplicate_list:(TySeqInt->TySeqInt). lam x:TySeqInt.
@@ -63,10 +85,92 @@ let duplicate_list = fix (lam duplicate_list:(TySeqInt->TySeqInt). lam x:TySeqIn
 )
 utest (newseq [int] (1,1,2,2)) (duplicate_list (newseq [int] (1,2)))
 
+// Replicate elements n times
+let createreplicates = fix (lam createreplicates:(Int->Int->TySeqInt->TySeqInt). lam x:Int. lam n:Int. lam newl:TySeqInt. (
+  if (eqi n 0) then (
+    newl
+  ) else (
+    let newl2 = seqmethod.push [Int] newl x in
+    let newn = subi n 1 in
+    createreplicates x newn newl2
+  )))
+let replicate_elements_n_times_helper = fix (lam replicate_elements_n_times_helper:(TySeqInt->Int->TySeqInt->TySeqInt). lam l:TySeqInt. lam n:Int. lam newl:TySeqInt. (
+  if (seqmethod.is_empty [Int] l) then (
+    newl
+  ) else (
+    let hd = seqmethod.first [Int] l in
+    let tl = seqmethod.drop [Int] l 1 in
+    let nreplicates = createreplicates hd n (newseq [int] ()) in
+    let newl2 = seqmethod.append [Int] newl nreplicates in
+    replicate_elements_n_times_helper tl n newl2
+  )))
+let replicate_elements_n_times = lam x:TySeqInt. lam n:Int. (
+  if (eqi n 0) then
+    (x)
+  else
+    replicate_elements_n_times_helper x n (newseq [int] ())
+)
+utest (newseq [int] (1,1,1)) (replicate_elements_n_times (newseq [int] (1)) 3)
+utest (newseq [int] (1,1,2,2)) (replicate_elements_n_times (newseq [int] (1,2)) 2)
 
-//let pow = fix (lam pow:(Int->Int->Int). lam x:Int. lam n:Int.
-  //         if (leqi n 1) then
-    //          (x)
-      //     else
-        //      (muli x (pow x (subi n 1)))
-          // )
+// Drop every nth element
+let drop_nth_element = fix (lam drop_nth_element:(TySeqInt->Int->TySeqInt->Int->TySeqInt). lam l:TySeqInt. lam n:Int. lam newl:TySeqInt. lam i:Int. (
+  if (seqmethod.is_empty [Int] l) then (
+    newl
+  ) else (
+    let hd = seqmethod.first [Int] l in
+    let tl = seqmethod.drop [Int] l 1 in
+    if (eqi i 1) then (
+      drop_nth_element tl n newl n
+    ) else (
+      let newl2 = seqmethod.push_last [Int] newl hd in
+      drop_nth_element tl n newl2 (subi i 1)
+    )
+  )))
+  utest (newseq [int] (1,3)) (drop_nth_element (newseq [int] (1,2,3,4)) 2 (newseq [int] ()) 2)
+  utest (newseq [int] ()) (drop_nth_element (newseq [int] (1,2,3,4)) 1 (newseq [int] ()) 1)
+
+// Split a list into two parts (at index n), and get the first one
+let split_list_get_first_part = lam x:TySeqInt. lam n:Int. (
+  seqmethod.take [Int] x n
+)
+utest (newseq [int] (1,2)) (split_list_get_first_part (newseq [int] (1,2,3,4)) 2)
+
+// Split a list into two parts (at index n), and get the second one
+let split_list_get_last_part = lam x:TySeqInt. lam n:Int. (
+  seqmethod.drop [Int] x n
+)
+utest (newseq [int] (3,4)) (split_list_get_last_part (newseq [int] (1,2,3,4)) 2)
+
+// Get a part of the list between indices m and n
+let split_list_btw_m_and_n = lam x:TySeqInt. lam m:Int. lam n:Int. (
+  let updx1 = seqmethod.drop [Int] x m in
+  let newn = subi n m in
+  seqmethod.take [Int] updx1 (subi newn 1)
+)
+utest (newseq [int] (2)) (split_list_btw_m_and_n (newseq [int] (1,2,3)) 1 3)
+utest (newseq [int] (1,2)) (split_list_btw_m_and_n (newseq [int] (1,2,3)) 0 3)
+
+// Rotate n places left
+let rotate_n_left = lam x:TySeqInt. lam n:Int. (
+  let lhs = seqmethod.take [Int] x n in
+  let rhs = seqmethod.drop [Int] x n in
+  seqmethod.append [Int] rhs lhs
+)
+utest (newseq [int] (2,3,1)) (rotate_n_left (newseq [int] (1,2,3)) 1)
+utest (newseq [int] (3,1,2)) (rotate_n_left (newseq [int] (1,2,3)) 2)
+
+// Remove nth element
+let remove_element_n = lam x:TySeqInt. lam n:Int. (
+  let lhs = seqmethod.take [Int] x (subi n 1) in
+  let rhs = seqmethod.drop [Int] x n in
+  seqmethod.append [Int] lhs rhs
+)
+utest (newseq [int] (1,3)) (remove_element_n (newseq [int] (1,2,3)) 2)
+utest (newseq [int] (1,2,3)) (remove_element_n (newseq [int] (1,2,3,4)) 4)
+
+// Filter elements within a given range
+let filter_elements_in_range = lam x:TySeqInt. lam m:Int. lam n:Int. (
+  seqmethod.filter [Int] (lam x:Int. if (and (lti x n) (gti x m)) then true else false) (newseq [int] (1,2,3))
+)
+utest (newseq [int] (2)) (filter_elements_in_range (newseq [int] (1,2,3)) 1 3)

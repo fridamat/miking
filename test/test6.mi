@@ -1,0 +1,7 @@
+lang mcore
+
+// Filter elements within a given range
+let filter_elements_in_range = lam x:TySeqInt. lam m:Int. lam n:Int. (
+  seqmethod.filter [Int] (lam x:Int. if (and (lti x n) (gti x m)) then true else false) (newseq [int] (1,2,3))
+)
+utest (newseq [int] (2)) (filter_elements_in_range (newseq [int] (1,2,3)) 1 3)

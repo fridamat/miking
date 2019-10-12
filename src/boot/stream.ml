@@ -124,15 +124,6 @@ module Stream : Sequence = struct
     match s with
     | lazy Nil -> acc
     | lazy (SCons(hd, tl)) -> foldl f (f acc hd) tl
-  let rec equals s1 s2 =
-    match s1, s2 with
-    | lazy Nil, lazy Nil -> true
-    | lazy Nil, _ | _, lazy Nil -> false
-    | lazy (SCons(hd1,tl1)), lazy (SCons(hd2,tl2)) ->
-      if hd1 == hd2 then
-        equals tl1 tl2
-      else
-        false
 end
 
 open Stream

@@ -12,8 +12,10 @@ let empty_list_now = fix (lam empty_list_now:(TySeqInt->TySeqInt). lam x:TySeqIn
       let x2 = seqmethod.pop [Int] x in
       empty_list_now x2
 )
-let s = empty_list_now (newseq [int] ())
+let s = empty_list_now (newseq [int] (1))
 utest (newseq [int] ()) (s)
+
+
 
 
 //let pow = fix (lam pow:(Int->Int->Int). lam x:Int. lam n:Int.
