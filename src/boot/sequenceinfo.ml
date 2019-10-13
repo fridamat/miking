@@ -22,6 +22,7 @@ let get_exp_args_length fun_name =
   | "foldl" -> 3
   | _ -> failwith "Sequence function not implemented"
 
+(*0: Linked list*) (*TODO: Lägga till Linkedlists värden*)
 let get_mc =
   [[Complexities.Logn;Complexities.Logn;Complexities.Logn; Complexities.Logn;Complexities.Logn;Complexities.Logn;Complexities.Logn;Complexities.Logn;Complexities.Logn;Complexities.Logn;Complexities.Logn;Complexities.Logn;Complexities.Logn;Complexities.Logn;Complexities.Logn;Complexities.Logn;Complexities.Logn;Complexities.Logn;Complexities.Logn;Complexities.Logn;];]
 
