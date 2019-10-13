@@ -9,10 +9,6 @@
 open Ustring.Op
 open Msg
 open Linkedlist
-open Ocamlarray
-open Ocamlqueue
-open Ocamlstack
-open Okasakiqueue
 
 let utest = ref false           (* Set to true if unit testing is enabled *)
 let utest_ok = ref 0            (* Counts the number of successful unit tests *)
@@ -118,10 +114,6 @@ and tm_list =
 
 and sequence =
   | SeqList  of tm Linkedlist.sequence
-  | SeqQueue of tm Okasakiqueue.sequence
-  | SeqOArray of tm Ocamlarray.sequence
-  | SeqOQueue of tm Ocamlqueue.sequence
-  | SeqOStack of tm Ocamlstack.sequence
   | SeqNone
 
 and actual_fun =
@@ -138,58 +130,6 @@ and actual_fun =
   | SeqListFun11 of ((tm -> bool) -> (tm Linkedlist.sequence) -> tm)
   | SeqListFun12 of ((tm -> bool) -> (tm Linkedlist.sequence) -> (tm Linkedlist.sequence))
   | SeqListFun13 of ((tm -> tm -> tm) -> tm -> (tm Linkedlist.sequence) -> tm)
-  | SeqQueueFun1 of ((tm Okasakiqueue.sequence) -> (tm Okasakiqueue.sequence) -> (tm Okasakiqueue.sequence))
-  | SeqQueueFun2 of ((tm Okasakiqueue.sequence) -> int)
-  | SeqQueueFun3 of ((tm Okasakiqueue.sequence) -> tm -> (tm Okasakiqueue.sequence))
-  | SeqQueueFun4 of ((tm Okasakiqueue.sequence) -> bool)
-  | SeqQueueFun5 of ((tm Okasakiqueue.sequence) -> tm)
-  | SeqQueueFun6 of ((tm Okasakiqueue.sequence) -> (tm Okasakiqueue.sequence))
-  | SeqQueueFun7 of ((tm Okasakiqueue.sequence) -> int -> tm)
-  | SeqQueueFun8 of ((tm Okasakiqueue.sequence) -> int -> (tm Okasakiqueue.sequence))
-  | SeqQueueFun9 of ((tm -> tm) -> (tm Okasakiqueue.sequence) -> (tm Okasakiqueue.sequence))
-  | SeqQueueFun10 of ((tm -> bool) -> (tm Okasakiqueue.sequence) -> bool)
-  | SeqQueueFun11 of ((tm -> bool) -> (tm Okasakiqueue.sequence) -> tm)
-  | SeqQueueFun12 of ((tm -> bool) -> (tm Okasakiqueue.sequence) -> (tm Okasakiqueue.sequence))
-  | SeqQueueFun13 of ((tm -> tm -> tm) -> tm -> (tm Okasakiqueue.sequence) -> tm)
-  | SeqOArrayFun1 of ((tm Ocamlarray.sequence) -> (tm Ocamlarray.sequence) -> (tm Ocamlarray.sequence))
-  | SeqOArrayFun2 of ((tm Ocamlarray.sequence) -> int)
-  | SeqOArrayFun3 of ((tm Ocamlarray.sequence) -> tm -> (tm Ocamlarray.sequence))
-  | SeqOArrayFun4 of ((tm Ocamlarray.sequence) -> bool)
-  | SeqOArrayFun5 of ((tm Ocamlarray.sequence) -> tm)
-  | SeqOArrayFun6 of ((tm Ocamlarray.sequence) -> (tm Ocamlarray.sequence))
-  | SeqOArrayFun7 of ((tm Ocamlarray.sequence) -> int -> tm)
-  | SeqOArrayFun8 of ((tm Ocamlarray.sequence) -> int -> (tm Ocamlarray.sequence))
-  | SeqOArrayFun9 of ((tm -> tm) -> (tm Ocamlarray.sequence) -> (tm Ocamlarray.sequence))
-  | SeqOArrayFun10 of ((tm -> bool) -> (tm Ocamlarray.sequence) -> bool)
-  | SeqOArrayFun11 of ((tm -> bool) -> (tm Ocamlarray.sequence) -> tm)
-  | SeqOArrayFun12 of ((tm -> bool) -> (tm Ocamlarray.sequence) -> (tm Ocamlarray.sequence))
-  | SeqOArrayFun13 of ((tm -> tm -> tm) -> tm -> (tm Ocamlarray.sequence) -> tm)
-  | SeqOQueueFun1 of ((tm Ocamlqueue.sequence) -> (tm Ocamlqueue.sequence) -> (tm Ocamlqueue.sequence))
-  | SeqOQueueFun2 of ((tm Ocamlqueue.sequence) -> int)
-  | SeqOQueueFun3 of ((tm Ocamlqueue.sequence) -> tm -> (tm Ocamlqueue.sequence))
-  | SeqOQueueFun4 of ((tm Ocamlqueue.sequence) -> bool)
-  | SeqOQueueFun5 of ((tm Ocamlqueue.sequence) -> tm)
-  | SeqOQueueFun6 of ((tm Ocamlqueue.sequence) -> (tm Ocamlqueue.sequence))
-  | SeqOQueueFun7 of ((tm Ocamlqueue.sequence) -> int -> tm)
-  | SeqOQueueFun8 of ((tm Ocamlqueue.sequence) -> int -> (tm Ocamlqueue.sequence))
-  | SeqOQueueFun9 of ((tm -> tm) -> (tm Ocamlqueue.sequence) -> (tm Ocamlqueue.sequence))
-  | SeqOQueueFun10 of ((tm -> bool) -> (tm Ocamlqueue.sequence) -> bool)
-  | SeqOQueueFun11 of ((tm -> bool) -> (tm Ocamlqueue.sequence) -> tm)
-  | SeqOQueueFun12 of ((tm -> bool) -> (tm Ocamlqueue.sequence) -> (tm Ocamlqueue.sequence))
-  | SeqOQueueFun13 of ((tm -> tm -> tm) -> tm -> (tm Ocamlqueue.sequence) -> tm)
-  | SeqOStackFun1 of ((tm Ocamlstack.sequence) -> (tm Ocamlstack.sequence) -> (tm Ocamlstack.sequence))
-  | SeqOStackFun2 of ((tm Ocamlstack.sequence) -> int)
-  | SeqOStackFun3 of ((tm Ocamlstack.sequence) -> tm -> (tm Ocamlstack.sequence))
-  | SeqOStackFun4 of ((tm Ocamlstack.sequence) -> bool)
-  | SeqOStackFun5 of ((tm Ocamlstack.sequence) -> tm)
-  | SeqOStackFun6 of ((tm Ocamlstack.sequence) -> (tm Ocamlstack.sequence))
-  | SeqOStackFun7 of ((tm Ocamlstack.sequence) -> int -> tm)
-  | SeqOStackFun8 of ((tm Ocamlstack.sequence) -> int -> (tm Ocamlstack.sequence))
-  | SeqOStackFun9 of ((tm -> tm) -> (tm Ocamlstack.sequence) -> (tm Ocamlstack.sequence))
-  | SeqOStackFun10 of ((tm -> bool) -> (tm Ocamlstack.sequence) -> bool)
-  | SeqOStackFun11 of ((tm -> bool) -> (tm Ocamlstack.sequence) -> tm)
-  | SeqOStackFun12 of ((tm -> bool) -> (tm Ocamlstack.sequence) -> (tm Ocamlstack.sequence))
-  | SeqOStackFun13 of ((tm -> tm -> tm) -> tm -> (tm Ocamlstack.sequence) -> tm)
   | SeqFunNone
 
 (* Terms / expressions *)

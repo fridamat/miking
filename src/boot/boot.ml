@@ -13,17 +13,12 @@ open Utils
 open Ustring.Op
 open Printf
 open Ast
+open Comparers
 open Msg
 open Pprint
 open Linkedlist
 open Frequencies
 open Dssa
-(*open Testseqprocessing*)
-open Okasakiqueue
-open Ocamlarray
-open Ocamlqueue
-open Ocamlstack
-open Comparers
 
 let prog_argv = ref []          (* Argv for the program that is executed *)
 
@@ -127,14 +122,6 @@ let get_list_from_seqlist seql =
   match seql with
   | SeqList(ll) ->
     Linkedlist.to_list ll
-  | SeqQueue(q) ->
-    Okasakiqueue.to_list q
-  | SeqOArray(a) ->
-    Ocamlarray.to_list a
-  | SeqOQueue(q) ->
-    Ocamlqueue.to_list q
-  | SeqOStack(s) ->
-    Ocamlstack.to_list s
   | _ -> failwith "Sequence type not implemented"
 
 (* Check if two value terms are equal *)
@@ -557,155 +544,6 @@ let rec eval env t =
      | "foldl", SeqListFun13(f), [TmClos(clos_ti,x,clos_ty,clos_tm,clos_env,clos_pemode); b; TmSeq(seq_ti,ty_ident,tm_list,SeqList(l),ds_choice)] ->
        let foldl_f b' e = eval env' (TmApp(seq_ti,TmApp(seq_ti,TmLam(clos_ti,x,clos_ty,clos_tm),b'),e)) in
        f foldl_f b l
-     (*Queue*)
-     | "is_empty", SeqQueueFun4(f), [TmSeq(ti,ty_ident,tm_list,SeqQueue(l),ds_choice)] ->
-       TmConst(ti,CBool(f l))
-     | "first", SeqQueueFun5(f), [TmSeq(ti,ty_ident,tm_list,SeqQueue(l),ds_choice)] ->
-       f l
-     | "last", SeqQueueFun5(f), [TmSeq(ti,ty_ident,tm_list,SeqQueue(l),ds_choice)] ->
-       f l
-     | "push", SeqQueueFun3(f), [TmSeq(seq_ti,ty_ident,tm_l,SeqQueue(l),ds_choice); e] ->
-       let _ = check_element_type (Typesys.getType (TmSeq(seq_ti,ty_ident,tm_l,SeqQueue(l),ds_choice))) (Typesys.getType e) in
-       TmSeq(ti,ty_ident,tm_l,SeqQueue(f l e),ds_choice)
-     | "pop", SeqQueueFun6(f), [TmSeq(ti,ty_ident,tm_list,SeqQueue(l),ds_choice)] ->
-       TmSeq(ti,ty_ident,tm_list,SeqQueue(f l),ds_choice)
-     | "length", SeqQueueFun2(f), [TmSeq(_,_,_,SeqQueue(l),ds_choice)] ->
-       TmConst(ti,CInt(f l))
-     | "nth", SeqQueueFun7(f), [TmSeq(seq_ti,ty_ident,tm_list,SeqQueue(l),ds_choice); TmConst(const_ty,CInt(n))] ->
-       f l n
-     | "append", SeqQueueFun1(f), [TmSeq(ti1,ty_ident1,tmlist1,SeqQueue(l1),ds_choice1); TmSeq(ti2,ty_ident2,tmlist2,SeqQueue(l2),ds_choice2)] ->
-       let _ = check_element_type (Typesys.getType (TmSeq(ti1,ty_ident1,tmlist1,SeqQueue(l1),ds_choice1))) (Typesys.getType (TmSeq(ti2,ty_ident2,tmlist2,SeqQueue(l2),ds_choice2))) in
-       TmSeq(ti,ty_ident1,tmlist1,SeqQueue(f l1 l2),ds_choice1)
-     | "reverse", SeqQueueFun6(f), [TmSeq(ti,ty_ident,tm_list,SeqQueue(l),ds_choice)] ->
-       TmSeq(ti,ty_ident,tm_list,SeqQueue(f l),ds_choice)
-     | "push_last", SeqQueueFun3(f), [TmSeq(seq_ti,ty_ident,tm_l,SeqQueue(l),ds_choice); e] ->
-       let _ = check_element_type (Typesys.getType (TmSeq(seq_ti,ty_ident,tm_l,SeqQueue(l),ds_choice))) (Typesys.getType e) in
-       TmSeq(ti,ty_ident,tm_l,SeqQueue(f l e),ds_choice)
-     | "pop_last", SeqQueueFun6(f), [TmSeq(ti,ty_ident,tm_list,SeqQueue(l),ds_choice)] ->
-       TmSeq(ti,ty_ident,tm_list,SeqQueue(f l),ds_choice)
-     | "take", SeqQueueFun8(f), [TmSeq(ti,ty_ident,tm_list,SeqQueue(l),ds_choice); TmConst(const_ti,CInt(n))] ->
-       TmSeq(ti,ty_ident,tm_list,SeqQueue(f l n),ds_choice)
-     | "drop", SeqQueueFun8(f), [TmSeq(ti,ty_ident,tm_list,SeqQueue(l),ds_choice); TmConst(const_ti,CInt(n))] ->
-       TmSeq(ti,ty_ident,tm_list,SeqQueue(f l n),ds_choice)
-     | "map", SeqQueueFun9(f), [TmClos(clos_ti,x,clos_ty,clos_tm,clos_env,clos_pemode); TmSeq(seq_ti,ty_ident,tm_list,SeqQueue(l),ds_choice)] ->
-       (*TODO: Check type of element against lam_ty for those below*)
-       (*TODO: Check return type of list for those below*)
-       let map_f e = (eval env' (TmApp(seq_ti,TmLam(clos_ti,x,clos_ty,clos_tm),e))) in
-       TmSeq(seq_ti,ty_ident,tm_list,SeqQueue(f map_f l),ds_choice)
-     | "any", SeqQueueFun10(f), [TmClos(clos_ti,x,clos_ty,clos_tm,clos_env,clos_pemode); TmSeq(seq_ti,ty_ident,tm_list,SeqQueue(l),ds_choice)] ->
-       let any_f e =
-         (match eval env' (TmApp(seq_ti,TmLam(clos_ti,x,clos_ty,clos_tm),e))
-          with
-          | TmConst(_,CBool(b)) ->
-            b
-          | _ -> failwith "Wrong return type of any function") in
-       TmConst(seq_ti,CBool(f any_f l))
-     | "seqall", SeqQueueFun10(f), [TmClos(clos_ti,x,clos_ty,clos_tm,clos_env,clos_pemode); TmSeq(seq_ti,ty_ident,tm_list,SeqQueue(l),ds_choice)] ->
-       let all_f e =
-         (match eval env' (TmApp(seq_ti,TmLam(clos_ti,x,clos_ty,clos_tm),e))
-          with
-          | TmConst(_,CBool(b)) ->
-            b
-          | _ -> failwith "Wrong return type of any function") in
-       TmConst(seq_ti,CBool(f all_f l))
-     | "find", SeqQueueFun11(f), [TmClos(clos_ti,x,clos_ty,clos_tm,clos_env,clos_pemode); TmSeq(seq_ti,ty_ident,tm_list,SeqQueue(l),ds_choice)] ->
-       let find_f e =
-         (match eval env' (TmApp(seq_ti,TmLam(clos_ti,x,clos_ty,clos_tm),e))
-          with
-          | TmConst(_,CBool(b)) ->
-            b
-          | _ -> failwith "Wrong return type of any function") in
-       f find_f l
-     | "filter", SeqQueueFun12(f), [TmClos(clos_ti,x,clos_ty,clos_tm,clos_env,clos_pemode); TmSeq(seq_ti,ty_ident,tm_list,SeqQueue(l),ds_choice)] ->
-       let filter_f e =
-         (match eval env' (TmApp(seq_ti,TmLam(clos_ti,x,clos_ty,clos_tm),e))
-          with
-          | TmConst(_,CBool(b)) ->
-            b
-          | _ -> failwith "Wrong return type of any function") in
-       TmSeq(seq_ti,ty_ident,tm_list,SeqQueue(f filter_f l),ds_choice)
-     | "foldr", SeqQueueFun13(f), [TmClos(clos_ti,x,clos_ty,clos_tm,clos_env,clos_pemode); b; TmSeq(seq_ti,ty_ident,tm_list,SeqQueue(l),ds_choice)] ->
-       let foldr_f b' e = eval env' (TmApp(seq_ti,TmApp(seq_ti,TmLam(clos_ti,x,clos_ty,clos_tm),b'),e)) in
-       f foldr_f b l
-     | "foldl", SeqQueueFun13(f), [TmClos(clos_ti,x,clos_ty,clos_tm,clos_env,clos_pemode); b; TmSeq(seq_ti,ty_ident,tm_list,SeqQueue(l),ds_choice)] ->
-       let foldl_f b' e = eval env' (TmApp(seq_ti,TmApp(seq_ti,TmLam(clos_ti,x,clos_ty,clos_tm),b'),e)) in
-       f foldl_f b l
-     (*OCaml Array*)
-     | "is_empty", SeqOArrayFun4(f), [TmSeq(ti,ty_ident,tm_list,SeqOArray(l),ds_choice)] ->
-       TmConst(ti,CBool(f l))
-     | "first", SeqOArrayFun5(f), [TmSeq(ti,ty_ident,tm_list,SeqOArray(l),ds_choice)] ->
-       f l
-     | "last", SeqOArrayFun5(f), [TmSeq(ti,ty_ident,tm_list,SeqOArray(l),ds_choice)] ->
-       f l
-     | "push", SeqOArrayFun3(f), [TmSeq(seq_ti,ty_ident,tm_l,SeqOArray(l),ds_choice); e] ->
-       let _ = check_element_type (Typesys.getType (TmSeq(seq_ti,ty_ident,tm_l,SeqOArray(l),ds_choice))) (Typesys.getType e) in
-       TmSeq(ti,ty_ident,tm_l,SeqOArray(f l e),ds_choice)
-     | "pop", SeqOArrayFun6(f), [TmSeq(ti,ty_ident,tm_list,SeqOArray(l),ds_choice)] ->
-       TmSeq(ti,ty_ident,tm_list,SeqOArray(f l),ds_choice)
-     | "length", SeqOArrayFun2(f), [TmSeq(_,_,_,SeqOArray(l),ds_choice)] ->
-       TmConst(ti,CInt(f l))
-     | "nth", SeqOArrayFun7(f), [TmSeq(seq_ti,ty_ident,tm_list,SeqOArray(l),ds_choice); TmConst(const_ty,CInt(n))] ->
-       f l n
-     | "append", SeqOArrayFun1(f), [TmSeq(ti1,ty_ident1,tmlist1,SeqOArray(l1),ds_choice1); TmSeq(ti2,ty_ident2,tmlist2,SeqOArray(l2),ds_choice2)] ->
-       let _ = check_element_type (Typesys.getType (TmSeq(ti1,ty_ident1,tmlist1,SeqOArray(l1),ds_choice1))) (Typesys.getType (TmSeq(ti2,ty_ident2,tmlist2,SeqOArray(l2),ds_choice2))) in
-       TmSeq(ti,ty_ident1,tmlist1,SeqOArray(f l1 l2),ds_choice1)
-     | "reverse", SeqOArrayFun6(f), [TmSeq(ti,ty_ident,tm_list,SeqOArray(l),ds_choice)] ->
-       TmSeq(ti,ty_ident,tm_list,SeqOArray(f l),ds_choice)
-     | "push_last", SeqOArrayFun3(f), [TmSeq(seq_ti,ty_ident,tm_l,SeqOArray(l),ds_choice); e] ->
-       let _ = check_element_type (Typesys.getType (TmSeq(seq_ti,ty_ident,tm_l,SeqOArray(l),ds_choice))) (Typesys.getType e) in
-       TmSeq(ti,ty_ident,tm_l,SeqOArray(f l e),ds_choice)
-     | "pop_last", SeqOArrayFun6(f), [TmSeq(ti,ty_ident,tm_list,SeqOArray(l),ds_choice)] ->
-       TmSeq(ti,ty_ident,tm_list,SeqOArray(f l),ds_choice)
-     | "take", SeqOArrayFun8(f), [TmSeq(ti,ty_ident,tm_list,SeqOArray(l),ds_choice); TmConst(const_ti,CInt(n))] ->
-       TmSeq(ti,ty_ident,tm_list,SeqOArray(f l n),ds_choice)
-     | "drop", SeqOArrayFun8(f), [TmSeq(ti,ty_ident,tm_list,SeqOArray(l),ds_choice); TmConst(const_ti,CInt(n))] ->
-       TmSeq(ti,ty_ident,tm_list,SeqOArray(f l n),ds_choice)
-     | "map", SeqOArrayFun9(f), [TmClos(clos_ti,x,clos_ty,clos_tm,clos_env,clos_pemode); TmSeq(seq_ti,ty_ident,tm_list,SeqOArray(l),ds_choice)] ->
-       (*TODO: Check type of element against lam_ty for those below*)
-       (*TODO: Check return type of list for those below*)
-       let map_f e = (eval env' (TmApp(seq_ti,TmLam(clos_ti,x,clos_ty,clos_tm),e))) in
-       TmSeq(seq_ti,ty_ident,tm_list,SeqOArray(f map_f l),ds_choice)
-     | "any", SeqOArrayFun10(f), [TmClos(clos_ti,x,clos_ty,clos_tm,clos_env,clos_pemode); TmSeq(seq_ti,ty_ident,tm_list,SeqOArray(l),ds_choice)] ->
-       let any_f e =
-         (match eval env' (TmApp(seq_ti,TmLam(clos_ti,x,clos_ty,clos_tm),e))
-          with
-          | TmConst(_,CBool(b)) ->
-            b
-          | _ -> failwith "Wrong return type of any function") in
-       TmConst(seq_ti,CBool(f any_f l))
-     | "seqall", SeqOArrayFun10(f), [TmClos(clos_ti,x,clos_ty,clos_tm,clos_env,clos_pemode); TmSeq(seq_ti,ty_ident,tm_list,SeqOArray(l),ds_choice)] ->
-       let all_f e =
-         (match eval env' (TmApp(seq_ti,TmLam(clos_ti,x,clos_ty,clos_tm),e))
-          with
-          | TmConst(_,CBool(b)) ->
-            b
-          | _ -> failwith "Wrong return type of any function") in
-       TmConst(seq_ti,CBool(f all_f l))
-     | "find", SeqOArrayFun11(f),
-      [TmClos(clos_ti,x,clos_ty,clos_tm,clos_env,clos_pemode); TmSeq(seq_ti,ty_ident,tm_list,SeqOArray(l),ds_choice)] ->
-       let find_f e =
-         (match eval env' (TmApp(seq_ti,TmLam(clos_ti,x,clos_ty,clos_tm),e))
-          with
-          | TmConst(_,CBool(b)) ->
-            b
-          | _ -> failwith "Wrong return type of any function") in
-       f find_f l
-     | "filter", SeqOArrayFun12(f), [TmClos(clos_ti,x,clos_ty,clos_tm,clos_env,clos_pemode); TmSeq(seq_ti,ty_ident,tm_list,SeqOArray(l),ds_choice)] ->
-       let filter_f e =
-         (match eval env' (TmApp(seq_ti,TmLam(clos_ti,x,clos_ty,clos_tm),e))
-          with
-          | TmConst(_,CBool(b)) ->
-            b
-          | _ -> failwith "Wrong return type of any function") in
-       TmSeq(seq_ti,ty_ident,tm_list,SeqOArray(f filter_f l),ds_choice)
-     | "foldr", SeqOArrayFun13(f),
-      [TmClos(clos_ti,x,clos_ty,clos_tm,clos_env,clos_pemode); b; TmSeq(seq_ti,ty_ident,tm_list,SeqOArray(l),ds_choice)] ->
-       let foldr_f b' e = eval env'
-          (TmApp(seq_ti,TmApp(seq_ti,TmLam(clos_ti,x,clos_ty,clos_tm),b'),e)) in
-       f foldr_f b l
-     | "foldl", SeqOArrayFun13(f), [TmClos(clos_ti,x,clos_ty,clos_tm,clos_env,clos_pemode); b; TmSeq(seq_ti,ty_ident,tm_list,SeqOArray(l),ds_choice)] ->
-       let foldl_f b' e = eval env' (TmApp(seq_ti,TmApp(seq_ti,TmLam(clos_ti,x,clos_ty,clos_tm),b'),e)) in
-       f foldl_f b l
      | _, SeqFunNone, _ ->
        let str = "No method type has been set" in
        failwith str
@@ -724,41 +562,9 @@ let rec eval env t =
        let upd_first = eval env (Linkedlist.first ll) in
        let ll_tl = Linkedlist.drop ll 1 in
        eval_linkedlist_elements ll_tl (Linkedlist.push_last upd_ll upd_first)) in
-  let rec eval_queue_elements q upd_q =
-    (if Okasakiqueue.is_empty q then
-       upd_q
-     else
-       let upd_first = eval env (Okasakiqueue.first q) in
-       let q_tl = Okasakiqueue.drop q 1 in
-       eval_queue_elements q_tl (Okasakiqueue.push_last upd_q upd_first)) in
-  let rec eval_oarray_elements a upd_a =
-    (if Ocamlarray.is_empty a then
-       upd_a
-     else
-       let upd_first = eval env (Ocamlarray.first a) in
-       let a_tl = Ocamlarray.drop a 1 in
-       eval_oarray_elements a_tl (Ocamlarray.push_last upd_a upd_first)) in
-  let rec eval_oqueue_elements q upd_q =
-    (if Ocamlqueue.is_empty q then
-       upd_q
-     else
-       let upd_first = eval env (Ocamlqueue.first q) in
-       let q_tl = Ocamlqueue.drop q 1 in
-       eval_oqueue_elements q_tl (Ocamlqueue.push_last upd_q upd_first)) in
-  let rec eval_ostack_elements s upd_s =
-    (if Ocamlstack.is_empty s then
-       upd_s
-     else
-       let upd_first = eval env (Ocamlstack.first s) in
-       let s_tl = Ocamlstack.drop s 1 in
-       eval_ostack_elements s_tl (Ocamlstack.push_last upd_s upd_first)) in
   let eval_sequence_elements seq =
     (match seq with
      | SeqList(ll) -> SeqList(eval_linkedlist_elements ll (Linkedlist.empty))
-     | SeqQueue(q) -> SeqQueue(eval_queue_elements q (Okasakiqueue.empty))
-     | SeqOArray(a) -> SeqOArray(eval_oarray_elements a (Ocamlarray.empty))
-     | SeqOQueue(q) -> SeqOQueue(eval_oqueue_elements q (Ocamlqueue.empty))
-     | SeqOStack(s) -> SeqOStack(eval_ostack_elements s (Ocamlstack.empty))
      | _ -> failwith "Not implemented yet") in
   debug_eval env t;
   match t with
