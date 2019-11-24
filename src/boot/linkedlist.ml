@@ -7,8 +7,8 @@ exception NotFound
 module Linkedlist : Sequence = struct
   (* Constructors *)
   type 'a linkedlist =
-   | Nil
-   | Cons of 'a * 'a linkedlist
+    | Nil
+    | Cons of 'a * 'a linkedlist
 
   type 'a sequence = 'a linkedlist
 
@@ -22,7 +22,7 @@ module Linkedlist : Sequence = struct
     | Cons(hd,tl) -> hd::(to_list tl)
 
   (* Helper methods *)
-    let rec reverse_helper l rev_l = match l with
+  let rec reverse_helper l rev_l = match l with
     | Nil -> rev_l
     | Cons(hd, tl) -> reverse_helper tl (Cons(hd, rev_l))
 
@@ -44,10 +44,14 @@ module Linkedlist : Sequence = struct
   let rec length = function
     | Nil -> 0
     | Cons(_, tl) -> 1 + length tl
-  let rec nth l n = match (l, n) with (*TODO Check if n <= 0*)
+  let rec nth l n = match (l, n) with
     | (Nil, _) -> raise IndexOutOfBounds
     | (Cons(hd,_), 0) -> hd
-    | (Cons(_,tl), _) -> nth tl (n-1)
+    | (Cons(_,tl), _) ->
+      if (n < 0) then
+        raise IndexOutOfBounds
+      else
+        nth tl (n-1)
   let rec append l1 l2 = match l1 with
     | Nil -> l2
     | Cons(hd,tl) -> Cons(hd, (append tl l2))
@@ -63,20 +67,32 @@ module Linkedlist : Sequence = struct
     | Nil, _ -> raise IndexOutOfBounds
     | _, 0 -> Nil
     | Cons(hd,_), 1 -> Cons(hd, Nil)
-    | Cons(hd,tl), _ -> Cons(hd, (take tl (n-1)))
+    | Cons(hd,tl), _ ->
+      if (n < 0) then
+        raise IndexOutOfBounds
+      else
+        Cons(hd, (take tl (n-1)))
   let rec drop l n = match l, n with
     | _, 0 -> l
     | Nil, _ -> raise IndexOutOfBounds
-    | Cons(_,tl), _ -> drop tl (n-1)
+    | Cons(_,tl), _ ->
+      if (n < 0) then
+        raise IndexOutOfBounds
+      else
+        drop tl (n-1)
   let rec map f = function
     | Nil -> Nil
     | Cons(hd, tl) -> Cons(f hd, map f tl)
   let rec any p = function
     | Nil -> false
     | Cons(hd, tl) -> p hd || any p tl
-  let rec all p = function
+  let rec all_helper p l =
+    match l with
     | Nil -> true
-    | Cons(hd, tl) -> p hd && all p tl
+    | Cons(hd, tl) -> p hd && all_helper p tl
+  let all p = function
+    | Nil -> false
+    | l -> all_helper p l
   let rec find p = function
     | Nil -> raise NotFound
     | Cons(hd, tl) ->
@@ -95,15 +111,9 @@ module Linkedlist : Sequence = struct
   let rec foldl f acc = function
     | Nil -> acc
     | Cons(hd, tl) -> foldl f (f acc hd) tl
-  let rec equals l1 l2 =
-    match l1, l2 with
-    | Nil, Nil -> true
-    | Nil, _ | _, Nil -> false
-    | Cons(hd1,tl1), Cons(hd2,tl2) ->
-      if hd1 == hd2 then
-        equals tl1 tl2
-      else
-        false
+  (*WC: O(1)*)
+  let copy l =
+    l
 end
 
 open Linkedlist
