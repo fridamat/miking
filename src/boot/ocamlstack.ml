@@ -24,8 +24,7 @@ module Ocamlstack : Sequence = struct
   (*WC: O(N)*)
   let from_list l =
     match l with
-    | [] ->
-      Sta(Stack.create()) (*O(1)*)
+    | [] -> Nil (*O(1)*)
     | _ ->
       let s = Stack.create() in (*O(1)*)
       Sta(from_list_helper l s) (*O(N)*)
@@ -42,7 +41,8 @@ module Ocamlstack : Sequence = struct
     match s with
     | Nil -> []
     | Sta(s') ->
-      to_list_helper s' (*O(N)*)
+      let copy_s = Stack.copy s' in (*O(N)*)
+      to_list_helper copy_s (*O(N)*)
 
   (*WC: O(1)*)
   let empty = Nil
@@ -54,12 +54,16 @@ module Ocamlstack : Sequence = struct
     | Sta(s') ->
       Stack.is_empty s' (*O(1)*)
 
-  (*WC: O(1)*)
+  (*WC: O(N)*)
   let first s =
     match s with
     | Nil -> raise Empty
     | Sta(s') ->
-      Stack.top s' (*O(1)*)
+      if Stack.is_empty s' then
+        raise Empty
+      else
+        let copy_s = Stack.copy s' in (*O(N)*)
+        Stack.top copy_s (*O(1)*)
 
   (*WC: Each recursive call costs O(1) => O(N)*)
   let rec last_helper s s_len i =
@@ -73,9 +77,13 @@ module Ocamlstack : Sequence = struct
     match s with
     | Nil -> raise Empty
     | Sta(s') ->
-      last_helper s' (Stack.length s') 0 (*Length: O(N), method call: O(N)*)
+      if Stack.is_empty s' then
+        raise Empty
+      else
+        let copy_s = Stack.copy s' in (*O(N)*)
+        last_helper copy_s (Stack.length copy_s) 0 (*Length: O(N), method call: O(N)*)
 
-  (*WC: O(1)*)
+  (*WC: O(N)*)
   let push s e =
     match s with
     | Nil ->
@@ -83,16 +91,21 @@ module Ocamlstack : Sequence = struct
       let _ = Stack.push e s' in (*O(1)*)
       Sta(s')
     | Sta(s') ->
-      let _ = Stack.push e s' in (*O(1)*)
-      Sta(s')
+      let copy_s = Stack.copy s' in (*O(N)*)
+      let _ = Stack.push e copy_s in (*O(1)*)
+      Sta(copy_s)
 
-  (*WC: O(1)*)
+  (*WC: O(N)*)
   let pop s =
     match s with
     | Nil -> raise Empty
     | Sta(s') ->
-      let _ = Stack.pop s' in (*O(1)*)
-      Sta(s')
+      if Stack.is_empty s' then
+        raise Empty
+      else
+        let copy_s = Stack.copy s' in (*O(N)*)
+        let _ = Stack.pop copy_s in (*O(1)*)
+        Sta(copy_s)
 
   (*WC: O(N)*)
   let length s =
@@ -111,9 +124,13 @@ module Ocamlstack : Sequence = struct
   (*WC: O(N)*)
   let nth s n =
     match s with
-    | Nil -> raise Empty
+    | Nil -> raise IndexOutOfBounds
     | Sta(s') ->
-      nth_helper s' n (*O(N)*)
+      if (n < 0) || (n >= Stack.length s') then
+        raise IndexOutOfBounds
+      else
+        let copy_s = Stack.copy s' in (*O(N)*)
+        nth_helper copy_s n (*O(N)*)
 
   (*WC: Each recursive call costs O(1) => O(N)*)
   let rec append_helper s1 s2 =
@@ -131,7 +148,9 @@ module Ocamlstack : Sequence = struct
     | Nil, _ -> s2 (*O(1)*)
     | _, Nil -> s1 (*O(1)*)
     | Sta(s1'), Sta(s2') ->
-      Sta(append_helper s1' s2') (*O(N)*)
+      let copy_s1 = Stack.copy s1' in (*O(N)*)
+      let copy_s2 = Stack.copy s2' in (*O(N)*)
+      Sta(append_helper copy_s1 copy_s2) (*O(N)*)
 
   (*WC: Each recursive call costs O(1) => O(N)*)
   let rec reverse_helper s new_s =
@@ -146,8 +165,9 @@ module Ocamlstack : Sequence = struct
     match s with
     | Nil -> Nil
     | Sta(s') ->
-      let new_s = Stack.create() in (*=(1)*)
-      Sta(reverse_helper s' new_s) (*O(N)*)
+      let new_s = Stack.create() in (*O(1)*)
+      let copy_s = Stack.copy s' in (*O(N)*)
+      Sta(reverse_helper copy_s new_s) (*O(N)*)
 
   (*WC: O(N)*)
   let push_last s e =
@@ -159,7 +179,8 @@ module Ocamlstack : Sequence = struct
     | Sta(s') ->
       let new_s = Stack.create() in (*O(1)*)
       let _ = Stack.push e new_s in (*O(1)*)
-      append (Sta(s')) (Sta(new_s)) (*O(N)*)
+      let copy_s = Stack.copy s' in (*O(N)*)
+      append (Sta(copy_s)) (Sta(new_s)) (*O(N)*)
 
   (*WC: Each recursive call costs O(1) => O(N)*)
   let rec pop_last_helper s new_s s_len i =
@@ -175,8 +196,12 @@ module Ocamlstack : Sequence = struct
     match s with
     | Nil -> raise Empty
     | Sta(s') ->
-      let new_s = Stack.create() in (*O(1)*)
-      Sta(pop_last_helper s' new_s (Stack.length s') 0) (*Length: O(1), method call: O(N)*)
+      if Stack.is_empty s' then
+        raise Empty
+      else
+        let new_s = Stack.create() in (*O(1)*)
+        let s_copy = Stack.copy s' in (*O(N)*)
+        Sta(pop_last_helper s_copy new_s (Stack.length s') 0) (*Length: O(1), method call: O(N)*)
 
   (*WC: Each recursive call costs O(1) => O(N)*)
   let rec take_helper s new_s n i =
@@ -194,10 +219,14 @@ module Ocamlstack : Sequence = struct
       if (n == 0) then
         Nil
       else
-        raise Empty
+        raise IndexOutOfBounds
     | Sta(s') ->
-      let new_s = Stack.create() in (*O(1)*)
-      Sta(take_helper s' new_s n 0) (*O(N)*)
+      if (n < 0) || (n > Stack.length s') then
+        raise IndexOutOfBounds
+      else
+        let new_s = Stack.create() in (*O(1)*)
+        let copy_s = Stack.copy s' in (*O(N)*)
+        Sta(take_helper copy_s new_s n 0) (*O(N)*)
 
   (*WC: Each recursive call costs O(1) => O(N)*)
   let rec drop_helper s n i =
@@ -213,9 +242,13 @@ module Ocamlstack : Sequence = struct
       if (n == 0) then
         Nil
       else
-        raise Empty
+        raise IndexOutOfBounds
     | Sta(s') ->
-      Sta(drop_helper s' n 0) (*O(N)*)
+      if Stack.is_empty s' then
+        raise IndexOutOfBounds
+      else
+        let s_copy = Stack.copy s' in (*O(N)*)
+        Sta(drop_helper s_copy n 0) (*O(N)*)
 
   (*WC: Each recursive call costs O(1) => O(N) ?Depends on the function?*)
   let rec map_helper f s new_s =
@@ -232,8 +265,12 @@ module Ocamlstack : Sequence = struct
     match s with
     | Nil -> Nil
     | Sta(s') ->
-      let new_s = Stack.create() in (*O(1)*)
-      Sta(map_helper f s' new_s) (*O(N)*)
+      if Stack.is_empty s' then
+        Nil
+      else
+        let new_s = Stack.create() in (*O(1)*)
+        let copy_s = Stack.copy s' in (*O(N)*)
+        Sta(map_helper f copy_s new_s) (*O(N)*)
 
   (*WC: Each recursive call costs O(1) => O(N)*)
   let rec any_helper p s =
@@ -250,7 +287,11 @@ module Ocamlstack : Sequence = struct
     match s with
     | Nil -> false
     | Sta(s') ->
-      any_helper p s' (*O(N)*)
+      if Stack.is_empty s' then
+        false
+      else
+        let copy_s = Stack.copy s' in (*O(N)*)
+        any_helper p copy_s (*O(N)*)
 
   (*WC: Each recursive call costs O(1) => O(N)*)
   let rec all_helper p s =
@@ -264,7 +305,11 @@ module Ocamlstack : Sequence = struct
     match s with
     | Nil -> true
     | Sta(s') ->
-      all_helper p s' (*O(N)*)
+      if Stack.is_empty s' then
+        false
+      else
+        let copy_s = Stack.copy s' in (*O(N)*)
+        all_helper p copy_s (*O(N)*)
 
   (*WC: Each recursive call costs O(1) => O(N) ?Depends on the function?*)
   let rec find_helper p s =
@@ -281,7 +326,8 @@ module Ocamlstack : Sequence = struct
     match s with
     | Nil -> raise NotFound
     | Sta(s') ->
-      find_helper p s' (*O(N)*)
+      let copy_s = Stack.copy s' in (*O(N)*)
+      find_helper p copy_s (*O(N)*)
 
   (*WC: Each recursive call costs O(1) => O(N) ?Depends on the function? ?Am I right with two recursive calls?*)
   let rec filter_helper p s new_s =
@@ -301,7 +347,8 @@ module Ocamlstack : Sequence = struct
     | Nil -> Nil
     | Sta(s') ->
       let new_s = Stack.create() in (*O(1)*)
-      Sta(filter_helper p s' new_s) (*O(N) ???*)
+      let copy_s = Stack.copy s' in (*O(N)*)
+      Sta(filter_helper p copy_s new_s) (*O(N) ???*)
 
   (*WC: Each recursive call costs O(1) => O(N) ?Depends on the function?*)
   let rec foldr_helper f acc s =
@@ -315,7 +362,11 @@ module Ocamlstack : Sequence = struct
     match s with
     | Nil -> raise Empty
     | Sta(s') ->
-      foldr_helper f acc s' (*O(N)*)
+      if Stack.is_empty s' then
+        acc
+      else
+        let s_copy = Stack.copy s' in (*O(N)*)
+        foldr_helper f acc s_copy (*O(N)*)
 
   (*WC: Each recursive call costs O(1) => O(N) ?Depends on the function?*)
   let rec foldl_helper f acc s =
@@ -329,7 +380,19 @@ module Ocamlstack : Sequence = struct
     match s with
     | Nil -> raise Empty
     | Sta(s') ->
-      foldl_helper f acc s' (*O(N)*)
+      if Stack.is_empty s' then
+        acc
+      else
+        let s_copy = Stack.copy s' in
+        foldl_helper f acc s_copy (*O(N)*)
+
+  (*WC: O(N)*)
+  let copy s =
+    match s with
+    | Nil -> Nil
+    | Sta(s') ->
+      Sta(Stack.copy s')
+
 end
 
 open Ocamlstack
