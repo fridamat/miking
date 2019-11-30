@@ -712,6 +712,162 @@ let rec eval env t =
        f foldl_f b l
      | "copy", SeqOArrayFun6(f), [TmSeq(ti,ty_ident,tm_list,SeqOArray(l),ds_choice)] ->
        TmSeq(ti,ty_ident,tm_list,SeqOArray(f l),ds_choice)
+     (*OCaml Queue*)
+     | "is_empty", SeqOQueueFun4(f), [TmSeq(ti,ty_ident,tm_list,SeqOQueue(l),ds_choice)] ->
+       TmConst(ti,CBool(f l))
+     | "first", SeqOQueueFun5(f), [TmSeq(ti,ty_ident,tm_list,SeqOQueue(l),ds_choice)] ->
+       f l
+     | "last", SeqOQueueFun5(f), [TmSeq(ti,ty_ident,tm_list,SeqOQueue(l),ds_choice)] ->
+       f l
+     | "push", SeqOQueueFun3(f), [TmSeq(seq_ti,ty_ident,tm_l,SeqOQueue(l),ds_choice); e] ->
+       let _ = check_element_type (Typesys.getType (TmSeq(seq_ti,ty_ident,tm_l,SeqOQueue(l),ds_choice))) (Typesys.getType e) in
+       TmSeq(ti,ty_ident,tm_l,SeqOQueue(f l e),ds_choice)
+     | "pop", SeqOQueueFun6(f), [TmSeq(ti,ty_ident,tm_list,SeqOQueue(l),ds_choice)] ->
+       TmSeq(ti,ty_ident,tm_list,SeqOQueue(f l),ds_choice)
+     | "length", SeqOQueueFun2(f), [TmSeq(_,_,_,SeqOQueue(l),ds_choice)] ->
+       TmConst(ti,CInt(f l))
+     | "nth", SeqOQueueFun7(f), [TmSeq(seq_ti,ty_ident,tm_list,SeqOQueue(l),ds_choice); TmConst(const_ty,CInt(n))] ->
+       f l n
+     | "append", SeqOQueueFun1(f), [TmSeq(ti1,ty_ident1,tmlist1,SeqOQueue(l1),ds_choice1); TmSeq(ti2,ty_ident2,tmlist2,SeqOQueue(l2),ds_choice2)] ->
+       let _ = check_element_type (Typesys.getType (TmSeq(ti1,ty_ident1,tmlist1,SeqOQueue(l1),ds_choice1))) (Typesys.getType (TmSeq(ti2,ty_ident2,tmlist2,SeqOQueue(l2),ds_choice2))) in
+       TmSeq(ti,ty_ident1,tmlist1,SeqOQueue(f l1 l2),ds_choice1)
+     | "reverse", SeqOQueueFun6(f), [TmSeq(ti,ty_ident,tm_list,SeqOQueue(l),ds_choice)] ->
+       TmSeq(ti,ty_ident,tm_list,SeqOQueue(f l),ds_choice)
+     | "push_last", SeqOQueueFun3(f), [TmSeq(seq_ti,ty_ident,tm_l,SeqOQueue(l),ds_choice); e] ->
+       let _ = check_element_type (Typesys.getType (TmSeq(seq_ti,ty_ident,tm_l,SeqOQueue(l),ds_choice))) (Typesys.getType e) in
+       TmSeq(ti,ty_ident,tm_l,SeqOQueue(f l e),ds_choice)
+     | "pop_last", SeqOQueueFun6(f), [TmSeq(ti,ty_ident,tm_list,SeqOQueue(l),ds_choice)] ->
+       TmSeq(ti,ty_ident,tm_list,SeqOQueue(f l),ds_choice)
+     | "take", SeqOQueueFun8(f), [TmSeq(ti,ty_ident,tm_list,SeqOQueue(l),ds_choice); TmConst(const_ti,CInt(n))] ->
+       TmSeq(ti,ty_ident,tm_list,SeqOQueue(f l n),ds_choice)
+     | "drop", SeqOQueueFun8(f), [TmSeq(ti,ty_ident,tm_list,SeqOQueue(l),ds_choice); TmConst(const_ti,CInt(n))] ->
+       TmSeq(ti,ty_ident,tm_list,SeqOQueue(f l n),ds_choice)
+     | "map", SeqOQueueFun9(f), [TmClos(clos_ti,x,clos_ty,clos_tm,clos_env,clos_pemode); TmSeq(seq_ti,ty_ident,tm_list,SeqOQueue(l),ds_choice)] ->
+       (*TODO: Check type of element against lam_ty for those below*)
+       (*TODO: Check return type of list for those below*)
+       let map_f e = (eval env' (TmApp(seq_ti,TmLam(clos_ti,x,clos_ty,clos_tm),e))) in
+       TmSeq(seq_ti,ty_ident,tm_list,SeqOQueue(f map_f l),ds_choice)
+     | "any", SeqOQueueFun10(f), [TmClos(clos_ti,x,clos_ty,clos_tm,clos_env,clos_pemode); TmSeq(seq_ti,ty_ident,tm_list,SeqOQueue(l),ds_choice)] ->
+       let any_f e =
+         (match eval env' (TmApp(seq_ti,TmLam(clos_ti,x,clos_ty,clos_tm),e))
+          with
+          | TmConst(_,CBool(b)) ->
+            b
+          | _ -> failwith "Wrong return type of any function") in
+       TmConst(seq_ti,CBool(f any_f l))
+     | "seqall", SeqOQueueFun10(f), [TmClos(clos_ti,x,clos_ty,clos_tm,clos_env,clos_pemode); TmSeq(seq_ti,ty_ident,tm_list,SeqOQueue(l),ds_choice)] ->
+       let all_f e =
+         (match eval env' (TmApp(seq_ti,TmLam(clos_ti,x,clos_ty,clos_tm),e))
+          with
+          | TmConst(_,CBool(b)) ->
+            b
+          | _ -> failwith "Wrong return type of any function") in
+       TmConst(seq_ti,CBool(f all_f l))
+     | "find", SeqOQueueFun11(f),
+       [TmClos(clos_ti,x,clos_ty,clos_tm,clos_env,clos_pemode); TmSeq(seq_ti,ty_ident,tm_list,SeqOQueue(l),ds_choice)] ->
+       let find_f e =
+         (match eval env' (TmApp(seq_ti,TmLam(clos_ti,x,clos_ty,clos_tm),e))
+          with
+          | TmConst(_,CBool(b)) ->
+            b
+          | _ -> failwith "Wrong return type of any function") in
+       f find_f l
+     | "filter", SeqOQueueFun12(f), [TmClos(clos_ti,x,clos_ty,clos_tm,clos_env,clos_pemode); TmSeq(seq_ti,ty_ident,tm_list,SeqOQueue(l),ds_choice)] ->
+       let filter_f e =
+         (match eval env' (TmApp(seq_ti,TmLam(clos_ti,x,clos_ty,clos_tm),e))
+          with
+          | TmConst(_,CBool(b)) ->
+            b
+          | _ -> failwith "Wrong return type of any function") in
+       TmSeq(seq_ti,ty_ident,tm_list,SeqOQueue(f filter_f l),ds_choice)
+     | "foldr", SeqOQueueFun13(f),
+       [TmClos(clos_ti,x,clos_ty,clos_tm,clos_env,clos_pemode); b; TmSeq(seq_ti,ty_ident,tm_list,SeqOQueue(l),ds_choice)] ->
+       let foldr_f b' e = eval env'
+           (TmApp(seq_ti,TmApp(seq_ti,TmLam(clos_ti,x,clos_ty,clos_tm),b'),e)) in
+       f foldr_f b l
+     | "foldl", SeqOQueueFun13(f), [TmClos(clos_ti,x,clos_ty,clos_tm,clos_env,clos_pemode); b; TmSeq(seq_ti,ty_ident,tm_list,SeqOQueue(l),ds_choice)] ->
+       let foldl_f b' e = eval env' (TmApp(seq_ti,TmApp(seq_ti,TmLam(clos_ti,x,clos_ty,clos_tm),b'),e)) in
+       f foldl_f b l
+     | "copy", SeqOQueueFun6(f), [TmSeq(ti,ty_ident,tm_list,SeqOQueue(l),ds_choice)] ->
+       TmSeq(ti,ty_ident,tm_list,SeqOQueue(f l),ds_choice)
+     (*OCaml Stack*)
+     | "is_empty", SeqOStackFun4(f), [TmSeq(ti,ty_ident,tm_list,SeqOStack(l),ds_choice)] ->
+       TmConst(ti,CBool(f l))
+     | "first", SeqOStackFun5(f), [TmSeq(ti,ty_ident,tm_list,SeqOStack(l),ds_choice)] ->
+       f l
+     | "last", SeqOStackFun5(f), [TmSeq(ti,ty_ident,tm_list,SeqOStack(l),ds_choice)] ->
+       f l
+     | "push", SeqOStackFun3(f), [TmSeq(seq_ti,ty_ident,tm_l,SeqOStack(l),ds_choice); e] ->
+       let _ = check_element_type (Typesys.getType (TmSeq(seq_ti,ty_ident,tm_l,SeqOStack(l),ds_choice))) (Typesys.getType e) in
+       TmSeq(ti,ty_ident,tm_l,SeqOStack(f l e),ds_choice)
+     | "pop", SeqOStackFun6(f), [TmSeq(ti,ty_ident,tm_list,SeqOStack(l),ds_choice)] ->
+       TmSeq(ti,ty_ident,tm_list,SeqOStack(f l),ds_choice)
+     | "length", SeqOStackFun2(f), [TmSeq(_,_,_,SeqOStack(l),ds_choice)] ->
+       TmConst(ti,CInt(f l))
+     | "nth", SeqOStackFun7(f), [TmSeq(seq_ti,ty_ident,tm_list,SeqOStack(l),ds_choice); TmConst(const_ty,CInt(n))] ->
+       f l n
+     | "append", SeqOStackFun1(f), [TmSeq(ti1,ty_ident1,tmlist1,SeqOStack(l1),ds_choice1); TmSeq(ti2,ty_ident2,tmlist2,SeqOStack(l2),ds_choice2)] ->
+       let _ = check_element_type (Typesys.getType (TmSeq(ti1,ty_ident1,tmlist1,SeqOStack(l1),ds_choice1))) (Typesys.getType (TmSeq(ti2,ty_ident2,tmlist2,SeqOStack(l2),ds_choice2))) in
+       TmSeq(ti,ty_ident1,tmlist1,SeqOStack(f l1 l2),ds_choice1)
+     | "reverse", SeqOStackFun6(f), [TmSeq(ti,ty_ident,tm_list,SeqOStack(l),ds_choice)] ->
+       TmSeq(ti,ty_ident,tm_list,SeqOStack(f l),ds_choice)
+     | "push_last", SeqOStackFun3(f), [TmSeq(seq_ti,ty_ident,tm_l,SeqOStack(l),ds_choice); e] ->
+       let _ = check_element_type (Typesys.getType (TmSeq(seq_ti,ty_ident,tm_l,SeqOStack(l),ds_choice))) (Typesys.getType e) in
+       TmSeq(ti,ty_ident,tm_l,SeqOStack(f l e),ds_choice)
+     | "pop_last", SeqOStackFun6(f), [TmSeq(ti,ty_ident,tm_list,SeqOStack(l),ds_choice)] ->
+       TmSeq(ti,ty_ident,tm_list,SeqOStack(f l),ds_choice)
+     | "take", SeqOStackFun8(f), [TmSeq(ti,ty_ident,tm_list,SeqOStack(l),ds_choice); TmConst(const_ti,CInt(n))] ->
+       TmSeq(ti,ty_ident,tm_list,SeqOStack(f l n),ds_choice)
+     | "drop", SeqOStackFun8(f), [TmSeq(ti,ty_ident,tm_list,SeqOStack(l),ds_choice); TmConst(const_ti,CInt(n))] ->
+       TmSeq(ti,ty_ident,tm_list,SeqOStack(f l n),ds_choice)
+     | "map", SeqOStackFun9(f), [TmClos(clos_ti,x,clos_ty,clos_tm,clos_env,clos_pemode); TmSeq(seq_ti,ty_ident,tm_list,SeqOStack(l),ds_choice)] ->
+       (*TODO: Check type of element against lam_ty for those below*)
+       (*TODO: Check return type of list for those below*)
+       let map_f e = (eval env' (TmApp(seq_ti,TmLam(clos_ti,x,clos_ty,clos_tm),e))) in
+       TmSeq(seq_ti,ty_ident,tm_list,SeqOStack(f map_f l),ds_choice)
+     | "any", SeqOStackFun10(f), [TmClos(clos_ti,x,clos_ty,clos_tm,clos_env,clos_pemode); TmSeq(seq_ti,ty_ident,tm_list,SeqOStack(l),ds_choice)] ->
+       let any_f e =
+         (match eval env' (TmApp(seq_ti,TmLam(clos_ti,x,clos_ty,clos_tm),e))
+          with
+          | TmConst(_,CBool(b)) ->
+            b
+          | _ -> failwith "Wrong return type of any function") in
+       TmConst(seq_ti,CBool(f any_f l))
+     | "seqall", SeqOStackFun10(f), [TmClos(clos_ti,x,clos_ty,clos_tm,clos_env,clos_pemode); TmSeq(seq_ti,ty_ident,tm_list,SeqOStack(l),ds_choice)] ->
+       let all_f e =
+         (match eval env' (TmApp(seq_ti,TmLam(clos_ti,x,clos_ty,clos_tm),e))
+          with
+          | TmConst(_,CBool(b)) ->
+            b
+          | _ -> failwith "Wrong return type of any function") in
+       TmConst(seq_ti,CBool(f all_f l))
+     | "find", SeqOStackFun11(f),
+       [TmClos(clos_ti,x,clos_ty,clos_tm,clos_env,clos_pemode); TmSeq(seq_ti,ty_ident,tm_list,SeqOStack(l),ds_choice)] ->
+       let find_f e =
+         (match eval env' (TmApp(seq_ti,TmLam(clos_ti,x,clos_ty,clos_tm),e))
+          with
+          | TmConst(_,CBool(b)) ->
+            b
+          | _ -> failwith "Wrong return type of any function") in
+       f find_f l
+     | "filter", SeqOStackFun12(f), [TmClos(clos_ti,x,clos_ty,clos_tm,clos_env,clos_pemode); TmSeq(seq_ti,ty_ident,tm_list,SeqOStack(l),ds_choice)] ->
+       let filter_f e =
+         (match eval env' (TmApp(seq_ti,TmLam(clos_ti,x,clos_ty,clos_tm),e))
+          with
+          | TmConst(_,CBool(b)) ->
+            b
+          | _ -> failwith "Wrong return type of any function") in
+       TmSeq(seq_ti,ty_ident,tm_list,SeqOStack(f filter_f l),ds_choice)
+     | "foldr", SeqOStackFun13(f),
+       [TmClos(clos_ti,x,clos_ty,clos_tm,clos_env,clos_pemode); b; TmSeq(seq_ti,ty_ident,tm_list,SeqOStack(l),ds_choice)] ->
+       let foldr_f b' e = eval env'
+           (TmApp(seq_ti,TmApp(seq_ti,TmLam(clos_ti,x,clos_ty,clos_tm),b'),e)) in
+       f foldr_f b l
+     | "foldl", SeqOStackFun13(f), [TmClos(clos_ti,x,clos_ty,clos_tm,clos_env,clos_pemode); b; TmSeq(seq_ti,ty_ident,tm_list,SeqOStack(l),ds_choice)] ->
+       let foldl_f b' e = eval env' (TmApp(seq_ti,TmApp(seq_ti,TmLam(clos_ti,x,clos_ty,clos_tm),b'),e)) in
+       f foldl_f b l
+     | "copy", SeqOStackFun6(f), [TmSeq(ti,ty_ident,tm_list,SeqOStack(l),ds_choice)] ->
+       TmSeq(ti,ty_ident,tm_list,SeqOStack(f l),ds_choice)
      | _, SeqFunNone, _ ->
        let str = "No method type has been set" in
        failwith str

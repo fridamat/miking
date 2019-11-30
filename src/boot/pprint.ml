@@ -168,10 +168,42 @@ and pprint basic t =
       us""
     else
       (pprint false (Linkedlist.nth ll i)) ^. us"," ^. (pprint_linkedlist ll (i+1))) in
+  let rec pprint_queue ll i =
+    (if i = (Okasakiqueue.length ll) then
+       us""
+     else
+       (pprint false (Okasakiqueue.nth ll i)) ^. us"," ^. (pprint_queue ll (i+1))) in
+  let rec pprint_oarray ll i =
+    (if i = (Ocamlarray.length ll) then
+       us""
+     else
+       (pprint false (Ocamlarray.nth ll i)) ^. us"," ^. (pprint_oarray ll (i+1))) in
+  let rec pprint_oqueue ll i =
+    (if i = (Ocamlqueue.length ll) then
+       us""
+     else
+       (pprint false (Ocamlqueue.nth ll i)) ^. us"," ^. (pprint_oqueue ll (i+1))) in
+  let rec pprint_ostack ll i =
+    (if i = (Ocamlstack.length ll) then
+       us""
+     else
+       (pprint false (Ocamlstack.nth ll i)) ^. us"," ^. (pprint_ostack ll (i+1))) in
   let pprint_sequence seq =
     (match seq with
     | SeqList(s) ->
       let s_string = pprint_linkedlist s 0 in
+      s_string
+    | SeqQueue(s) ->
+      let s_string = pprint_queue s 0 in
+      s_string
+    | SeqOArray(s) ->
+      let s_string = pprint_oarray s 0 in
+      s_string
+    | SeqOQueue(s) ->
+      let s_string = pprint_oqueue s 0 in
+      s_string
+    | SeqOStack(s) ->
+      let s_string = pprint_ostack s 0 in
       s_string
     | _ -> us"") in
   let rec pprint_tm_list tm_l =
