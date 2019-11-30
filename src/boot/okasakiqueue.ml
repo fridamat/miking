@@ -137,7 +137,10 @@ module Okasakiqueue : Sequence = struct
   (*WC:O(N)*)
   let all b = function
     | QueueCons(f, r) ->
-      Linkedlist.all b f && Linkedlist.all b r
+      if Linkedlist.is_empty r then
+        Linkedlist.all b f
+      else
+        Linkedlist.all b f
   (*WC: O(N)*)
   let find p = function
     | QueueCons(f, r) ->
@@ -161,6 +164,9 @@ module Okasakiqueue : Sequence = struct
       let rev_r = Linkedlist.reverse r in
       let l = Linkedlist.append f rev_r in
       Linkedlist.foldl fn acc l
+  (*WC: O(1)*)
+  let copy q =
+    q
 end
 
 open Okasakiqueue
