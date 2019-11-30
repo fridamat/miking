@@ -8,6 +8,10 @@ open Ast
 open Ustring.Op
 open Printf
 open Linkedlist
+open Okasakiqueue
+open Ocamlarray
+open Ocamlqueue
+open Ocamlstack
 
 
 (* Debug options *)
