@@ -435,6 +435,7 @@ let get_actual_fun_w_sel_ds fun_name sel_ds =
   | 0, "filter" -> (SeqListFun12(Linkedlist.filter))
   | 0, "foldr" -> (SeqListFun13(Linkedlist.foldr))
   | 0, "foldl" -> (SeqListFun13(Linkedlist.foldl))
+  | 0, "copy" -> (SeqListFun13(Linkedlist.copy))
   | _ -> failwith "Method not yet implemented1"
 
 let get_seq_from_list ds_choice l =

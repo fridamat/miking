@@ -20,6 +20,7 @@ let get_exp_args_length fun_name =
   | "filter" -> 2
   | "foldr" -> 3
   | "foldl" -> 3
+  | "copy" -> 1
   | _ -> failwith "Sequence function not implemented"
 
 (*0: Linked list*) (*TODO: Lägga till Linkedlists värden*)
@@ -46,4 +47,5 @@ let get_seq_fun_names =
    "find";
    "filter";
    "foldr";
-   "foldl"]
+   "foldl";
+   "copy";]
