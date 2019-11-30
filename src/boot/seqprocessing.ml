@@ -439,6 +439,7 @@ let get_actual_fun_w_sel_ds fun_name sel_ds =
   | 0, "filter" -> (SeqListFun12(Linkedlist.filter))
   | 0, "foldr" -> (SeqListFun13(Linkedlist.foldr))
   | 0, "foldl" -> (SeqListFun13(Linkedlist.foldl))
+  | 0, "copy" -> (SeqListFun6(Linkedlist.copy))
   | 1, "is_empty" -> (SeqQueueFun4(Okasakiqueue.is_empty))
   | 1, "first" -> (SeqQueueFun5(Okasakiqueue.first))
   | 1, "last" -> (SeqQueueFun5(Okasakiqueue.last))
@@ -459,6 +460,7 @@ let get_actual_fun_w_sel_ds fun_name sel_ds =
   | 1, "filter" -> (SeqQueueFun12(Okasakiqueue.filter))
   | 1, "foldr" -> (SeqQueueFun13(Okasakiqueue.foldr))
   | 1, "foldl" -> (SeqQueueFun13(Okasakiqueue.foldl))
+  | 1, "copy" -> (SeqQueueFun6(Okasakiqueue.copy))
   | 2, "is_empty" -> (SeqOArrayFun4(Ocamlarray.is_empty))
   | 2, "first" -> (SeqOArrayFun5(Ocamlarray.first))
   | 2, "last" -> (SeqOArrayFun5(Ocamlarray.last))
@@ -479,6 +481,7 @@ let get_actual_fun_w_sel_ds fun_name sel_ds =
   | 2, "filter" -> (SeqOArrayFun12(Ocamlarray.filter))
   | 2, "foldr" -> (SeqOArrayFun13(Ocamlarray.foldr))
   | 2, "foldl" -> (SeqOArrayFun13(Ocamlarray.foldl))
+  | 2, "copy" -> (SeqOArrayFun6(Ocamlarray.copy))
   | 3, "is_empty" -> (SeqOQueueFun4(Ocamlqueue.is_empty))
   | 3, "first" -> (SeqOQueueFun5(Ocamlqueue.first))
   | 3, "last" -> (SeqOQueueFun5(Ocamlqueue.last))
@@ -499,6 +502,7 @@ let get_actual_fun_w_sel_ds fun_name sel_ds =
   | 3, "filter" -> (SeqOQueueFun12(Ocamlqueue.filter))
   | 3, "foldr" -> (SeqOQueueFun13(Ocamlqueue.foldr))
   | 3, "foldl" -> (SeqOQueueFun13(Ocamlqueue.foldl))
+  | 3, "copy" -> (SeqOQueueFun6(Ocamlqueue.copy))
   | 4, "is_empty" -> (SeqOStackFun4(Ocamlstack.is_empty))
   | 4, "first" -> (SeqOStackFun5(Ocamlstack.first))
   | 4, "last" -> (SeqOStackFun5(Ocamlstack.last))
@@ -519,6 +523,7 @@ let get_actual_fun_w_sel_ds fun_name sel_ds =
   | 4, "filter" -> (SeqOStackFun12(Ocamlstack.filter))
   | 4, "foldr" -> (SeqOStackFun13(Ocamlstack.foldr))
   | 4, "foldl" -> (SeqOStackFun13(Ocamlstack.foldl))
+  | 4, "copy" -> (SeqOStackFun6(Ocamlstack.copy))
   | _ -> failwith "Method not yet implemented1"
 
 let get_seq_from_list ds_choice l =
