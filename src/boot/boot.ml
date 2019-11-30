@@ -485,6 +485,7 @@ let get_actual_fun_w_sel_ds fun_name sel_ds =
   | 0, "filter" -> (SeqListFun12(Linkedlist.filter))
   | 0, "foldr" -> (SeqListFun13(Linkedlist.foldr))
   | 0, "foldl" -> (SeqListFun13(Linkedlist.foldl))
+  | 0, "copy" -> (SeqListFun6(Linkedlist.copy))
   | _ -> failwith "Data structure and function combination is not available"
 
 (* Main evaluation loop of a term. Evaluates using big-step semantics *)
@@ -560,6 +561,8 @@ let rec eval env t =
      | "foldl", SeqListFun13(f), [TmClos(clos_ti,x,clos_ty,clos_tm,clos_env,clos_pemode); b; TmSeq(seq_ti,ty_ident,tm_list,SeqList(l),ds_choice)] ->
        let foldl_f b' e = eval env' (TmApp(seq_ti,TmApp(seq_ti,TmLam(clos_ti,x,clos_ty,clos_tm),b'),e)) in
        f foldl_f b l
+     | "copy", SeqListFun6(f), [TmSeq(ti,ty_ident,tm_list,SeqList(l),ds_choice)] ->
+       TmSeq(ti,ty_ident,tm_list,SeqList(f l),ds_choice)
      | _, SeqFunNone, _ ->
        let str = "No method type has been set" in
        failwith str

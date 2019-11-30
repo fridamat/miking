@@ -20,10 +20,11 @@ let get_exp_args_length fun_name =
   | "filter" -> 2
   | "foldr" -> 3
   | "foldl" -> 3
+  | "copy" -> 1
   | _ -> failwith "Sequence function not implemented"
 
 let get_mc =
-  [[Complexities.Logn;Complexities.Logn;Complexities.Logn; Complexities.Logn;Complexities.Logn;Complexities.Logn;Complexities.Logn;Complexities.Logn;Complexities.Logn;Complexities.Logn;Complexities.Logn;Complexities.Logn;Complexities.Logn;Complexities.Logn;Complexities.Logn;Complexities.Logn;Complexities.Logn;Complexities.Logn;Complexities.Logn;Complexities.Logn;];]
+  [[Complexities.Logn;Complexities.Logn;Complexities.Logn; Complexities.Logn;Complexities.Logn;Complexities.Logn;Complexities.Logn;Complexities.Logn;Complexities.Logn;Complexities.Logn;Complexities.Logn;Complexities.Logn;Complexities.Logn;Complexities.Logn;Complexities.Logn;Complexities.Logn;Complexities.Logn;Complexities.Logn;Complexities.Logn;Complexities.Logn;Complexities.Logn;];]
 
 let get_seq_fun_names =
   ["is_empty";
@@ -45,4 +46,5 @@ let get_seq_fun_names =
    "find";
    "filter";
    "foldr";
-   "foldl"]
+   "foldl";
+   "copy";]

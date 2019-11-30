@@ -505,6 +505,11 @@ let get_seq_fun_type fun_name fi =
                                 TyArrow(fi,
                                         TySeq(TyVar(fi,us"a",0)),
                                         TyVar(fi,us"b",0))))))
+  | "copy" ->
+    TyAll(fi,us"a",KindStar(fi),
+          TyArrow(fi,
+                  TySeq(TyVar(fi,us"a",0)),
+                  TySeq(TyVar(fi,us"a",0))))
   | _ -> failwith "We don't have type of this function"
 
 let rec check_types_of_list tm_l seq_ty =
