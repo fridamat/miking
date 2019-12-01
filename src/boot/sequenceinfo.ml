@@ -25,7 +25,27 @@ let get_exp_args_length fun_name =
 
 (*0: Linked list*) (*TODO: Lägga till Linkedlists värden*)
 let get_mc =
-  [[Complexities.Logn;Complexities.Logn;Complexities.Logn; Complexities.Logn;Complexities.Logn;Complexities.Logn;Complexities.Logn;Complexities.Logn;Complexities.Logn;Complexities.Logn;Complexities.Logn;Complexities.Logn;Complexities.Logn;Complexities.Logn;Complexities.Logn;Complexities.Logn;Complexities.Logn;Complexities.Logn;Complexities.Logn;Complexities.Logn;Complexities.Logn;];]
+  [[Complexities.Const; (*Linkedlist: is_empty*)
+    Complexities.Const; (*Linkedlist: first*)
+    Complexities.X1; (*Linkedlist: last*)
+    Complexities.Const; (*Linkedlist: push*)
+    Complexities.Const; (*Linkedlist: pop*)
+    Complexities.X1; (*Linkedlist: length*)
+    Complexities.X1; (*Linkedlist: nth*)
+    Complexities.X1; (*Linkedlist: append*)
+    Complexities.X1; (*Linkedlist: reverse*)
+    Complexities.X1; (*Linkedlist: push_last*)
+    Complexities.X1; (*Linkedlist: pop_last*)
+    Complexities.X1; (*Linkedlist: take*)
+    Complexities.X1; (*Linkedlist: drop*)
+    Complexities.X1; (*Linkedlist: map*)
+    Complexities.X1; (*Linkedlist: any*)
+    Complexities.X1; (*Linkedlist: seqall*)
+    Complexities.X1; (*Linkedlist: find*)
+    Complexities.X1; (*Linkedlist: filter*)
+    Complexities.X1; (*Linkedlist: foldr*)
+    Complexities.X1; (*Linkedlist: foldl*)
+    Complexities.X1; (*Linkedlist: copy*)];]
 
 let get_seq_fun_names =
   ["is_empty";
