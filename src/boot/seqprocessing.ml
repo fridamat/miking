@@ -111,6 +111,12 @@ let rec get_lam_var_rels lam vars =
   | hd::tl ->
     (lam,hd)::(get_lam_var_rels lam tl)
 
+let rec combine_new_tm_var_rels e l =
+  match l with
+  | [] -> []
+  | hd::tl ->
+    (e,hd)::(combine_new_tm_var_rels e tl)
+
 let compare_names var_x y =
   match y with
   | TmVar(_,var_y,_,_) ->
