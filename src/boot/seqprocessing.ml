@@ -107,6 +107,31 @@ let rec get_lam_var_rels lam vars =
   | hd::tl ->
     (lam,hd)::(get_lam_var_rels lam tl)
 
+let compare_names var_x y =
+  match y with
+  | TmVar(_,var_y,_,_) ->
+    (Ustring.to_utf8 var_x) = (Ustring.to_utf8 var_y)
+  | _ -> false
+
+let rec combine_new_tm_var_rels e l =
+  match l with
+  | [] -> []
+  | hd::tl ->
+    (e,hd)::(combine_new_tm_var_rels e tl)
+
+let rec find_vars_with_the_same_name seqs =
+  match seqs with
+  | [] -> []
+  | hd::tl ->
+    (
+      match hd with
+      | TmVar(_,var_x,_,_) ->
+        let matches = List.find_all (compare_names var_x) tl in
+        let new_rels = combine_new_tm_var_rels hd matches in
+        List.append new_rels (find_vars_with_the_same_name tl)
+      | _ -> find_vars_with_the_same_name tl
+    )
+
 (*Goes through AST to find all terms of sequence type and their internal relationships*)
 let rec find_rels_and_seqs_in_ast ast rels seqs in_fix =
   (*let _ = Printf.printf "- %s with type %s\n" (Ustring.to_utf8 (Pprint.pprint false ast)) (Ustring.to_utf8 (Pprint.pprint_ty (Typesys.getType ast))) in*)
@@ -513,7 +538,8 @@ let process_ast ast =
   (*-Pre-processing-*)
   (*Find all terms of sequence type and sequence methods, and their internal relationships*)
   let (rls,seqs) = find_rels_and_seqs_in_ast ast [] [] false in
-  let rels = find_lam_var_rels seqs rls seqs in
+  let rels0 = find_lam_var_rels seqs rls seqs in
+  let rels = List.append rels0 (find_vars_with_the_same_name seqs) in
   (*let _ = Printf.printf "The seqs:\n%s\n" (get_tm_list_string seqs) in
   let _ = Printf.printf "The rels:\n%s\n" (get_tm_pair_list_string rels) in*)
   (*Get the sequence constructors*) (*TODO: Remove this step?*)
@@ -530,10 +556,11 @@ let process_ast ast =
   (*let _ = Printf.printf "The third version of the rels assoc list:\n%s\n" (get_rels_assoc_list_string rels_assoc_l3) in*)
   (*Create Method-Frequency (MF) matrix*)
   let mf_matrix1 = create_mf_matrix rels_assoc_l3 in
-  (*let _ = Printf.printf "The first version of the mf matrix:\n%s\n" (get_mf_count_string mf_matrix1) in*)
+  (*let _ = Printf.printf "The first version of the mf matrix:\n%s\n" (get_mf_count_string mf_matrix1) in
+  let _ = Printf.printf "The length of mf: %d" (List.length mf_matrix1) in *)
   (*Translate MF count to MF frequencies*)
   let mf_matrix2 = Frequencies.translate_mf_assoc_list mf_matrix1 (Sequenceinfo.get_seq_fun_names) in
-  (*let _ = Printf.printf "The second version of the mf matrix:\n%s\n" (get_mf_freq_string mf_matrix2) in*)
+  let _ = Printf.printf "The second version of the mf matrix:\n%s\n" (get_mf_freq_string mf_matrix2) in
   (*-Data structure selection algorithm-*)
   let selected_dss = Dssa.main mf_matrix2 in
   (*let _ = Printf.printf "The selected data structures are:\n%s\n" (get_selected_datastructures_string selected_dss) in*)
