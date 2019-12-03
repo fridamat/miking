@@ -560,7 +560,7 @@ let process_ast ast =
   let _ = Printf.printf "The length of mf: %d" (List.length mf_matrix1) in *)
   (*Translate MF count to MF frequencies*)
   let mf_matrix2 = Frequencies.translate_mf_assoc_list mf_matrix1 (Sequenceinfo.get_seq_fun_names) in
-  let _ = Printf.printf "The second version of the mf matrix:\n%s\n" (get_mf_freq_string mf_matrix2) in
+  (*let _ = Printf.printf "The second version of the mf matrix:\n%s\n" (get_mf_freq_string mf_matrix2) in*)
   (*-Data structure selection algorithm-*)
   let selected_dss = Dssa.main mf_matrix2 in
   (*let _ = Printf.printf "The selected data structures are:\n%s\n" (get_selected_datastructures_string selected_dss) in*)
