@@ -88,6 +88,42 @@ Performance counter stats for 'build/boot tytest test/master-thesis/rep_length.m
         59,047,224      branch-misses:u           #    0.03% of all branches          ( +-  0.06% )
 
          112.89065 +- 0.00845 seconds time elapsed  ( +-  0.01% )
+         
+         
+rep_nth:
 
+Performance counter stats for 'build/boot tytest test/master-thesis/rep_nth.mi' (100 runs):
+
+        113,217.97 msec task-clock:u              #    1.000 CPUs utilized            ( +-  0.01% )
+                 0      context-switches:u        #    0.000 K/sec                  
+                 0      cpu-migrations:u          #    0.000 K/sec                  
+            17,224      page-faults:u             #    0.152 K/sec                    ( +-  0.00% )
+   369,694,628,027      cycles:u                  #    3.265 GHz                      ( +-  0.00% )
+    70,779,267,575      stalled-cycles-frontend:u #   19.15% frontend cycles idle     ( +-  0.05% )
+   897,701,950,110      instructions:u            #    2.43  insn per cycle         
+                                                  #    0.08  stalled cycles per insn  ( +-  0.00% )
+   219,145,689,254      branches:u                # 1935.609 M/sec                    ( +-  0.00% )
+        59,041,857      branch-misses:u           #    0.03% of all branches          ( +-  0.01% )
+
+         113.24371 +- 0.00709 seconds time elapsed  ( +-  0.01% )
          
          
+rep_pop:
+
+Performance counter stats for 'build/boot tytest test/master-thesis/rep_pop.mi' (100 runs):
+
+        113,596.54 msec task-clock:u              #    1.000 CPUs utilized            ( +-  0.01% )
+                 0      context-switches:u        #    0.000 K/sec                  
+                 0      cpu-migrations:u          #    0.000 K/sec                  
+            23,714      page-faults:u             #    0.209 K/sec                    ( +-  0.00% )
+   370,875,920,070      cycles:u                  #    3.265 GHz                      ( +-  0.01% )
+    69,307,283,372      stalled-cycles-frontend:u #   18.69% frontend cycles idle     ( +-  0.06% )
+   900,795,632,894      instructions:u            #    2.43  insn per cycle         
+                                                  #    0.08  stalled cycles per insn  ( +-  0.00% )
+   219,850,551,896      branches:u                # 1935.363 M/sec                    ( +-  0.00% )
+        59,392,789      branch-misses:u           #    0.03% of all branches          ( +-  0.02% )
+
+          113.6256 +- 0.0146 seconds time elapsed  ( +-  0.01% )
+          
+          
+          
