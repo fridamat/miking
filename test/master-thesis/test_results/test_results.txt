@@ -160,3 +160,21 @@ Performance counter stats for 'build/boot tytest test/master-thesis/rep_push_las
         59,590,517      branch-misses:u           #    0.03% of all branches          ( +-  0.14% )
 
          113.83043 +- 0.00896 seconds time elapsed  ( +-  0.01% )
+         
+         
+rep_push:
+
+Performance counter stats for 'build/boot tytest test/master-thesis/rep_push.mi' (100 runs):
+
+        113,756.27 msec task-clock:u              #    1.000 CPUs utilized            ( +-  0.01% )
+                 0      context-switches:u        #    0.000 K/sec                  
+                 0      cpu-migrations:u          #    0.000 K/sec                  
+            23,729      page-faults:u             #    0.209 K/sec                    ( +-  0.00% )
+   371,419,357,070      cycles:u                  #    3.265 GHz                      ( +-  0.01% )
+    72,284,009,377      stalled-cycles-frontend:u #   19.46% frontend cycles idle     ( +-  0.05% )
+   900,761,029,666      instructions:u            #    2.43  insn per cycle         
+                                                  #    0.08  stalled cycles per insn  ( +-  0.00% )
+   219,842,902,760      branches:u                # 1932.578 M/sec                    ( +-  0.00% )
+        59,488,389      branch-misses:u           #    0.03% of all branches          ( +-  0.01% )
+
+         113.78023 +- 0.00890 seconds time elapsed  ( +-  0.01% )
