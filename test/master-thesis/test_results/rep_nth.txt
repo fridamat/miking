@@ -1,0 +1,71 @@
+frida@dzoneduzt:~/Master/EXJOBB/miking-hack (test_suite4 *)$ perf stat -r 10 build/boot tytest test/master-thesis/rep_nth.mi
+test/master-thesis/rep_nth.mi: The selected data structures are:
+- 2
+
+
+ OK
+
+Unit testing SUCCESSFUL after executing 0 tests.
+test/master-thesis/rep_nth.mi: The selected data structures are:
+- 2
+
+
+ OK
+
+Unit testing SUCCESSFUL after executing 0 tests.
+test/master-thesis/rep_nth.mi: The selected data structures are:
+- 2
+
+
+ OK
+
+Unit testing SUCCESSFUL after executing 0 tests.
+test/master-thesis/rep_nth.mi: The selected data structures are:
+- 2
+
+
+ OK
+
+Unit testing SUCCESSFUL after executing 0 tests.
+test/master-thesis/rep_nth.mi: The selected data structures are:
+- 2
+
+
+ OK
+
+Unit testing SUCCESSFUL after executing 0 tests.
+test/master-thesis/rep_nth.mi: The selected data structures are:
+- 2
+
+
+ OK
+
+Unit testing SUCCESSFUL after executing 0 tests.
+test/master-thesis/rep_nth.mi: The selected data structures are:
+- 2
+
+
+ OK
+
+Unit testing SUCCESSFUL after executing 0 tests.
+test/master-thesis/rep_nth.mi: The selected data structures are:
+- 2
+
+
+ OK
+
+Unit testing SUCCESSFUL after executing 0 tests.
+test/master-thesis/rep_nth.mi: The selected data structures are:
+- 2
+
+
+ OK
+
+Unit testing SUCCESSFUL after executing 0 tests.
+test/master-thesis/rep_nth.mi: The selected data structures are:
+- 2
+
+
+ OK
+
+Unit testing SUCCESSFUL after executing 0 tests.

@@ -1,0 +1,71 @@
+frida@dzoneduzt:~/Master/EXJOBB/miking-hack (test_suite4 *)$ perf stat -r 10 build/boot tytest test/master-thesis/combo_test1.mi
+test/master-thesis/combo_test1.mi: The selected data structures are:
+- 0
+
+
+ OK
+
+Unit testing SUCCESSFUL after executing 0 tests.
+test/master-thesis/combo_test1.mi: The selected data structures are:
+- 0
+
+
+ OK
+
+Unit testing SUCCESSFUL after executing 0 tests.
+test/master-thesis/combo_test1.mi: The selected data structures are:
+- 0
+
+
+ OK
+
+Unit testing SUCCESSFUL after executing 0 tests.
+test/master-thesis/combo_test1.mi: The selected data structures are:
+- 0
+
+
+ OK
+
+Unit testing SUCCESSFUL after executing 0 tests.
+test/master-thesis/combo_test1.mi: The selected data structures are:
+- 0
+
+
+ OK
+
+Unit testing SUCCESSFUL after executing 0 tests.
+test/master-thesis/combo_test1.mi: The selected data structures are:
+- 0
+
+
+ OK
+
+Unit testing SUCCESSFUL after executing 0 tests.
+test/master-thesis/combo_test1.mi: The selected data structures are:
+- 0
+
+
+ OK
+
+Unit testing SUCCESSFUL after executing 0 tests.
+test/master-thesis/combo_test1.mi: The selected data structures are:
+- 0
+
+
+ OK
+
+Unit testing SUCCESSFUL after executing 0 tests.
+test/master-thesis/combo_test1.mi: The selected data structures are:
+- 0
+
+
+ OK
+
+Unit testing SUCCESSFUL after executing 0 tests.
+test/master-thesis/combo_test1.mi: The selected data structures are:
+- 0
+
+
+ OK
+
+Unit testing SUCCESSFUL after executing 0 tests.

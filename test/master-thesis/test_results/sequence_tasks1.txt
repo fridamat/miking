@@ -1,0 +1,381 @@
+frida@dzoneduzt:~/Master/EXJOBB/miking-hack (test_suite4 *)$ perf stat -r 10 build/boot tytest test/master-thesis/sequence_tasks.mi
+test/master-thesis/sequence_tasks.mi: The selected data structures are:
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+
+
+ OK
+
+Unit testing SUCCESSFUL after executing 0 tests.
+test/master-thesis/sequence_tasks.mi: The selected data structures are:
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+
+
+ OK
+
+Unit testing SUCCESSFUL after executing 0 tests.
+test/master-thesis/sequence_tasks.mi: The selected data structures are:
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+
+
+ OK
+
+Unit testing SUCCESSFUL after executing 0 tests.
+test/master-thesis/sequence_tasks.mi: The selected data structures are:
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+
+
+ OK
+
+Unit testing SUCCESSFUL after executing 0 tests.
+test/master-thesis/sequence_tasks.mi: The selected data structures are:
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+
+
+ OK
+
+Unit testing SUCCESSFUL after executing 0 tests.
+test/master-thesis/sequence_tasks.mi: The selected data structures are:
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+
+
+ OK
+
+Unit testing SUCCESSFUL after executing 0 tests.
+test/master-thesis/sequence_tasks.mi: The selected data structures are:
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+
+
+ OK
+
+Unit testing SUCCESSFUL after executing 0 tests.
+test/master-thesis/sequence_tasks.mi: The selected data structures are:
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+
+
+ OK
+
+Unit testing SUCCESSFUL after executing 0 tests.
+test/master-thesis/sequence_tasks.mi: The selected data structures are:
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+
+
+ OK
+
+Unit testing SUCCESSFUL after executing 0 tests.
+test/master-thesis/sequence_tasks.mi: The selected data structures are:
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+- 0
+
+
+ OK
+
+Unit testing SUCCESSFUL after executing 0 tests.
