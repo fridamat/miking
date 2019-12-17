@@ -58,7 +58,12 @@ module Dssa = struct
     let frequency_2 = Costterms.get_frequency cost_term_2 in
     match compare_complexities complexity_1 complexity_2 with
     | 2 -> 2 (*complexity_2 = None*)
-    | 1 -> 1 (*complexity_1 > complexity_2*)
+    | 1 -> (*complexity_1 > complexity_2*)
+      (
+        match frequency_1 with
+        | Frequencies.Zero -> -1
+        | _ -> 1
+      )
     | 0 -> (
         (*complexity_1 = complexity_2, so we want to compare the frequencies*)
         match compare_frequencies frequency_1 frequency_2 with
@@ -68,7 +73,12 @@ module Dssa = struct
         | -1 -> -1 (*frequency_1 < frequency_2*)
         | -2 -> -2 (*frequency_1 = None*)
         | _ -> raise UnknownComparisonResult)
-    | -1 -> -1 (*complexity_1 < complexity_2*)
+    | -1 -> (*complexity_1 < complexity_2*)
+      (
+        match frequency_2 with
+        | Frequencies.Zero -> 1
+        | _ -> -1
+      )
     | -2 -> -2 (*complexity_1 = None*)
     | _ -> raise UnknownComparisonResult
 
