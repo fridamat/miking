@@ -1,0 +1,3 @@
+test/master-thesis/combo_test1.mi:  OK
+
+Unit testing SUCCESSFUL after executing 0 tests.
