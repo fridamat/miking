@@ -1,0 +1,108 @@
+100 ds
+100 reps
+
+combo_test1:
+
+Performance counter stats for 'build/boot tytest test/master-thesis/combo_test1.mi' (100 runs):
+
+          9,936.57 msec task-clock:u              #    1.000 CPUs utilized            ( +-  0.10% )
+                 0      context-switches:u        #    0.000 K/sec                  
+                 0      cpu-migrations:u          #    0.000 K/sec                  
+            14,673      page-faults:u             #    0.001 M/sec                    ( +-  0.00% )
+    32,156,439,887      cycles:u                  #    3.236 GHz                      ( +-  0.08% )
+    14,470,640,230      stalled-cycles-frontend:u #   45.00% frontend cycles idle     ( +-  0.18% )
+    56,940,863,791      instructions:u            #    1.77  insn per cycle         
+                                                  #    0.25  stalled cycles per insn  ( +-  0.00% )
+    12,692,130,457      branches:u                # 1277.316 M/sec                    ( +-  0.00% )
+        19,637,510      branch-misses:u           #    0.15% of all branches          ( +-  0.19% )
+
+            9.9413 +- 0.0104 seconds time elapsed  ( +-  0.10% )
+
+rep_first:
+
+Performance counter stats for 'build/boot tytest test/master-thesis/rep_first.mi' (100 runs):
+
+        115,767.76 msec task-clock:u              #    1.000 CPUs utilized            ( +-  0.04% )
+                 0      context-switches:u        #    0.000 K/sec                  
+                 0      cpu-migrations:u          #    0.000 K/sec                  
+            15,178      page-faults:u             #    0.131 K/sec                    ( +-  0.00% )
+   377,139,720,824      cycles:u                  #    3.258 GHz                      ( +-  0.04% )
+    67,094,253,747      stalled-cycles-frontend:u #   17.79% frontend cycles idle     ( +-  0.12% )
+   894,872,487,496      instructions:u            #    2.37  insn per cycle         
+                                                  #    0.07  stalled cycles per insn  ( +-  0.00% )
+   218,448,355,240      branches:u                # 1886.953 M/sec                    ( +-  0.00% )
+        64,160,515      branch-misses:u           #    0.03% of all branches          ( +-  8.11% )
+
+          115.7980 +- 0.0500 seconds time elapsed  ( +-  0.04% )
+          
+          
+rep_pop:  
+          
+Performance counter stats for 'build/boot tytest test/master-thesis/rep_pop.mi' (100 runs):
+
+        116,509.50 msec task-clock:u              #    1.000 CPUs utilized            ( +-  0.04% )
+                 0      context-switches:u        #    0.000 K/sec                  
+                 0      cpu-migrations:u          #    0.000 K/sec                  
+            25,509      page-faults:u             #    0.219 K/sec                    ( +-  0.00% )
+   379,630,926,208      cycles:u                  #    3.258 GHz                      ( +-  0.04% )
+    67,360,502,637      stalled-cycles-frontend:u #   17.74% frontend cycles idle     ( +-  0.12% )
+   900,843,847,278      instructions:u            #    2.37  insn per cycle         
+                                                  #    0.07  stalled cycles per insn  ( +-  0.00% )
+   219,854,745,796      branches:u                # 1887.011 M/sec                    ( +-  0.00% )
+        64,794,656      branch-misses:u           #    0.03% of all branches          ( +-  8.16% )
+
+          116.5383 +- 0.0511 seconds time elapsed  ( +-  0.04% )
+          
+          
+rep_push_last_filter:
+
+ Performance counter stats for 'build/boot tytest test/master-thesis/rep_push_last_filter.mi' (100 runs):
+
+        116,999.05 msec task-clock:u              #    1.000 CPUs utilized            ( +-  0.01% )
+                 0      context-switches:u        #    0.000 K/sec                  
+                 0      cpu-migrations:u          #    0.000 K/sec                  
+            25,707      page-faults:u             #    0.220 K/sec                    ( +-  0.00% )
+   381,189,533,555      cycles:u                  #    3.258 GHz                      ( +-  0.01% )
+    70,562,849,904      stalled-cycles-frontend:u #   18.51% frontend cycles idle     ( +-  0.12% )
+   903,536,037,312      instructions:u            #    2.37  insn per cycle         
+                                                  #    0.08  stalled cycles per insn  ( +-  0.00% )
+   220,509,003,141      branches:u                # 1884.708 M/sec                    ( +-  0.00% )
+        59,950,609      branch-misses:u           #    0.03% of all branches          ( +-  0.13% )
+
+         117.02636 +- 0.00826 seconds time elapsed  ( +-  0.01% )
+
+         
+rep_push_last:
+
+ Performance counter stats for 'build/boot tytest test/master-thesis/rep_push_last.mi' (100 runs):
+
+        116,630.35 msec task-clock:u              #    1.000 CPUs utilized            ( +-  0.01% )
+                 0      context-switches:u        #    0.000 K/sec                  
+                 0      cpu-migrations:u          #    0.000 K/sec                  
+            22,172      page-faults:u             #    0.190 K/sec                    ( +-  0.00% )
+   379,946,830,354      cycles:u                  #    3.258 GHz                      ( +-  0.01% )
+    70,279,356,527      stalled-cycles-frontend:u #   18.50% frontend cycles idle     ( +-  0.05% )
+   900,824,524,897      instructions:u            #    2.37  insn per cycle         
+                                                  #    0.08  stalled cycles per insn  ( +-  0.00% )
+   219,848,651,503      branches:u                # 1885.004 M/sec                    ( +-  0.00% )
+        59,563,625      branch-misses:u           #    0.03% of all branches          ( +-  0.02% )
+
+         116.66086 +- 0.00749 seconds time elapsed  ( +-  0.01% )
+
+         
+rep_push:
+
+ Performance counter stats for 'build/boot tytest test/master-thesis/rep_push.mi' (100 runs):
+
+        116,625.02 msec task-clock:u              #    1.000 CPUs utilized            ( +-  0.01% )
+                 0      context-switches:u        #    0.000 K/sec                  
+                 0      cpu-migrations:u          #    0.000 K/sec                  
+            23,725      page-faults:u             #    0.203 K/sec                    ( +-  0.00% )
+   379,928,723,571      cycles:u                  #    3.258 GHz                      ( +-  0.01% )
+    69,921,010,366      stalled-cycles-frontend:u #   18.40% frontend cycles idle     ( +-  0.04% )
+   900,838,358,531      instructions:u            #    2.37  insn per cycle         
+                                                  #    0.08  stalled cycles per insn  ( +-  0.00% )
+   219,852,052,980      branches:u                # 1885.119 M/sec                    ( +-  0.00% )
+        59,697,273      branch-misses:u           #    0.03% of all branches          ( +-  0.12% )
+
+         116.65413 +- 0.00798 seconds time elapsed  ( +-  0.01% )
