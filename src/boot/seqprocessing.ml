@@ -63,6 +63,8 @@ let rec get_seqs_w_selected_dss_string selected_ds_assoc_l =
     "- " ^ (Ustring.to_utf8 (Pprint.pprint false hd1)) ^ " with data structure " ^ (string_of_int hd2) ^ "\n" ^ (get_seqs_w_selected_dss_string tl)
 
 (*Help methods*)
+
+(*WC: O(1)*)
 let rec check_if_ty_is_tyseq ty =
   match ty with
   (*All terms of type TySeq*)
@@ -77,6 +79,7 @@ let rec check_if_ty_is_tyseq ty =
   | _ ->
     false
 
+(*WC: O(1)*)
 let rec check_if_tm_has_type_tyseq t =
   match t, getType t with
   | TmLam(lam_ti,lam_x,lam_ty,lam_tm), ty ->
@@ -85,11 +88,12 @@ let rec check_if_tm_has_type_tyseq t =
      | TyArrow(_,TySeq _,TyGround(_,GVoid)) ->
        true
      | _ ->
-       check_if_ty_is_tyseq ty
+       check_if_ty_is_tyseq ty (*WC: O(1)*)
     )
   | _, ty ->
-    check_if_ty_is_tyseq ty
+    check_if_ty_is_tyseq ty (*WC: O(1)*)
 
+(*WC: #variables*)
 (*Finds all vars in list "seqs" that has the identifier "lam_x"*)
 let rec find_related_vars lam_x seqs =
   match seqs with
@@ -104,6 +108,7 @@ let rec find_related_vars lam_x seqs =
      | _ ->
        find_related_vars lam_x tl)
 
+(*WC: O(#variables)*)
 (*Forms pairs between lambda "lam" and each variable in the list "vars"*)
 let rec get_lam_var_rels lam vars =
   match vars with
@@ -111,18 +116,21 @@ let rec get_lam_var_rels lam vars =
   | hd::tl ->
     (lam,hd)::(get_lam_var_rels lam tl)
 
+(*WC: O(#elements in l)*)
 let rec combine_new_tm_var_rels e l =
   match l with
   | [] -> []
   | hd::tl ->
     (e,hd)::(combine_new_tm_var_rels e tl)
 
+(*WC: O(1)*)
 let compare_names var_x y =
   match y with
   | TmVar(_,var_y,_,_) ->
     (Ustring.to_utf8 var_x) = (Ustring.to_utf8 var_y)
   | _ -> false
 
+(*WC: O(#variables^2)*)
 let rec find_vars_with_the_same_name seqs =
   match seqs with
   | [] -> []
@@ -130,8 +138,8 @@ let rec find_vars_with_the_same_name seqs =
     (
       match hd with
       | TmVar(_,var_x,_,_) ->
-        let matches = List.find_all (compare_names var_x) tl in
-        let new_rels = combine_new_tm_var_rels hd matches in
+        let matches = List.find_all (compare_names var_x) tl in (*WC: O(#variables)*)
+        let new_rels = combine_new_tm_var_rels hd matches in (*WC: O(#variables)*)
         List.append new_rels (find_vars_with_the_same_name tl)
       | _ -> find_vars_with_the_same_name tl
     )

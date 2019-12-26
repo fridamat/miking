@@ -36,6 +36,42 @@ Performance counter stats for 'build/boot tytest test/master-thesis/rep_first.mi
           115.7980 +- 0.0500 seconds time elapsed  ( +-  0.04% )
           
           
+rep_last:
+          
+Performance counter stats for 'build/boot tytest test/master-thesis/rep_last.mi' (100 runs):
+
+        115,743.54 msec task-clock:u              #    1.000 CPUs utilized            ( +-  0.04% )
+                 0      context-switches:u        #    0.000 K/sec                  
+                 0      cpu-migrations:u          #    0.000 K/sec                  
+            20,836      page-faults:u             #    0.180 K/sec                    ( +-  0.00% )
+   377,089,630,824      cycles:u                  #    3.258 GHz                      ( +-  0.04% )
+    66,800,206,486      stalled-cycles-frontend:u #   17.71% frontend cycles idle     ( +-  0.12% )
+   895,191,512,585      instructions:u            #    2.37  insn per cycle         
+                                                  #    0.07  stalled cycles per insn  ( +-  0.00% )
+   218,521,572,501      branches:u                # 1887.981 M/sec                    ( +-  0.00% )
+        64,320,476      branch-misses:u           #    0.03% of all branches          ( +-  8.06% )
+
+          115.7728 +- 0.0510 seconds time elapsed  ( +-  0.04% )
+          
+          
+rep_length: 
+
+ Performance counter stats for 'build/boot tytest test/master-thesis/rep_length.mi' (100 runs):
+
+        115,837.40 msec task-clock:u              #    1.000 CPUs utilized            ( +-  0.06% )
+                 0      context-switches:u        #    0.000 K/sec                  
+                 0      cpu-migrations:u          #    0.000 K/sec                  
+            20,887      page-faults:u             #    0.180 K/sec                    ( +-  0.00% )
+   377,374,187,687      cycles:u                  #    3.258 GHz                      ( +-  0.06% )
+    66,959,970,825      stalled-cycles-frontend:u #   17.74% frontend cycles idle     ( +-  0.17% )
+   895,249,433,901      instructions:u            #    2.37  insn per cycle         
+                                                  #    0.07  stalled cycles per insn  ( +-  0.00% )
+   218,533,830,147      branches:u                # 1886.557 M/sec                    ( +-  0.00% )
+        69,875,171      branch-misses:u           #    0.03% of all branches          ( +- 10.74% )
+
+          115.8663 +- 0.0691 seconds time elapsed  ( +-  0.06% )
+          
+          
 rep_pop:  
           
 Performance counter stats for 'build/boot tytest test/master-thesis/rep_pop.mi' (100 runs):

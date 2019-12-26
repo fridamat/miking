@@ -28,6 +28,7 @@ let get_next_lower_complexity complexity =
   | 0 -> None
   | _ -> List.nth get_complexities (complexity_rank-1)
 
+(*WC: O(#complexities)*)
 (*Takes in two complexities (complexity_1 and complexity_2) and compares their ranks (complexity_rank_1 and complexity_rank_2). Returns 1 if complexity_rank_1 > complexity_rank_2, returns -1 if complexity_rank_1 < complexity_rank_2 and 0 if complexity_rank_1 = complexity_rank_2.*)
 let compare_complexities complexity_1 complexity_2 =
   if complexity_1 == None then
@@ -35,8 +36,8 @@ let compare_complexities complexity_1 complexity_2 =
   else if complexity_2 == None then
     2
   else
-    let complexity_rank_1 = get_complexity_rank complexity_1 in
-    let complexity_rank_2 = get_complexity_rank complexity_2 in
+    let complexity_rank_1 = get_complexity_rank complexity_1 in (*WC: O(#complexities)*)
+    let complexity_rank_2 = get_complexity_rank complexity_2 in (*WC: O(#complexities)*)
     if complexity_rank_1 > complexity_rank_2 then
       1
     else if complexity_rank_1 < complexity_rank_2 then
