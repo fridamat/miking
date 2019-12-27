@@ -2,18 +2,18 @@ combo_test1:
 
 Performance counter stats for 'build/boot tytest test/master-thesis/combo_test1.mi' (100 runs):
 
-          9,799.92 msec task-clock:u              #    1.000 CPUs utilized            ( +-  0.04% )
+          9,840.36 msec task-clock:u              #    1.000 CPUs utilized            ( +-  0.07% )
                  0      context-switches:u        #    0.000 K/sec                  
                  0      cpu-migrations:u          #    0.000 K/sec                  
-            14,682      page-faults:u             #    0.001 M/sec                    ( +-  0.00% )
-    31,801,634,781      cycles:u                  #    3.245 GHz                      ( +-  0.04% )
-    14,452,938,635      stalled-cycles-frontend:u #   45.45% frontend cycles idle     ( +-  0.08% )
-    56,820,845,325      instructions:u            #    1.79  insn per cycle         
-                                                  #    0.25  stalled cycles per insn  ( +-  0.00% )
-    12,678,476,847      branches:u                # 1293.732 M/sec                    ( +-  0.00% )
-        19,640,454      branch-misses:u           #    0.15% of all branches          ( +-  0.17% )
+            14,673      page-faults:u             #    0.001 M/sec                    ( +-  0.00% )
+    31,967,056,936      cycles:u                  #    3.249 GHz                      ( +-  0.06% )
+    14,277,220,661      stalled-cycles-frontend:u #   44.66% frontend cycles idle     ( +-  0.13% )
+    56,944,912,337      instructions:u            #    1.78  insn per cycle         
+                                                  #    0.25  stalled cycles per insn  ( +-  0.01% )
+    12,692,639,053      branches:u                # 1289.855 M/sec                    ( +-  0.00% )
+        19,613,034      branch-misses:u           #    0.15% of all branches          ( +-  0.23% )
 
-           9.80454 +- 0.00365 seconds time elapsed  ( +-  0.04% )
+           9.84381 +- 0.00732 seconds time elapsed  ( +-  0.07% )
            
            
 push_last_pop:
