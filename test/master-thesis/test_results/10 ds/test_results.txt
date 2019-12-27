@@ -1,4 +1,4 @@
-100 ds
+10 ds
 100 reps
 
 combo_test1:
