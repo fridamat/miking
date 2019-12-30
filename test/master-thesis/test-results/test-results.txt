@@ -16,22 +16,20 @@ Performance counter stats for 'build/boot tytest test/master-thesis/combo_test1.
            9.84381 +- 0.00732 seconds time elapsed  ( +-  0.07% )
            
            
-push_last_pop:
-
 Performance counter stats for 'build/boot tytest test/master-thesis/push_last_pop.mi' (100 runs):
 
-         19,767.51 msec task-clock:u              #    1.000 CPUs utilized            ( +-  0.05% )
+         19,827.73 msec task-clock:u              #    1.000 CPUs utilized            ( +-  0.06% )
                  0      context-switches:u        #    0.000 K/sec                  
                  0      cpu-migrations:u          #    0.000 K/sec                  
-            32,845      page-faults:u             #    0.002 M/sec                    ( +-  0.00% )
-    64,135,355,066      cycles:u                  #    3.244 GHz                      ( +-  0.04% )
-    29,771,660,670      stalled-cycles-frontend:u #   46.42% frontend cycles idle     ( +-  0.10% )
-   113,444,532,581      instructions:u            #    1.77  insn per cycle         
-                                                  #    0.26  stalled cycles per insn  ( +-  0.00% )
-    25,400,719,897      branches:u                # 1284.973 M/sec                    ( +-  0.00% )
-        27,319,610      branch-misses:u           #    0.11% of all branches          ( +-  0.19% )
+            32,856      page-faults:u             #    0.002 M/sec                    ( +-  0.00% )
+    64,376,126,433      cycles:u                  #    3.247 GHz                      ( +-  0.05% )
+    29,363,888,516      stalled-cycles-frontend:u #   45.61% frontend cycles idle     ( +-  0.11% )
+   113,529,129,191      instructions:u            #    1.76  insn per cycle         
+                                                  #    0.26  stalled cycles per insn  ( +-  0.01% )
+    25,393,693,021      branches:u                # 1280.716 M/sec                    ( +-  0.00% )
+        27,438,509      branch-misses:u           #    0.11% of all branches          ( +-  0.24% )
 
-          19.77458 +- 0.00899 seconds time elapsed  ( +-  0.05% )
+           19.8369 +- 0.0111 seconds time elapsed  ( +-  0.06% )
           
           
 rep_first:
