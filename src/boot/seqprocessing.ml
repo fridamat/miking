@@ -64,7 +64,7 @@ let rec get_seqs_w_selected_dss_string selected_ds_assoc_l =
 
 (*Help methods*)
 
-(*WC: O(1)*)
+(*WC: Depth of tyarrow*)
 let rec check_if_ty_is_tyseq ty =
   match ty with
   (*All terms of type TySeq*)
@@ -75,26 +75,24 @@ let rec check_if_ty_is_tyseq ty =
     true
   (*The case of nested TyArrows*)
   | TyArrow(_,_,rhs_ty) ->
-    check_if_ty_is_tyseq rhs_ty
+    check_if_ty_is_tyseq rhs_ty (*WC: Recursive call*)
   | _ ->
     false
 
-(*WC: O(1)*)
+(*WC: O(depth of TyArrow)*)
 let rec check_if_tm_has_type_tyseq t =
   match t, getType t with
   | TmLam(lam_ti,lam_x,lam_ty,lam_tm), ty ->
     (match ty with
-     (*The special case "let x = term of type TySeq"*)
      | TyArrow(_,TySeq _,TyGround(_,GVoid)) ->
        true
      | _ ->
-       check_if_ty_is_tyseq ty (*WC: O(1)*)
+       check_if_ty_is_tyseq ty (*WC: O(depth of TyArrow)*)
     )
   | _, ty ->
-    check_if_ty_is_tyseq ty (*WC: O(1)*)
+    check_if_ty_is_tyseq ty (*WC: O(depth of TyArrow)*)
 
-(*WC: #variables*)
-(*Finds all vars in list "seqs" that has the identifier "lam_x"*)
+(*WC: #variables/sequences*)
 let rec find_related_vars lam_x seqs =
   match seqs with
   | [] -> []
@@ -102,26 +100,25 @@ let rec find_related_vars lam_x seqs =
     (match hd with
      | TmVar(_,var_x,_,_) ->
        if (Ustring.to_utf8 var_x) = (Ustring.to_utf8 lam_x) then
-         hd::(find_related_vars lam_x tl)
+         hd::(find_related_vars lam_x tl) (*WC: O(1), recursive call*)
        else
-         find_related_vars lam_x tl
+         find_related_vars lam_x tl (*WC: Recursive call*)
      | _ ->
-       find_related_vars lam_x tl)
+       find_related_vars lam_x tl) (*WC: Recursive call*)
 
 (*WC: O(#variables)*)
-(*Forms pairs between lambda "lam" and each variable in the list "vars"*)
 let rec get_lam_var_rels lam vars =
   match vars with
   | [] -> []
   | hd::tl ->
-    (lam,hd)::(get_lam_var_rels lam tl)
+    (lam,hd)::(get_lam_var_rels lam tl) (*WC: O(1), recursive call*)
 
 (*WC: O(#elements in l)*)
 let rec combine_new_tm_var_rels e l =
   match l with
   | [] -> []
   | hd::tl ->
-    (e,hd)::(combine_new_tm_var_rels e tl)
+    (e,hd)::(combine_new_tm_var_rels e tl) (*WC: O(1), recursive call*)
 
 (*WC: O(1)*)
 let compare_names var_x y =
@@ -140,101 +137,85 @@ let rec find_vars_with_the_same_name seqs =
       | TmVar(_,var_x,_,_) ->
         let matches = List.find_all (compare_names var_x) tl in (*WC: O(#variables)*)
         let new_rels = combine_new_tm_var_rels hd matches in (*WC: O(#variables)*)
-        List.append new_rels (find_vars_with_the_same_name tl)
+        List.append new_rels (find_vars_with_the_same_name tl) (*WC: Recursive call*)
       | _ -> find_vars_with_the_same_name tl
     )
 
-(*Goes through AST to find all terms of sequence type and their internal relationships*)
+(*WC: O(terms in ast * (depth of TyArrow(?) + #seqs + #relationships))*)
 let rec find_rels_and_seqs_in_ast ast rels seqs in_fix =
-  (*let _ = Printf.printf "- %s with type %s\n" (Ustring.to_utf8 (Pprint.pprint false ast)) (Ustring.to_utf8 (Pprint.pprint_ty (Typesys.getType ast))) in*)
-  (*Processes terms from an application (TmApp)*)
+
+  (*WC: Helper method for above*)
   let find_rels_and_seqs_in_tmapp tm1 tm2 in_fix' =
-    (match tm1, check_if_tm_has_type_tyseq tm2 with
-     (*If tm1 is a fix, then we want to keep track of this when processing tm2 and therefore call find_rels_and_seqs_in_ast with in_fix (last arg) set to true*)
+    (match tm1, check_if_tm_has_type_tyseq tm2 with (*WC: O(depth of TyArrow)*)
      | TmFix(fix_ti), _ ->
-       find_rels_and_seqs_in_ast tm2 [] [] true
-     (*The case "let x = exp of type seq"*)
+       find_rels_and_seqs_in_ast tm2 [] [] true (*WC: Recursive call*)
      | TmLam(lam_ti,lam_x,lam_ty,TmNop), true ->
-       let (rels_tm1,seqs_tm1) = find_rels_and_seqs_in_ast tm1 [] [] in_fix' in
-       let (rels_tm2, seqs_tm2) = find_rels_and_seqs_in_ast tm2 [] [] in_fix' in
-       (*TODO: Failwith if seqs_tm2 is empty*)
-       (*Lambda term (tm1) and the first sequence in tm2 are related*)
-       let new_rel = (tm1,(List.nth seqs_tm2 0)) in
-       let upd_rels = List.append (new_rel::rels_tm1) rels_tm2 in
-       let upd_seqs = List.append seqs_tm1 seqs_tm2 in
+       let (rels_tm1,seqs_tm1) = find_rels_and_seqs_in_ast tm1 [] [] in_fix' in (*WC: terms in ast * (depth of TyArrow + #seqs + #relationships)*)
+       let (rels_tm2, seqs_tm2) = find_rels_and_seqs_in_ast tm2 [] [] in_fix' in (*WC: Recursive call*)
+       let new_rel = (tm1,(List.nth seqs_tm2 0)) in (*WC: O(#seqs in term)*)
+       let upd_rels = List.append (new_rel::rels_tm1) rels_tm2 in (*WC: O(#relationships)*)
+       let upd_seqs = List.append seqs_tm1 seqs_tm2 in (*WC: O(#seqs in each term)*)
        (upd_rels,upd_seqs)
-     (*The case "tm1 tm2" where tm2 has type sequence*)
      | _, true ->
-       let (rels_tm1,seqs_tm1) = find_rels_and_seqs_in_ast tm1 [] [] in_fix' in
-       let (rels_tm2,seqs_tm2) = find_rels_and_seqs_in_ast tm2 [] [] in_fix' in
-       let upd_rels = List.append rels_tm1 rels_tm2 in
-       let upd_seqs = List.append seqs_tm1 seqs_tm2 in
-       if ((List.length seqs_tm1) == 0) || ((List.length seqs_tm2) == 0) then
+       let (rels_tm1,seqs_tm1) = find_rels_and_seqs_in_ast tm1 [] [] in_fix' in (*WC: Recursive calls*)
+       let (rels_tm2,seqs_tm2) = find_rels_and_seqs_in_ast tm2 [] [] in_fix' in (*WC: Recursive calls*)
+       let upd_rels = List.append rels_tm1 rels_tm2 in (*WC: O(#relationships in terms)*)
+       let upd_seqs = List.append seqs_tm1 seqs_tm2 in (*WC: O(#sequences in terms)*)
+       if ((List.length seqs_tm1) == 0) || ((List.length seqs_tm2) == 0) then (*WC: O(#seqs in terms)*)
          (upd_rels,upd_seqs)
        else
-         (*The last sequence found in tm1 is related to the first sequence found in tm2*)
-         let new_rel = ((List.nth seqs_tm1 ((List.length seqs_tm1)-1)),(List.nth seqs_tm2 0)) in
+         let new_rel = ((List.nth seqs_tm1 ((List.length seqs_tm1)-1)),(List.nth seqs_tm2 0)) in (*WC: O(#sequences in terms)*)
          ((new_rel::upd_rels),upd_seqs)
      | _ ->
-       let (rels_tm1,seqs_tm1) = find_rels_and_seqs_in_ast tm1 [] [] in_fix' in
-       let (rels_tm2,seqs_tm2) = find_rels_and_seqs_in_ast tm2 [] [] in_fix' in
-       let upd_rels = List.append rels_tm1 rels_tm2 in
-       let upd_seqs = List.append seqs_tm1 seqs_tm2 in
+       let (rels_tm1,seqs_tm1) = find_rels_and_seqs_in_ast tm1 [] [] in_fix' in (*WC: Recursive call*)
+       let (rels_tm2,seqs_tm2) = find_rels_and_seqs_in_ast tm2 [] [] in_fix' in (*WC: Recursive call*)
+       let upd_rels = List.append rels_tm1 rels_tm2 in (*WC: O(#relationships in terms)*)
+       let upd_seqs = List.append seqs_tm1 seqs_tm2 in (*WC: O(#sequences in terms)*)
        (upd_rels,upd_seqs)) in
-  (*Processes terms in a list (TmList) as found in a sequence constructor (TmSeq)*)
+
   let rec find_rels_and_seqs_in_ast_list l l_rels l_seqs l_in_fix =
     (match l with
      | [] -> (l_rels,l_seqs)
      | hd::tl ->
-       let (upd_l_rels,upd_l_seqs) = find_rels_and_seqs_in_ast hd l_rels l_seqs l_in_fix in
-       find_rels_and_seqs_in_ast_list tl upd_l_rels upd_l_seqs l_in_fix) in
+       let (upd_l_rels,upd_l_seqs) = find_rels_and_seqs_in_ast hd l_rels l_seqs l_in_fix in (*WC: O(#terms in ast * (depth of TyArrow(?) + #seqs + #rels))*)
+       find_rels_and_seqs_in_ast_list tl upd_l_rels upd_l_seqs l_in_fix) in (*WC: Recursive call*)
+
   match ast with
   | TmSeq(ti,ty_ident,tm_l,tm_seq,ds_choice) ->
-    (*TmSeq always has type TySeq*)
-    let upd_seqs = ast::seqs in
-    (*Process elements (terms) of the sequence*)
-    find_rels_and_seqs_in_ast_list (get_list_from_tmlist tm_l) rels upd_seqs in_fix
+    let upd_seqs = ast::seqs in (*WC: O(1)*)
+    find_rels_and_seqs_in_ast_list (get_list_from_tmlist tm_l) rels upd_seqs in_fix (*WC: Circular call*)
   | TmSeqMethod(seqm_ti,fun_name,actual_fun,args,arg_index,ds_choice,in_fix_unknown) ->
-    (*We want to keep track of whether the sequence method is contained within a recursive method (application of TmFix), and therefore update the in_fix field of the TmSeqMethod*)
-    let upd_seqm = TmSeqMethod(seqm_ti,fun_name,actual_fun,args,arg_index,ds_choice,in_fix) in
-    (*We always consider a sequence method as an instance of sequence, even if it doesn't return a sequence*)
-    let upd_seqs = upd_seqm::seqs in
+    let upd_seqm = TmSeqMethod(seqm_ti,fun_name,actual_fun,args,arg_index,ds_choice,in_fix) in (*WC: O(1)*)
+    let upd_seqs = upd_seqm::seqs in (*WC: O(1)*)
     (rels,upd_seqs)
   | TmNop | TmChar _ | TmFix _ | TmConst _ ->
     (rels,seqs)
   | TmVar(ti,x,di,pm) ->
-    (*If the variable has type sequence, then we want to add it to our list of sequences found*)
-    if check_if_tm_has_type_tyseq ast then
-      (rels,(ast::seqs))
+    if check_if_tm_has_type_tyseq ast then (*WC: O(depth of TyArrow)*)
+      (rels,(ast::seqs)) (*WC: O(1)*)
     else
       (rels,seqs)
   | TmLam(_,_,_,tm) | TmClos(_,_,_,tm,_,_)  ->
-    (*If the lambda/closure has type sequence, then we want to add it to our list of sequences found*)
     let (upd_seqs) =
-      (if check_if_tm_has_type_tyseq ast then
-         (ast::seqs)
+      (if check_if_tm_has_type_tyseq ast then (*WC: O(depth of TyArrow)*)
+         (ast::seqs) (*WC: O(1)*)
        else
          seqs) in
-    (*We also want to process the term found within the lambda/closure*)
-    find_rels_and_seqs_in_ast tm rels upd_seqs in_fix
+    find_rels_and_seqs_in_ast tm rels upd_seqs in_fix (*WC: Recursive calls*)
   | TmApp(_,tm1,tm2) ->
-    (*We want to process the two terms within the application to determine how they relate to each other*)
-    let (app_rels,app_seqs) = find_rels_and_seqs_in_tmapp tm1 tm2 in_fix in
-    let upd_rels = List.append app_rels rels in
-    let upd_seqs = List.append app_seqs seqs in
+    let (app_rels,app_seqs) = find_rels_and_seqs_in_tmapp tm1 tm2 in_fix in (*WC: Circular call*)
+    let upd_rels = List.append app_rels rels in (*WC: O(#rels)*)
+    let upd_seqs = List.append app_seqs seqs in (*WC: O(#seqs)*)
     (upd_rels,upd_seqs)
   | TmUtest(_,tm1,tm2,tm3) | TmIfexp(_,tm1,tm2,tm3) ->
-    (*If the test/if expression has type sequence, then we want to add it to our list of sequences found*)
     let (upd_seqs1) =
-      (if check_if_tm_has_type_tyseq ast then
-         ast::seqs
+      (if check_if_tm_has_type_tyseq ast then (*WC: O(depth of TyArrow)*)
+         ast::seqs (*WC: O(1)*)
        else
          seqs) in
-    (*We also want to process the terms found within the test/if expression*)
-    let (upd_rels1,upd_seqs2) = find_rels_and_seqs_in_ast tm1 rels upd_seqs1 in_fix in
-    let (upd_rels2,upd_seqs3) = find_rels_and_seqs_in_ast tm2 upd_rels1 upd_seqs2 in_fix in
-    find_rels_and_seqs_in_ast tm3 upd_rels2 upd_seqs3 in_fix
-  (*Cases not yet implemented*)
+    let (upd_rels1,upd_seqs2) = find_rels_and_seqs_in_ast tm1 rels upd_seqs1 in_fix in (*WC: Recursive call*)
+    let (upd_rels2,upd_seqs3) = find_rels_and_seqs_in_ast tm2 upd_rels1 upd_seqs2 in_fix in (*WC: Recursive call*)
+    find_rels_and_seqs_in_ast tm3 upd_rels2 upd_seqs3 in_fix (*WC: Recursive call*)
   | TmMatch _ ->
     failwith "Not implemented1"
   | TmUC _ ->
@@ -244,126 +225,103 @@ let rec find_rels_and_seqs_in_ast ast rels seqs in_fix =
   | TmTyLam _ ->
     failwith "Not implemented4"
 
-(*Find the sequence constructors - that is, TmSeq terms - in a list of terms*)
+(*WC: O(#variables/sequences)*)
 let rec find_seq_cons_among_seqs seqs =
   match seqs with
   | [] -> []
   | hd::tl ->
     (match hd with
      | TmSeq _ ->
-       hd::(find_seq_cons_among_seqs tl)
+       hd::(find_seq_cons_among_seqs tl) (*WC: O(1), recursive call*)
      | _ ->
-       find_seq_cons_among_seqs tl
+       find_seq_cons_among_seqs tl (*WC: Recursive call*)
     )
 
-(*Initialize an association list where they key is a term and the value is an empty list.*)
+(*WC: O(#variables/seqs)*)
 let rec init_rels_assoc_list seqs =
   match seqs with
   | [] -> []
   | hd::tl ->
-    (hd,[])::(init_rels_assoc_list tl)
+    (hd,[])::(init_rels_assoc_list tl) (*WC: O(1), recursive call*)
 
-(*Update an association list entry where they key is a term and the value is a list. The argument "new_val" is the value we want to add to the list associated with "key".*)
+(*WC: O(#relationships)*)
 let upd_rels_assoc_list_list_entry key rels_assoc_l new_val =
   let upd_rels_assoc_l1 =
-    (if List.mem_assoc key rels_assoc_l then
+    (if List.mem_assoc key rels_assoc_l then (*WC: O(#relationships)*)
        rels_assoc_l
      else
-       (key,[])::rels_assoc_l) in
-  let curr_val = List.assoc key upd_rels_assoc_l1 in
-  let upd_val = new_val::curr_val in
-  let upd_rels_assoc_l2 = List.remove_assoc key upd_rels_assoc_l1 in
-  (key,upd_val)::upd_rels_assoc_l2
+       (key,[])::rels_assoc_l) in (*WC: O(1)*)
+  let curr_val = List.assoc key upd_rels_assoc_l1 in (*WC: O(#relationships)*)
+  let upd_val = new_val::curr_val in (*WC: O(1)*)
+  let upd_rels_assoc_l2 = List.remove_assoc key upd_rels_assoc_l1 in (*WC: O(#relationships)*)
+  (key,upd_val)::upd_rels_assoc_l2 (*WC: O(1)*)
 
-(*Update an association list entry where they key is a term and the value is a boolean. The argument "new_val" is the new boolean value we want to associate with "key".*)
+(*WC: O(#relationships)*)
 let upd_rels_assoc_list_bool_entry key rels_assoc_l new_val =
   let upd_rels_assoc_l1 =
-    (if List.mem_assoc key rels_assoc_l then
+    (if List.mem_assoc key rels_assoc_l then (*WC: O(#relationships)*)
        rels_assoc_l
      else
-       (key,false)::rels_assoc_l) in
-  let upd_rels_assoc_l2 = List.remove_assoc key upd_rels_assoc_l1 in
-  (key,new_val)::upd_rels_assoc_l2
+       (key,false)::rels_assoc_l) in (*WC: O(1)*)
+  let upd_rels_assoc_l2 = List.remove_assoc key upd_rels_assoc_l1 in (*WC: O(#relationships)*)
+  (key,new_val)::upd_rels_assoc_l2 (*WC: O(1)*)
 
-(*Translates a list of relationships - that is, term pairs - to an association list where they key is a term and the value is a list of its related terms. "rels" is the list of relationships and "rels_assoc_l" is an initialized association list.*)
+(*WC: O(#relationships^2)*)
 let rec transl_rels_to_rels_assoc_list rels rels_assoc_l =
   match rels with
   | [] -> rels_assoc_l
   | (hd1,hd2)::tl ->
-    (*Add relationship (hd1,hd2) to association list*)
-    let upd_rels_assoc_l1 = upd_rels_assoc_list_list_entry hd1 rels_assoc_l hd2 in
-    (*Add relationship (hd2,hd1) to association list*)
-    let upd_rels_assoc_l2 = upd_rels_assoc_list_list_entry hd2 upd_rels_assoc_l1 hd1 in
-    transl_rels_to_rels_assoc_list tl upd_rels_assoc_l2
+    let upd_rels_assoc_l1 = upd_rels_assoc_list_list_entry hd1 rels_assoc_l hd2 in (*WC: O(#relationships)*)
+    let upd_rels_assoc_l2 = upd_rels_assoc_list_list_entry hd2 upd_rels_assoc_l1 hd1 in (*WC: O(#relationships)*)
+    transl_rels_to_rels_assoc_list tl upd_rels_assoc_l2 (*WC: Recursive call*)
 
-(*Initializes an association list for keeping track of which terms have been visited. The key is a term and the value, which is a boolean, is initially set to false.*)
+(*WC: O(#relationships)*)
 let rec init_visited_seqs_assoc_list rels_assoc_l =
   match rels_assoc_l with
   | [] -> []
   | (hd,_)::tl ->
-    (hd,false)::(init_visited_seqs_assoc_list tl)
+    (hd,false)::(init_visited_seqs_assoc_list tl) (*WC: O(1), recursive call*)
 
-(*Dives further down into the association list for relationships to find all terms related to "curr_seqs".
-  Input:
-  - "rels_assoc_l" is an association list where the key is a term and the value is a list with all its related terms
-  - "curr_seqs" is the list of sequences for which we currently want to find all relatives
-  - "new_seqs" is a list of sequences recently found for which we later want to find all relatives
-  - "visited_assoc_l" is an association list where the key is a term and the value is a boolean, which is used to keep track of which terms have been visited
-  - "all_seqs" is a list containing all related terms found so far
-  Returns:
-  - "all_seqs"
-  - "visited_assoc_l"
-*)
+(*WC: O(#sequences * (#sequences + #relationships))*)
 let rec find_all_related_seqs rels_assoc_l curr_seqs new_seqs visited_assoc_l all_seqs =
   match curr_seqs, new_seqs with
-  (*All related terms have been found*)
   | [], [] -> (all_seqs,visited_assoc_l)
-  (*All terms in "curr_seqs" have been visited, so we start to visit the terms in "new_seqs" instead*)
-  | [], _ -> find_all_related_seqs rels_assoc_l new_seqs [] visited_assoc_l all_seqs
+  | [], _ -> find_all_related_seqs rels_assoc_l new_seqs [] visited_assoc_l all_seqs (*WC: Recursive call *)
   | (hd::tl), _ ->
-    if List.assoc hd visited_assoc_l then
-      (*If term hd has already been visited, we continue on to the next element of the list "curr_seqs"*)
-      find_all_related_seqs rels_assoc_l tl new_seqs visited_assoc_l all_seqs
+    if List.assoc hd visited_assoc_l then (*WC: O(#sequences)*)
+      find_all_related_seqs rels_assoc_l tl new_seqs visited_assoc_l all_seqs (*WC: Recursive call*)
     else
-      (*Mark hd as visited*)
-      let upd_visited_assoc_l = upd_rels_assoc_list_bool_entry hd visited_assoc_l true in
-      (*Find the terms directly related to term hd*)
-      let hd_rel_seqs = List.assoc hd rels_assoc_l in
-      (*Add hd's related terms to the list for terms to study later*)
-      let upd_new_seqs = List.append hd_rel_seqs new_seqs in
-      (*Add hd to the list containing all related terms*)
-      let upd_all_seqs = hd::all_seqs in
-      (*Continue on to the next element of the list "curr_seqs"*)
-      find_all_related_seqs rels_assoc_l tl upd_new_seqs upd_visited_assoc_l upd_all_seqs
+      let upd_visited_assoc_l = upd_rels_assoc_list_bool_entry hd visited_assoc_l true in (*WC: O(#relationships)*)
+      let hd_rel_seqs = List.assoc hd rels_assoc_l in (*WC: O(#relationships)*)
+      let upd_new_seqs = List.append hd_rel_seqs new_seqs in (*WC: O(#seqs)*)
+      let upd_all_seqs = hd::all_seqs in (*WC: O(1)*)
+      find_all_related_seqs rels_assoc_l tl upd_new_seqs upd_visited_assoc_l upd_all_seqs (*WC: Recursive call*)
 
-(**)
+(*WC: O(#sequences *(#sequences * (#sequences + #relationships))) => O(#sequences^3)*)
 let rec reduce_rels rels_assoc_l visited_assoc_l =
   match rels_assoc_l with
   | [] -> []
   | (hd,hdl)::tl ->
-    if List.assoc hd visited_assoc_l then
-      reduce_rels tl visited_assoc_l
+    if List.assoc hd visited_assoc_l then (*WC: O(#sequences)*)
+      reduce_rels tl visited_assoc_l (*WC: Recursive call*)
     else
-      (*Mark hd as visited*)
-      let upd_visited_assoc_l1 = upd_rels_assoc_list_bool_entry hd visited_assoc_l true in
-      (*Get all hd's related terms*)
-      let (hd_rel_seqs,upd_visited_assoc_l2) = find_all_related_seqs rels_assoc_l (List.assoc hd rels_assoc_l) [] upd_visited_assoc_l1 [] in
-      (*Add new entry with hd as key and all hd's related terms as value, and recursively continue building list for the next term in "rels_assoc_l"*)
+      let upd_visited_assoc_l1 = upd_rels_assoc_list_bool_entry hd visited_assoc_l true in (*WC: O(#relationships)*)
+      let (hd_rel_seqs,upd_visited_assoc_l2) = find_all_related_seqs rels_assoc_l (List.assoc hd rels_assoc_l) [] upd_visited_assoc_l1 [] in (*WC: O(#sequences * (#sequences + #relationships))*)
       (hd,hd_rel_seqs)::(reduce_rels rels_assoc_l upd_visited_assoc_l2)
 
-(*Initialize an association list where the key is a function name and the value is a count, which is initially set to zero.*)
+(*WC: O(#functions)*)
 let rec init_fun_count_assoc_list funs =
   match funs with
   | [] -> []
   | hd::tl ->
     (hd,0)::(init_fun_count_assoc_list tl)
 
-(*Initialize an mf matrix row, where the keys are function names and the values are the count for that function, which is intially set to zero.*)
+(*WC: O(#functions)*)
 let init_mf_row =
-  let fun_names = Sequenceinfo.get_seq_fun_names in
+  let fun_names = Sequenceinfo.get_seq_fun_names in (*WC: O(#functions)*)
   init_fun_count_assoc_list fun_names
 
-(*Finds all sequence methods - that is, TmSeqMethod - in a list of terms of type sequence.*)
+(*WC: O(#sequences)*)
 let rec get_seqmethods seqs =
   match seqs with
   | [] -> []
@@ -373,83 +331,77 @@ let rec get_seqmethods seqs =
      | _ -> get_seqmethods tl
     )
 
-(*Get the function name from a sequence method term (TmSeqMethod).*)
+(*WC: O(1)*)
 let get_seqm_fun_name_string seqm =
   match seqm with
   | TmSeqMethod(_,fun_name,_,_,_,_,_) -> (Ustring.to_utf8 fun_name)
   | _ -> failwith "Expected a TmSeqMethod"
 
-(*Get the "in_fix" boolean field from a sequence method term (TmSeqMethod).*)
+(*WC: O(1)*)
 let get_seqm_in_fix_bool seqm =
   match seqm with
   | TmSeqMethod(_,_,_,_,_,_,in_fix) -> in_fix
   | _ -> failwith "Expected a TmSeqMethod"
 
-(*Fills in an mf matrix row "mf_row" with the count from a list of sequence methods "seqms"*)
+(*WC: O(#seq methods in code * (#functions))*)
 let rec fill_in_mf_row mf_row seqms =
   match seqms with
   | [] -> mf_row
   | hd::tl ->
-    let fun_name = get_seqm_fun_name_string hd in
-    let curr_fun_count = List.assoc fun_name mf_row in
+    let fun_name = get_seqm_fun_name_string hd in (*WC: O(1)*)
+    let curr_fun_count = List.assoc fun_name mf_row in (*WC: O(#functions)*)
     let upd_fun_count =
-      (if get_seqm_in_fix_bool hd || (curr_fun_count == -1) then
+      (if get_seqm_in_fix_bool hd || (curr_fun_count == -1) then (*WC: O(1)*)
          -1
        else
          curr_fun_count + 1) in
-    let upd_mf_row1 = List.remove_assoc fun_name mf_row in
-    (*Add entry with incremented count for the current function name*)
-    let upd_mf_row2 = (fun_name,upd_fun_count)::upd_mf_row1 in
-    fill_in_mf_row upd_mf_row2 tl
+    let upd_mf_row1 = List.remove_assoc fun_name mf_row in (*WC: O(#functions)*)
+    let upd_mf_row2 = (fun_name,upd_fun_count)::upd_mf_row1 in (*WC: O(1)*)
+    fill_in_mf_row upd_mf_row2 tl (*WC: recursive call*)
 
-(*Creates a mf matrix with one row for each entry in the "rels_assoc_l". Each row is an association list where they keys are function names and the values are the counts corresponding to function used in the code.*)
+(*WC: O(#sequences * (#seq methods * #functions + #functions))*)
 let rec create_mf_matrix rels_assoc_l =
   match rels_assoc_l with
   | [] -> []
   | (hd,hdl)::tl ->
-    let mf_row = init_mf_row in
-    let seqms = get_seqmethods hdl in
-    let upd_mf_row = fill_in_mf_row mf_row seqms in
-    upd_mf_row::(create_mf_matrix tl)
+    let mf_row = init_mf_row in (*WC: O(#functions)*)
+    let seqms = get_seqmethods hdl in (*WC: O(#seq methods found)*)
+    let upd_mf_row = fill_in_mf_row mf_row seqms in (*WC: O(#seq methods in code * (#functions))*)
+    upd_mf_row::(create_mf_matrix tl) (*WC: recursive call*)
 
-(*Connects lambda expressions in the list of sequences "seqs" with variables with the same identifier also found in "seqs".*)
+(*WC: O(#sequences^2)*)
 let rec find_lam_var_rels seqs rels seqs_unchanged =
   match seqs with
   | [] -> rels
   | hd::tl ->
     (match hd with
      | TmLam(_,x,_,_) ->
-       (*Find all related variables with the same identifier "x" in the list of sequences "seqs_unchanged"*)
-       let rel_vars = find_related_vars x seqs_unchanged in
-       (*Form relationships between the lambda and each related variable - that is, term pairs*)
-       let lam_var_rels = get_lam_var_rels hd (rel_vars) in
-       (*Add the newly formed relationships to the list containing all relationships found so far*)
-       let upd_rels = List.append lam_var_rels rels in
-       find_lam_var_rels tl upd_rels seqs_unchanged
+       let rel_vars = find_related_vars x seqs_unchanged in (*WC: O(#sequences)*)
+       let lam_var_rels = get_lam_var_rels hd (rel_vars) in (*WC: O(#variables/sequences)*)
+       let upd_rels = List.append lam_var_rels rels in (*WC: O(#relationships)*)
+       find_lam_var_rels tl upd_rels seqs_unchanged (*WC: recursive call*)
      | _ ->
-       find_lam_var_rels tl rels seqs_unchanged
+       find_lam_var_rels tl rels seqs_unchanged (*WC: recursive call*)
     )
 
-(*Associates sequences in "seq_l" with a selected data structure "sel_ds"*)
+(*WC: O(#sequences)*)
 let rec connect_seqs_list_w_sel_ds sel_ds seq_l =
   match seq_l with
   | [] -> []
   | hd::tl ->
     (hd,sel_ds)::(connect_seqs_list_w_sel_ds sel_ds tl)
 
-(*Takes in a list of selected data structures where each index represents a sequence and an association list with reduced relationships. Associates each sequence with the corresponding selected data structure.*)
+(*WC: O(#sequences^2)*)
 let rec connect_seqs_w_sel_dss selected_dss rels_assoc_l =
   match selected_dss, rels_assoc_l with
   | [], [] -> []
   | [], _ | _, [] -> failwith "The lists should have the same length"
   | (hd1::tl1), ((hd2,hdl2)::tl2) ->
-    (*Connect the key (hd) in the "rels_assoc_l" with the current selected data structure*)
-    let new_entry = (hd2,(List.nth hd1 0)) in (*TODO:Collect from selected_dss, also below*)
-    (*Connect all hd's related terms with the current selected data structure*)
-    let new_entries = connect_seqs_list_w_sel_ds (List.nth hd1 0) hdl2 in
-    List.append (new_entry::new_entries) (connect_seqs_w_sel_dss tl1 tl2)
+    let new_entry = (hd2,(List.nth hd1 0)) in (*WC: O(#sequences)*)
+    let new_entries = connect_seqs_list_w_sel_ds (List.nth hd1 0) hdl2 in (*WC: O(#sequences, recursive call)*)
+    List.append (new_entry::new_entries) (connect_seqs_w_sel_dss tl1 tl2) (*WC: O(#sequences, recursive call)*)
 
-(*Returns a function implementation given a fnuction name and a data structrue choice.*)
+(*WC: O(#functions * #data structures)*)
 let get_actual_fun_w_sel_ds fun_name sel_ds =
   match sel_ds, (Ustring.to_utf8 fun_name) with
   | 0, "is_empty" -> (SeqListFun4(Linkedlist.is_empty))
@@ -559,6 +511,7 @@ let get_actual_fun_w_sel_ds fun_name sel_ds =
   | 4, "copy" -> (SeqOStackFun6(Ocamlstack.copy))
   | _ -> failwith "Method not yet implemented1"
 
+(*WC: O(1)*)
 let get_seq_from_list ds_choice l =
   match ds_choice with
   | 0 -> SeqList(Linkedlist.from_list l)
@@ -568,31 +521,33 @@ let get_seq_from_list ds_choice l =
   | 4 -> SeqOStack(Ocamlstack.from_list l)
   | _ -> failwith "Data structure implementation not implemented"
 
-(*Updates AST with data structure choices. This means updating the corresponding field in TmSeqs and TmSeqMethods, getting the correct function implementation in TmSeqMethods and creating the sequence from the term list in TmSeqs.*)
+(*WC: O(#terms in ast * (#sequences + #functions + #data structures) + (*WC: O(#terms in ast * (#sequences + #functions + #data structures))*))*)
 let rec update_ast_w_sel_dss ast sel_dss in_fix =
+
   let rec update_ast_list_w_sel_dss ast_l sel_dss' l_in_fix =
     (match ast_l with
      | [] -> []
      | hd::tl ->
-       let upd_hd = update_ast_w_sel_dss hd sel_dss' l_in_fix in
-       upd_hd::(update_ast_list_w_sel_dss tl sel_dss' l_in_fix)) in
+       let upd_hd = update_ast_w_sel_dss hd sel_dss' l_in_fix in (*WC: O(#terms in ast * (#sequences + #functions + #data structures))*)
+       upd_hd::(update_ast_list_w_sel_dss tl sel_dss' l_in_fix)) in (*WC: O(1), recursive call*)
+
   match ast with
   | TmSeq(ti,ty_ident,tm_l,tm_seq,ds_choice) ->
-    let upd_tml = update_ast_list_w_sel_dss (get_list_from_tmlist tm_l) sel_dss in_fix in
-    let upd_ds_choice = List.assoc ast sel_dss in
-    let upd_tm_seq = get_seq_from_list upd_ds_choice upd_tml in
+    let upd_tml = update_ast_list_w_sel_dss (get_list_from_tmlist tm_l) sel_dss in_fix in (*WC: O(#terms in ast * (#sequences + #functions + #data structures))*)
+    let upd_ds_choice = List.assoc ast sel_dss in (*WC: O(#sequences)*)
+    let upd_tm_seq = get_seq_from_list upd_ds_choice upd_tml in (*WC: O(1)*)
     TmSeq(ti,ty_ident,TmList([]),upd_tm_seq,upd_ds_choice)
   | TmSeqMethod(ti,fun_name,actual_fun,args,arg_index,ds_choice,seqm_in_fix) ->
     let upd_seqm = TmSeqMethod(ti,fun_name,actual_fun,args,arg_index,ds_choice,in_fix) in
-    let upd_ds_choice = List.assoc upd_seqm sel_dss in
-    let upd_actual_fun = get_actual_fun_w_sel_ds fun_name upd_ds_choice in
+    let upd_ds_choice = List.assoc upd_seqm sel_dss in (*WC: O(#sequences)*)
+    let upd_actual_fun = get_actual_fun_w_sel_ds fun_name upd_ds_choice in (*WC: O(#functions * #data structures)*)
     TmSeqMethod(ti,fun_name,upd_actual_fun,args,arg_index,upd_ds_choice,in_fix)
   | TmNop | TmVar _ | TmChar _ | TmFix _ | TmConst _ -> ast
   | TmLam(ti,x,ty,tm) ->
-    let upd_tm = update_ast_w_sel_dss tm sel_dss in_fix in
+    let upd_tm = update_ast_w_sel_dss tm sel_dss in_fix in (*WC: Recursive call*)
     TmLam(ti,x,ty,upd_tm)
   | TmClos(ti,x,ty,tm,env,pm) ->
-    let upd_tm = update_ast_w_sel_dss tm sel_dss in_fix in
+    let upd_tm = update_ast_w_sel_dss tm sel_dss in_fix in (*WC: Recursive call*)
     TmClos(ti,x,ty,upd_tm,env,pm)
   | TmApp(ti,tm1,tm2) ->
     let app_in_fix =
@@ -600,18 +555,18 @@ let rec update_ast_w_sel_dss ast sel_dss in_fix =
        | TmFix _ -> true
        | _ -> in_fix
       ) in
-    let upd_tm1 = update_ast_w_sel_dss tm1 sel_dss app_in_fix in
-    let upd_tm2 = update_ast_w_sel_dss tm2 sel_dss app_in_fix in
+    let upd_tm1 = update_ast_w_sel_dss tm1 sel_dss app_in_fix in (*WC: Recursive call*)
+    let upd_tm2 = update_ast_w_sel_dss tm2 sel_dss app_in_fix in (*WC: Recursive call*)
     TmApp(ti,upd_tm1,upd_tm2)
   | TmUtest(ti,tm1,tm2,tm3) ->
-    let upd_tm1 = update_ast_w_sel_dss tm1 sel_dss in_fix in
-    let upd_tm2 = update_ast_w_sel_dss tm2 sel_dss in_fix in
-    let upd_tm3 = update_ast_w_sel_dss tm3 sel_dss in_fix in
+    let upd_tm1 = update_ast_w_sel_dss tm1 sel_dss in_fix in (*WC: Recursive call*)
+    let upd_tm2 = update_ast_w_sel_dss tm2 sel_dss in_fix in (*WC: Recursive call*)
+    let upd_tm3 = update_ast_w_sel_dss tm3 sel_dss in_fix in (*WC: Recursive call*)
     TmUtest(ti,upd_tm1,upd_tm2,upd_tm3)
   | TmIfexp(ti,tm1,tm2,tm3) ->
-    let upd_tm1 = update_ast_w_sel_dss tm1 sel_dss in_fix in
-    let upd_tm2 = update_ast_w_sel_dss tm2 sel_dss in_fix in
-    let upd_tm3 = update_ast_w_sel_dss tm3 sel_dss in_fix in
+    let upd_tm1 = update_ast_w_sel_dss tm1 sel_dss in_fix in (*WC: Recursive call*)
+    let upd_tm2 = update_ast_w_sel_dss tm2 sel_dss in_fix in (*WC: Recursive call*)
+    let upd_tm3 = update_ast_w_sel_dss tm3 sel_dss in_fix in (*WC: Recursive call*)
     TmIfexp(ti,upd_tm1,upd_tm2,upd_tm3)
   | TmMatch _ | TmUC _ | TmTyApp _ | TmTyLam _ ->
     failwith "Not implemented2"
@@ -633,41 +588,31 @@ let rec write_test1 n =
     let _ = Printf.printf "let q%d = seqmethod.pop [Int] q%d \n" (n+10) (n+9) in
     write_test1 (n+11)
 
+(*relationships = sequences^2*)
+(*WC: O(terms^4)*)
 let process_ast ast =
-  (*let _ = Printf.printf "\nThe complete program is:\n%s\n" (Ustring.to_utf8 (Pprint.pprint false ast)) in*)
-  (*-Pre-processing-*)
-  (*Find all terms of sequence type and sequence methods, and their internal relationships*)
+  (*WC: O(terms in ast * (depth of TyArrow(?) + #seqs + #relationships))*) (*ast^2*)
   let (rls,seqs) = find_rels_and_seqs_in_ast ast [] [] false in
+  (*WC: O(#sequences^2)*)
   let rels0 = find_lam_var_rels seqs rls seqs in
+  (*WC: O(#relationships + #sequences^2)*)
   let rels = List.append rels0 (find_vars_with_the_same_name seqs) in
-  (*let _ = Printf.printf "The seqs:\n%s\n" (get_tm_list_string seqs) in
-  let _ = Printf.printf "The rels:\n%s\n" (get_tm_pair_list_string rels) in*)
-  (*Get the sequence constructors*) (*TODO: Remove this step?*)
+  (*WC: O(#variables/sequences)*)
   let seq_cons = find_seq_cons_among_seqs seqs in
-  (*let _ = Printf.printf "The seq cons:\n%s\n" (get_tm_list_string seq_cons) in*)
-  (*Initate association list for relationships*)
+  (*WC: O(#variables/seqs)*)
   let rels_assoc_l1 = init_rels_assoc_list seqs in
-  (*let _ = Printf.printf "The first version of the rels assoc list:\n%s\n" (get_rels_assoc_list_string rels_assoc_l1) in*)
-  (*Transfer relationships in rels to the rels assoc list*)
+  (*WC: O(#relationships^2) => O(sequences^4)*) =>
   let rels_assoc_l2 = transl_rels_to_rels_assoc_list rels rels_assoc_l1 in
-  (*let _ = Printf.printf "The second version of the rels assoc list:\n%s\n" (get_rels_assoc_list_string rels_assoc_l2) in*)
-  (*Reduce relationships*)
+  (*WC: O(#sequences *(#sequences * (#sequences + #relationships))) => O(#sequences^4)*)
   let rels_assoc_l3 = reduce_rels rels_assoc_l2 (init_visited_seqs_assoc_list rels_assoc_l2) in
-  (*let _ = Printf.printf "The third version of the rels assoc list:\n%s\n" (get_rels_assoc_list_string rels_assoc_l3) in*)
-  (*Create Method-Frequency (MF) matrix*)
+  (*WC: O(#sequences * (#seq methods * #functions + #functions))*)
   let mf_matrix1 = create_mf_matrix rels_assoc_l3 in
-  (*let _ = Printf.printf "The first version of the mf matrix:\n%s\n" (get_mf_count_string mf_matrix1) in*)
-  (*Translate MF count to MF frequencies*)
+  (*WC: #functions*)
   let mf_matrix2 = Frequencies.translate_mf_assoc_list mf_matrix1 (Sequenceinfo.get_seq_fun_names) in
-  (*let _ = Printf.printf "The second version of the mf matrix:\n%s\n" (get_mf_freq_string mf_matrix2) in*)
-  (*-Data structure selection algorithm-*)
+  (*WC: O(#variables * (#variables (#data structures * (#data structures + (#methods * (#variables + complexities + frequencies + cost terms)) + (#complexities + #frequencies + #data structures))) + (#data structures^3)))*)
   let selected_dss = Dssa.main mf_matrix2 in
-  (*let _ = Printf.printf "The selected data structures are:\n%s\n" (get_selected_datastructures_string selected_dss) in*)
-  (*-Post-processing-*)
-  (*Connect selected data structure with all seqs*)
+  (*WC: O(#sequences^2)*)
   let sel_dss_assoc_l = connect_seqs_w_sel_dss selected_dss rels_assoc_l3 in
-  (*let _ = Printf.printf "The seqs with selected data structures are:\n%s\n" (get_seqs_w_selected_dss_string sel_dss_assoc_l) in*)
-  (*Update ast with selected data structures*)
+  (*WC: O(#terms in ast * (#sequences + #functions + #data structures) + (*WC: O(#terms in ast * (#sequences + #functions + #data structures))*))*)
   let upd_ast = update_ast_w_sel_dss ast sel_dss_assoc_l false in
-  (*let _ = Printf.printf "The updated ast is:\n%s\n" (Ustring.to_utf8 (Pprint.pprint false upd_ast)) in*)
   upd_ast
