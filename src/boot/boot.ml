@@ -15,7 +15,7 @@ open Printf
 open Ast
 open Msg
 open Pprint
-open Linkedlist
+open Fingertree
 open Frequencies
 open Dssa
 open Comparers
@@ -131,7 +131,7 @@ let rec val_equal v1 v2 =
       in o1 = o2 && u1 = u2 && eql (uct2revlist t1) (uct2revlist t2)
   | TmNop,TmNop -> true
   | TmSeq(_,_,_,SeqList(l1),ds_choice1), TmSeq(_,_,_,SeqList(l2),ds_choice2) ->
-    compare_term_lists (Linkedlist.to_list l1) (Linkedlist.to_list l2)
+    compare_term_lists (Fingertree.to_list l1) (Fingertree.to_list l2)
   | _ -> false
 
 let ustring2uctstring s =
@@ -465,27 +465,27 @@ let rec check_element_type ty1 ty2 =
 
 let get_actual_fun_w_sel_ds fun_name sel_ds =
   match sel_ds, (Ustring.to_utf8 fun_name) with
-  | 0, "is_empty" -> (SeqListFun4(Linkedlist.is_empty))
-  | 0, "first" -> (SeqListFun5(Linkedlist.first))
-  | 0, "last" -> (SeqListFun5(Linkedlist.last))
-  | 0, "push" -> (SeqListFun3(Linkedlist.push))
-  | 0, "pop" -> (SeqListFun6(Linkedlist.pop))
-  | 0, "length" -> (SeqListFun2(Linkedlist.length))
-  | 0, "nth" -> (SeqListFun7(Linkedlist.nth))
-  | 0, "append" -> (SeqListFun1(Linkedlist.append))
-  | 0, "reverse" -> (SeqListFun6(Linkedlist.reverse))
-  | 0, "push_last" -> (SeqListFun3(Linkedlist.push_last))
-  | 0, "pop_last" -> (SeqListFun6(Linkedlist.pop_last))
-  | 0, "take" -> (SeqListFun8(Linkedlist.take))
-  | 0, "drop" -> (SeqListFun8(Linkedlist.drop))
-  | 0, "map" -> (SeqListFun9(Linkedlist.map))
-  | 0, "any" -> (SeqListFun10(Linkedlist.any))
-  | 0, "seqall" -> (SeqListFun10(Linkedlist.all))
-  | 0, "find" -> (SeqListFun11(Linkedlist.find))
-  | 0, "filter" -> (SeqListFun12(Linkedlist.filter))
-  | 0, "foldr" -> (SeqListFun13(Linkedlist.foldr))
-  | 0, "foldl" -> (SeqListFun13(Linkedlist.foldl))
-  | 0, "copy" -> (SeqListFun6(Linkedlist.copy))
+  | 0, "is_empty" -> (SeqListFun4(Fingertree.is_empty))
+  | 0, "first" -> (SeqListFun5(Fingertree.first))
+  | 0, "last" -> (SeqListFun5(Fingertree.last))
+  | 0, "push" -> (SeqListFun3(Fingertree.push))
+  | 0, "pop" -> (SeqListFun6(Fingertree.pop))
+  | 0, "length" -> (SeqListFun2(Fingertree.length))
+  | 0, "nth" -> (SeqListFun7(Fingertree.nth))
+  | 0, "append" -> (SeqListFun1(Fingertree.append))
+  | 0, "reverse" -> (SeqListFun6(Fingertree.reverse))
+  | 0, "push_last" -> (SeqListFun3(Fingertree.push_last))
+  | 0, "pop_last" -> (SeqListFun6(Fingertree.pop_last))
+  | 0, "take" -> (SeqListFun8(Fingertree.take))
+  | 0, "drop" -> (SeqListFun8(Fingertree.drop))
+  | 0, "map" -> (SeqListFun9(Fingertree.map))
+  | 0, "any" -> (SeqListFun10(Fingertree.any))
+  | 0, "seqall" -> (SeqListFun10(Fingertree.all))
+  | 0, "find" -> (SeqListFun11(Fingertree.find))
+  | 0, "filter" -> (SeqListFun12(Fingertree.filter))
+  | 0, "foldr" -> (SeqListFun13(Fingertree.foldr))
+  | 0, "foldl" -> (SeqListFun13(Fingertree.foldl))
+  | 0, "copy" -> (SeqListFun6(Fingertree.copy))
   | _ -> failwith "Data structure and function combination is not available"
 
 (* Main evaluation loop of a term. Evaluates using big-step semantics *)
@@ -574,16 +574,16 @@ let rec eval env t =
      | TmList([]) -> []
      | TmList(hd::tl) -> (eval env hd)::(eval_tmlist env (TmList(tl)))
     ) in
-  let rec eval_linkedlist_elements ll upd_ll =
-    (if Linkedlist.is_empty ll then
+  let rec eval_Fingertree_elements ll upd_ll =
+    (if Fingertree.is_empty ll then
        upd_ll
      else
-       let upd_first = eval env (Linkedlist.first ll) in
-       let ll_tl = Linkedlist.drop ll 1 in
-       eval_linkedlist_elements ll_tl (Linkedlist.push_last upd_ll upd_first)) in
+       let upd_first = eval env (Fingertree.first ll) in
+       let ll_tl = Fingertree.drop ll 1 in
+       eval_Fingertree_elements ll_tl (Fingertree.push_last upd_ll upd_first)) in
   let eval_sequence_elements seq =
     (match seq with
-     | SeqList(ll) -> SeqList(eval_linkedlist_elements ll (Linkedlist.empty))
+     | SeqList(ll) -> SeqList(eval_Fingertree_elements ll (Fingertree.empty))
      | _ -> failwith "Not implemented yet") in
   debug_eval env t;
   match t with
