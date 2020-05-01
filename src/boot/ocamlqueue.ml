@@ -164,19 +164,18 @@ module Ocamlqueue : Sequence = struct
 
   (*WC: Each recursive call costs O(1) => O(N)*)
   let rec reverse_helper q new_q =
-    if Queue.is_empty q then (*O(1)*)
+    if (is_empty q) then
       new_q
     else
-      let e = Queue.pop q in (*O(1)*)
-      let _ = Queue.add e new_q in (*O(1)*)
-      reverse_helper q new_q (*Recursive call*)
+      let e = first q in
+      let new_new_q = push new_q e in
+      let q_tail = pop q in
+      reverse_helper q_tail new_new_q
   (*WC: O(N)*)
   let reverse q =
     match q with
     | Nil -> Nil
-    | Que(q') ->
-      let q_copy = Queue.copy q' in (*O(N)*)
-      Que(reverse_helper q_copy (Queue.create())) (*O(N)*)
+    | Que(q') -> reverse_helper q (empty)
 
   (*WC: O(N)*)
   let push_last q e =

@@ -7,7 +7,7 @@
 open Ast
 open Ustring.Op
 open Printf
-open Ocamlstack
+open Ocamlqueue
 
 
 (* Debug options *)
@@ -163,15 +163,15 @@ and pprint_const c =
 (* Pretty print a term. The boolean parameter 'basic' is true when
    the pretty printing should be done in basic form. Use e.g. Set(1,2) instead of {1,2} *)
 and pprint basic t =
-  let rec pprint_Ocamlstack ll i =
-    (if i = (Ocamlstack.length ll) then
+  let rec pprint_Ocamlqueue ll i =
+    (if i = (Ocamlqueue.length ll) then
       us""
     else
-      (pprint false (Ocamlstack.nth ll i)) ^. us"," ^. (pprint_Ocamlstack ll (i+1))) in
+      (pprint false (Ocamlqueue.nth ll i)) ^. us"," ^. (pprint_Ocamlqueue ll (i+1))) in
   let pprint_sequence seq =
     (match seq with
     | SeqList(s) ->
-      let s_string = pprint_Ocamlstack s 0 in
+      let s_string = pprint_Ocamlqueue s 0 in
       s_string
     | _ -> us"") in
   let rec pprint_tm_list tm_l =
