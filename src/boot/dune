@@ -1,12 +1,7 @@
+(ocamlyacc parser)
 
-
-(jbuild_version 1)
-
-(ocamlyacc (parser))
-(ocamllex (lexer))
+(ocamllex lexer)
 
 (executable
-  ((name boot)
-   (libraries ())
-  )
-)
+ (name boot)
+ (libraries batteries str))
