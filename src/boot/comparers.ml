@@ -1,5 +1,5 @@
 open Ast
-open Fingertree
+open Linkedlist
 
 let compare_tm_terms tm1 tm2 =
   match tm1, tm2 with
@@ -7,11 +7,11 @@ let compare_tm_terms tm1 tm2 =
   | _ -> false
 
 let rec compare_linked_lists ll1 ll2 i =
-  if (i = Fingertree.length ll1) && (i = Fingertree.length ll2) then
+  if (i = Linkedlist.length ll1) && (i = Linkedlist.length ll2) then
     true
-  else if (i = Fingertree.length ll1) || (i = Fingertree.length ll2) then
+  else if (i = Linkedlist.length ll1) || (i = Linkedlist.length ll2) then
     false
-  else if (compare_tm_terms (Fingertree.nth ll1 i) (Fingertree.nth ll2 i)) then
+  else if (compare_tm_terms (Linkedlist.nth ll1 i) (Linkedlist.nth ll2 i)) then
     compare_linked_lists ll1 ll2 (i+1)
   else
     false
@@ -47,7 +47,7 @@ let compare_sequences seq1 seq2 =
   (let (l1,l2) =
      (match seq1, seq2 with
       | SeqList(ll1), SeqList(ll2) ->
-        ((Fingertree.to_list ll1), (Fingertree.to_list ll2))
+        ((Linkedlist.to_list ll1), (Linkedlist.to_list ll2))
       | SeqNone, SeqNone ->
         ([], [])
       | _ -> failwith "Comparison of sequence type not implemented.") in

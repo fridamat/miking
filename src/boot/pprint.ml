@@ -7,7 +7,7 @@
 open Ast
 open Ustring.Op
 open Printf
-open Fingertree
+open Linkedlist
 
 
 (* Debug options *)
@@ -163,15 +163,15 @@ and pprint_const c =
 (* Pretty print a term. The boolean parameter 'basic' is true when
    the pretty printing should be done in basic form. Use e.g. Set(1,2) instead of {1,2} *)
 and pprint basic t =
-  let rec pprint_Fingertree ll i =
-    (if i = (Fingertree.length ll) then
+  let rec pprint_Linkedlist ll i =
+    (if i = (Linkedlist.length ll) then
       us""
     else
-      (pprint false (Fingertree.nth ll i)) ^. us"," ^. (pprint_Fingertree ll (i+1))) in
+      (pprint false (Linkedlist.nth ll i)) ^. us"," ^. (pprint_Linkedlist ll (i+1))) in
   let pprint_sequence seq =
     (match seq with
     | SeqList(s) ->
-      let s_string = pprint_Fingertree s 0 in
+      let s_string = pprint_Linkedlist s 0 in
       s_string
     | _ -> us"") in
   let rec pprint_tm_list tm_l =
