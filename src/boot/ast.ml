@@ -8,7 +8,7 @@
 
 open Ustring.Op
 open Msg
-open Ocamlarray
+open Ocamlstack
 
 
 
@@ -116,23 +116,23 @@ and tm_list =
   | TmList   of tm list
 
 and sequence =
-  | SeqList  of tm Ocamlarray.sequence
+  | SeqList  of tm Ocamlstack.sequence
   | SeqNone
 
 and actual_fun =
-  | SeqListFun1 of ((tm Ocamlarray.sequence) -> (tm Ocamlarray.sequence) -> (tm Ocamlarray.sequence))
-  | SeqListFun2 of ((tm Ocamlarray.sequence) -> int)
-  | SeqListFun3 of ((tm Ocamlarray.sequence) -> tm -> (tm Ocamlarray.sequence))
-  | SeqListFun4 of ((tm Ocamlarray.sequence) -> bool)
-  | SeqListFun5 of ((tm Ocamlarray.sequence) -> tm)
-  | SeqListFun6 of ((tm Ocamlarray.sequence) -> (tm Ocamlarray.sequence))
-  | SeqListFun7 of ((tm Ocamlarray.sequence) -> int -> tm)
-  | SeqListFun8 of ((tm Ocamlarray.sequence) -> int -> (tm Ocamlarray.sequence))
-  | SeqListFun9 of ((tm -> tm) -> (tm Ocamlarray.sequence) -> (tm Ocamlarray.sequence))
-  | SeqListFun10 of ((tm -> bool) -> (tm Ocamlarray.sequence) -> bool)
-  | SeqListFun11 of ((tm -> bool) -> (tm Ocamlarray.sequence) -> tm)
-  | SeqListFun12 of ((tm -> bool) -> (tm Ocamlarray.sequence) -> (tm Ocamlarray.sequence))
-  | SeqListFun13 of ((tm -> tm -> tm) -> tm -> (tm Ocamlarray.sequence) -> tm)
+  | SeqListFun1 of ((tm Ocamlstack.sequence) -> (tm Ocamlstack.sequence) -> (tm Ocamlstack.sequence))
+  | SeqListFun2 of ((tm Ocamlstack.sequence) -> int)
+  | SeqListFun3 of ((tm Ocamlstack.sequence) -> tm -> (tm Ocamlstack.sequence))
+  | SeqListFun4 of ((tm Ocamlstack.sequence) -> bool)
+  | SeqListFun5 of ((tm Ocamlstack.sequence) -> tm)
+  | SeqListFun6 of ((tm Ocamlstack.sequence) -> (tm Ocamlstack.sequence))
+  | SeqListFun7 of ((tm Ocamlstack.sequence) -> int -> tm)
+  | SeqListFun8 of ((tm Ocamlstack.sequence) -> int -> (tm Ocamlstack.sequence))
+  | SeqListFun9 of ((tm -> tm) -> (tm Ocamlstack.sequence) -> (tm Ocamlstack.sequence))
+  | SeqListFun10 of ((tm -> bool) -> (tm Ocamlstack.sequence) -> bool)
+  | SeqListFun11 of ((tm -> bool) -> (tm Ocamlstack.sequence) -> tm)
+  | SeqListFun12 of ((tm -> bool) -> (tm Ocamlstack.sequence) -> (tm Ocamlstack.sequence))
+  | SeqListFun13 of ((tm -> tm -> tm) -> tm -> (tm Ocamlstack.sequence) -> tm)
   | SeqFunNone
 
 (* Terms / expressions *)
