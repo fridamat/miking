@@ -72,7 +72,7 @@ module Okasakiqueue : Sequence = struct
       if Linkedlist.length f > n then
         Linkedlist.nth f n (*O(n)*)
       else
-        Linkedlist.nth r ((Linkedlist.length r) + 1 - (n - (Linkedlist.length f))) (*O((n-f))*)
+        Linkedlist.nth (Linkedlist.reverse r) (n - (Linkedlist.length f))
   (*WC: O(N)*)
   let append q1 q2 =
     match (q1, q2) with

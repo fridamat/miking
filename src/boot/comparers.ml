@@ -1,5 +1,5 @@
 open Ast
-open Ocamlqueue
+open Okasakiqueue
 open Linkedlist
 
 let compare_tm_terms tm1 tm2 =
@@ -38,7 +38,7 @@ let compare_sequences seq1 seq2 =
   (let (l1,l2) =
      (match seq1, seq2 with
       | SeqList(ll1), SeqList(ll2) ->
-        ((Ocamlqueue.to_list ll1), (Ocamlqueue.to_list ll2))
+        ((Okasakiqueue.to_list ll1), (Okasakiqueue.to_list ll2))
       | SeqNone, SeqNone ->
         ([], [])
       | _ -> failwith "Comparison of sequence type not implemented.") in

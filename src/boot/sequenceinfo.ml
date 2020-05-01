@@ -24,27 +24,27 @@ let get_exp_args_length fun_name =
   | _ -> failwith "Sequence function not implemented"
 
 let get_mc =
-  [[Complexities.Const; (*Ocamlqueue: is_empty*)
-    Complexities.Const; (*Ocamlqueue: first*)
-    Complexities.X1; (*Ocamlqueue: last*)
-    Complexities.Const; (*Ocamlqueue: push*)
-    Complexities.Const; (*Ocamlqueue: pop*)
-    Complexities.X1; (*Ocamlqueue: length*)
-    Complexities.X1; (*Ocamlqueue: nth*)
-    Complexities.X1; (*Ocamlqueue: append*)
-    Complexities.X1; (*Ocamlqueue: reverse*)
-    Complexities.X1; (*Ocamlqueue: push_last*)
-    Complexities.X1; (*Ocamlqueue: pop_last*)
-    Complexities.X1; (*Ocamlqueue: take*)
-    Complexities.X1; (*Ocamlqueue: drop*)
-    Complexities.X1; (*Ocamlqueue: map*)
-    Complexities.X1; (*Ocamlqueue: any*)
-    Complexities.X1; (*Ocamlqueue: seqall*)
-    Complexities.X1; (*Ocamlqueue: find*)
-    Complexities.X1; (*Ocamlqueue: filter*)
-    Complexities.X1; (*Ocamlqueue: foldr*)
-    Complexities.X1; (*Ocamlqueue: foldl*)
-    Complexities.X1; (*Ocamlqueue: copy*)];]
+  [[Complexities.Const; (*Okasakiqueue: is_empty*)
+    Complexities.Const; (*Okasakiqueue: first*)
+    Complexities.X1; (*Okasakiqueue: last*)
+    Complexities.Const; (*Okasakiqueue: push*)
+    Complexities.Const; (*Okasakiqueue: pop*)
+    Complexities.X1; (*Okasakiqueue: length*)
+    Complexities.X1; (*Okasakiqueue: nth*)
+    Complexities.X1; (*Okasakiqueue: append*)
+    Complexities.X1; (*Okasakiqueue: reverse*)
+    Complexities.X1; (*Okasakiqueue: push_last*)
+    Complexities.X1; (*Okasakiqueue: pop_last*)
+    Complexities.X1; (*Okasakiqueue: take*)
+    Complexities.X1; (*Okasakiqueue: drop*)
+    Complexities.X1; (*Okasakiqueue: map*)
+    Complexities.X1; (*Okasakiqueue: any*)
+    Complexities.X1; (*Okasakiqueue: seqall*)
+    Complexities.X1; (*Okasakiqueue: find*)
+    Complexities.X1; (*Okasakiqueue: filter*)
+    Complexities.X1; (*Okasakiqueue: foldr*)
+    Complexities.X1; (*Okasakiqueue: foldl*)
+    Complexities.X1; (*Okasakiqueue: copy*)];]
 
 let get_seq_fun_names =
   ["is_empty";

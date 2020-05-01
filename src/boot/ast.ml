@@ -8,7 +8,7 @@
 
 open Ustring.Op
 open Msg
-open Ocamlqueue
+open Okasakiqueue
 
 
 
@@ -116,23 +116,23 @@ and tm_list =
   | TmList   of tm list
 
 and sequence =
-  | SeqList  of tm Ocamlqueue.sequence
+  | SeqList  of tm Okasakiqueue.sequence
   | SeqNone
 
 and actual_fun =
-  | SeqListFun1 of ((tm Ocamlqueue.sequence) -> (tm Ocamlqueue.sequence) -> (tm Ocamlqueue.sequence))
-  | SeqListFun2 of ((tm Ocamlqueue.sequence) -> int)
-  | SeqListFun3 of ((tm Ocamlqueue.sequence) -> tm -> (tm Ocamlqueue.sequence))
-  | SeqListFun4 of ((tm Ocamlqueue.sequence) -> bool)
-  | SeqListFun5 of ((tm Ocamlqueue.sequence) -> tm)
-  | SeqListFun6 of ((tm Ocamlqueue.sequence) -> (tm Ocamlqueue.sequence))
-  | SeqListFun7 of ((tm Ocamlqueue.sequence) -> int -> tm)
-  | SeqListFun8 of ((tm Ocamlqueue.sequence) -> int -> (tm Ocamlqueue.sequence))
-  | SeqListFun9 of ((tm -> tm) -> (tm Ocamlqueue.sequence) -> (tm Ocamlqueue.sequence))
-  | SeqListFun10 of ((tm -> bool) -> (tm Ocamlqueue.sequence) -> bool)
-  | SeqListFun11 of ((tm -> bool) -> (tm Ocamlqueue.sequence) -> tm)
-  | SeqListFun12 of ((tm -> bool) -> (tm Ocamlqueue.sequence) -> (tm Ocamlqueue.sequence))
-  | SeqListFun13 of ((tm -> tm -> tm) -> tm -> (tm Ocamlqueue.sequence) -> tm)
+  | SeqListFun1 of ((tm Okasakiqueue.sequence) -> (tm Okasakiqueue.sequence) -> (tm Okasakiqueue.sequence))
+  | SeqListFun2 of ((tm Okasakiqueue.sequence) -> int)
+  | SeqListFun3 of ((tm Okasakiqueue.sequence) -> tm -> (tm Okasakiqueue.sequence))
+  | SeqListFun4 of ((tm Okasakiqueue.sequence) -> bool)
+  | SeqListFun5 of ((tm Okasakiqueue.sequence) -> tm)
+  | SeqListFun6 of ((tm Okasakiqueue.sequence) -> (tm Okasakiqueue.sequence))
+  | SeqListFun7 of ((tm Okasakiqueue.sequence) -> int -> tm)
+  | SeqListFun8 of ((tm Okasakiqueue.sequence) -> int -> (tm Okasakiqueue.sequence))
+  | SeqListFun9 of ((tm -> tm) -> (tm Okasakiqueue.sequence) -> (tm Okasakiqueue.sequence))
+  | SeqListFun10 of ((tm -> bool) -> (tm Okasakiqueue.sequence) -> bool)
+  | SeqListFun11 of ((tm -> bool) -> (tm Okasakiqueue.sequence) -> tm)
+  | SeqListFun12 of ((tm -> bool) -> (tm Okasakiqueue.sequence) -> (tm Okasakiqueue.sequence))
+  | SeqListFun13 of ((tm -> tm -> tm) -> tm -> (tm Okasakiqueue.sequence) -> tm)
   | SeqFunNone
 
 (* Terms / expressions *)
