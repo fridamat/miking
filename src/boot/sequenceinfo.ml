@@ -128,7 +128,28 @@ let get_mc =
     Complexities.X1; (*Ocamlstack: filter*)
     Complexities.X1; (*Ocamlstack: foldr*)
     Complexities.X1; (*Ocamlstack: foldl*)
-    Complexities.X1; (*Ocamlstack: copy*)];]
+    Complexities.X1; (*Ocamlstack: copy*)];
+    [Complexities.Const; (*Fingertree: is_empty*)
+     Complexities.X1; (*Fingertree: first*)
+     Complexities.X1; (*Fingertree: last*)
+     Complexities.X1; (*Fingertree: push*)
+     Complexities.X1; (*Fingertree: pop*)
+     Complexities.X1; (*Fingertree: length*)
+     Complexities.X1; (*Fingertree: nth*)
+     Complexities.X1; (*Fingertree: append*)
+     Complexities.X1; (*Fingertree: reverse*)
+     Complexities.X1; (*Fingertree: push_last*)
+     Complexities.X1; (*Fingertree: pop_last*)
+     Complexities.X1; (*Fingertree: take*)
+     Complexities.X1; (*Fingertree: drop*)
+     Complexities.X1; (*Fingertree: map*)
+     Complexities.X1; (*Fingertree: any*)
+     Complexities.X1; (*Fingertree: seqall*)
+     Complexities.X1; (*Fingertree: find*)
+     Complexities.X1; (*Fingertree: filter*)
+     Complexities.X1; (*Fingertree: foldr*)
+     Complexities.X1; (*Fingertree: foldl*)
+     Complexities.X1; (*Fingertree: copy*)];]
 
 let get_seq_fun_names =
   ["is_empty";

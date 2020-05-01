@@ -13,6 +13,7 @@ open Ocamlarray
 open Ocamlqueue
 open Ocamlstack
 open Okasakiqueue
+open Fingertree
 
 let utest = ref false           (* Set to true if unit testing is enabled *)
 let utest_ok = ref 0            (* Counts the number of successful unit tests *)
@@ -122,6 +123,7 @@ and sequence =
   | SeqOArray of tm Ocamlarray.sequence
   | SeqOQueue of tm Ocamlqueue.sequence
   | SeqOStack of tm Ocamlstack.sequence
+  | SeqFinTree of tm Fingertree.sequence
   | SeqNone
 
 and actual_fun =
@@ -190,6 +192,19 @@ and actual_fun =
   | SeqOStackFun11 of ((tm -> bool) -> (tm Ocamlstack.sequence) -> tm)
   | SeqOStackFun12 of ((tm -> bool) -> (tm Ocamlstack.sequence) -> (tm Ocamlstack.sequence))
   | SeqOStackFun13 of ((tm -> tm -> tm) -> tm -> (tm Ocamlstack.sequence) -> tm)
+  | SeqFinTreeFun1 of ((tm Fingertree.sequence) -> (tm Fingertree.sequence) -> (tm Fingertree.sequence))
+  | SeqFinTreeFun2 of ((tm Fingertree.sequence) -> int)
+  | SeqFinTreeFun3 of ((tm Fingertree.sequence) -> tm -> (tm Fingertree.sequence))
+  | SeqFinTreeFun4 of ((tm Fingertree.sequence) -> bool)
+  | SeqFinTreeFun5 of ((tm Fingertree.sequence) -> tm)
+  | SeqFinTreeFun6 of ((tm Fingertree.sequence) -> (tm Fingertree.sequence))
+  | SeqFinTreeFun7 of ((tm Fingertree.sequence) -> int -> tm)
+  | SeqFinTreeFun8 of ((tm Fingertree.sequence) -> int -> (tm Fingertree.sequence))
+  | SeqFinTreeFun9 of ((tm -> tm) -> (tm Fingertree.sequence) -> (tm Fingertree.sequence))
+  | SeqFinTreeFun10 of ((tm -> bool) -> (tm Fingertree.sequence) -> bool)
+  | SeqFinTreeFun11 of ((tm -> bool) -> (tm Fingertree.sequence) -> tm)
+  | SeqFinTreeFun12 of ((tm -> bool) -> (tm Fingertree.sequence) -> (tm Fingertree.sequence))
+  | SeqFinTreeFun13 of ((tm -> tm -> tm) -> tm -> (tm Fingertree.sequence) -> tm)
   | SeqFunNone
 
 (* Terms / expressions *)

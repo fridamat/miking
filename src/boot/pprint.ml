@@ -12,6 +12,7 @@ open Okasakiqueue
 open Ocamlarray
 open Ocamlqueue
 open Ocamlstack
+open Fingertree
 
 
 (* Debug options *)
@@ -192,6 +193,11 @@ and pprint basic t =
        us""
      else
        (pprint false (Ocamlstack.nth ll i)) ^. us"," ^. (pprint_ostack ll (i+1))) in
+  let rec pprint_fingertree ft i =
+    (if i = (Fingertree.length ft) then
+       us""
+     else
+       (pprint false (Fingertree.nth ft i)) ^. us"," ^. (pprint_fingertree ft (i+1))) in
   let pprint_sequence seq =
     (match seq with
     | SeqList(s) ->

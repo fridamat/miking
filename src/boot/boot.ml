@@ -23,6 +23,7 @@ open Okasakiqueue
 open Ocamlarray
 open Ocamlqueue
 open Ocamlstack
+open Fingertree
 open Comparers
 
 let prog_argv = ref []          (* Argv for the program that is executed *)
@@ -135,6 +136,8 @@ let get_list_from_seqlist seql =
     Ocamlqueue.to_list q
   | SeqOStack(s) ->
     Ocamlstack.to_list s
+  | SeqFinTree(ft) ->
+    Fingertree.to_list ft
   | _ -> failwith "Sequence type not implemented"
 
 (* Check if two value terms are equal *)
@@ -914,6 +917,14 @@ let rec eval env t =
        let upd_first = eval env (Ocamlstack.first s) in
        let s_tl = Ocamlstack.drop s 1 in
        eval_ostack_elements s_tl (Ocamlstack.push_last upd_s upd_first)) in
+  let rec eval_fingertree_elements ft upd_ft =
+    (if Fingertree.is_empty ft then
+       upd_ft
+     else
+       let upd_first = eval env (Fingertree.first ft) in
+       let ft_tl = Fingertree.drop ft 1 in
+       eval_fingertree_elements ft_tl (Fingertree.push_last upd_ft upd_first))
+  in
   let eval_sequence_elements seq =
     (match seq with
      | SeqList(ll) -> SeqList(eval_linkedlist_elements ll (Linkedlist.empty))
@@ -921,6 +932,7 @@ let rec eval env t =
      | SeqOArray(a) -> SeqOArray(eval_oarray_elements a (Ocamlarray.empty))
      | SeqOQueue(q) -> SeqOQueue(eval_oqueue_elements q (Ocamlqueue.empty))
      | SeqOStack(s) -> SeqOStack(eval_ostack_elements s (Ocamlstack.empty))
+     | SeqFinTree(ft) -> SeqFinTree(eval_fingertree_elements ft (Fingertree.empty))
      | _ -> failwith "Not implemented yet") in
   debug_eval env t;
   match t with

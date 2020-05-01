@@ -5,6 +5,7 @@ open Ocamlarray
 open Ocamlqueue
 open Ocamlstack
 open Okasakiqueue
+open Fingertree
 open Typesys
 
 (*Print methods*)
@@ -549,6 +550,27 @@ let get_actual_fun_w_sel_ds fun_name sel_ds =
   | 4, "foldr" -> (SeqOStackFun13(Ocamlstack.foldr))
   | 4, "foldl" -> (SeqOStackFun13(Ocamlstack.foldl))
   | 4, "copy" -> (SeqOStackFun6(Ocamlstack.copy))
+  | 5, "is_empty" -> (SeqFinTreeFun4(Fingertree.is_empty))
+  | 5, "first" -> (SeqFinTreeFun5(Fingertree.first))
+  | 5, "last" -> (SeqFinTreeFun5(Fingertree.last))
+  | 5, "push" -> (SeqFinTreeFun3(Fingertree.push))
+  | 5, "pop" -> (SeqFinTreeFun6(Fingertree.pop))
+  | 5, "length" -> (SeqFinTreeFun2(Fingertree.length))
+  | 5, "nth" -> (SeqFinTreeFun7(Fingertree.nth))
+  | 5, "append" -> (SeqFinTreeFun1(Fingertree.append))
+  | 5, "reverse" -> (SeqFinTreeFun6(Fingertree.reverse))
+  | 5, "push_last" -> (SeqFinTreeFun3(Fingertree.push_last))
+  | 5, "pop_last" -> (SeqFinTreeFun6(Fingertree.pop_last))
+  | 5, "take" -> (SeqFinTreeFun8(Fingertree.take))
+  | 5, "drop" -> (SeqFinTreeFun8(Fingertree.drop))
+  | 5, "map" -> (SeqFinTreeFun9(Fingertree.map))
+  | 5, "any" -> (SeqFinTreeFun10(Fingertree.any))
+  | 5, "seqall" -> (SeqFinTreeFun10(Fingertree.all))
+  | 5, "find" -> (SeqFinTreeFun11(Fingertree.find))
+  | 5, "filter" -> (SeqFinTreeFun12(Fingertree.filter))
+  | 5, "foldr" -> (SeqFinTreeFun13(Fingertree.foldr))
+  | 5, "foldl" -> (SeqFinTreeFun13(Fingertree.foldl))
+  | 5, "copy" -> (SeqFinTreeFun6(Fingertree.copy))
   | _ -> failwith "Method not yet implemented1"
 
 let get_seq_from_list ds_choice l =
@@ -558,6 +580,7 @@ let get_seq_from_list ds_choice l =
   | 2 -> SeqOArray(Ocamlarray.from_list l)
   | 3 -> SeqOQueue(Ocamlqueue.from_list l)
   | 4 -> SeqOStack(Ocamlstack.from_list l)
+  | 5 -> SeqFinTree(Fingertree.from_list l)
   | _ -> failwith "Data structure implementation not implemented"
 
 (*Updates AST with data structure choices. This means updating the corresponding field in TmSeqs and TmSeqMethods, getting the correct function implementation in TmSeqMethods and creating the sequence from the term list in TmSeqs.*)
