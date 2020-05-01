@@ -24,27 +24,27 @@ let get_exp_args_length fun_name =
   | _ -> failwith "Sequence function not implemented"
 
 let get_mc =
-  [[Complexities.Const; (*Linkedlist: is_empty*)
-    Complexities.Const; (*Linkedlist: first*)
-    Complexities.X1; (*Linkedlist: last*)
-    Complexities.Const; (*Linkedlist: push*)
-    Complexities.Const; (*Linkedlist: pop*)
-    Complexities.X1; (*Linkedlist: length*)
-    Complexities.X1; (*Linkedlist: nth*)
-    Complexities.X1; (*Linkedlist: append*)
-    Complexities.X1; (*Linkedlist: reverse*)
-    Complexities.X1; (*Linkedlist: push_last*)
-    Complexities.X1; (*Linkedlist: pop_last*)
-    Complexities.X1; (*Linkedlist: take*)
-    Complexities.X1; (*Linkedlist: drop*)
-    Complexities.X1; (*Linkedlist: map*)
-    Complexities.X1; (*Linkedlist: any*)
-    Complexities.X1; (*Linkedlist: seqall*)
-    Complexities.X1; (*Linkedlist: find*)
-    Complexities.X1; (*Linkedlist: filter*)
-    Complexities.X1; (*Linkedlist: foldr*)
-    Complexities.X1; (*Linkedlist: foldl*)
-    Complexities.X1; (*Linkedlist: copy*)];]
+  [[Complexities.Const; (*Ocamlarray: is_empty*)
+    Complexities.Const; (*Ocamlarray: first*)
+    Complexities.X1; (*Ocamlarray: last*)
+    Complexities.Const; (*Ocamlarray: push*)
+    Complexities.Const; (*Ocamlarray: pop*)
+    Complexities.X1; (*Ocamlarray: length*)
+    Complexities.X1; (*Ocamlarray: nth*)
+    Complexities.X1; (*Ocamlarray: append*)
+    Complexities.X1; (*Ocamlarray: reverse*)
+    Complexities.X1; (*Ocamlarray: push_last*)
+    Complexities.X1; (*Ocamlarray: pop_last*)
+    Complexities.X1; (*Ocamlarray: take*)
+    Complexities.X1; (*Ocamlarray: drop*)
+    Complexities.X1; (*Ocamlarray: map*)
+    Complexities.X1; (*Ocamlarray: any*)
+    Complexities.X1; (*Ocamlarray: seqall*)
+    Complexities.X1; (*Ocamlarray: find*)
+    Complexities.X1; (*Ocamlarray: filter*)
+    Complexities.X1; (*Ocamlarray: foldr*)
+    Complexities.X1; (*Ocamlarray: foldl*)
+    Complexities.X1; (*Ocamlarray: copy*)];]
 
 let get_seq_fun_names =
   ["is_empty";

@@ -100,19 +100,20 @@ module Ocamlarray : Sequence = struct
     | Arr(a1), Arr(a2) ->
       Arr(Array.append a1 a2) (*O(N)*)
 
-  (*WC: O(1) for each recursive call, so O(N)*)
-  let rec reverse_helper old_arr new_arr i =
-    if (i == (Array.length new_arr)) then (*O(1)*)
+  (*WC: O(n^2)*)
+  let rec reverse_helper arr new_arr i length_arr =
+    if (i == length_arr) then
       new_arr
     else
-      let _ = Array.set new_arr ((Array.length new_arr)-1) (Array.get old_arr i) in (*3 x O(1)*)
-      reverse_helper old_arr new_arr (i+1) (*Recursive*)
-  (*WC: O(N)*)
+      let e = nth arr i in (*O(1)*)
+      let new_new_arr = push new_arr e in (*O(N)*)
+      let new_i = i + 1 in
+      reverse_helper arr new_new_arr new_i length_arr
+  (*WC: O(N^2)*)
   let reverse arr =
     match arr with
     | Nil -> Nil
-    | Arr(a) ->
-      Arr(reverse_helper a (Array.make (Array.length a) (Array.get a 0)) 0) (*Creating new array: O(N), call method O(N)*)
+    | Arr(a) -> reverse_helper arr (empty) 0 (length arr) (*O(N^2)*)
 
   (*WC: O(N)*)
   let push_last arr e =
