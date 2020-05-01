@@ -11,7 +11,7 @@
   open Ustring.Op
   open Msg
   open Ast
-  open Linkedlist
+  open Fingertree
 
   (** Create a new info, taking left and right part *)
   let mkinfo fi1 fi2 =
@@ -197,7 +197,7 @@ mc_term:
         TmIfexp(fi, $2, $4, $6) }
   | SEQ LSQUARE IDENT RSQUARE LPAREN mc_list
       { let fi = mktinfo $1.i.fi $4.i.fi in
-        TmSeq(fi, $3.v, TmList([]), SeqList(Linkedlist.from_list (get_list_from_tmlist $6)), 0) }
+        TmSeq(fi, $3.v, TmList([]), SeqList(Fingertree.from_list (get_list_from_tmlist $6)), 0) }
 
 mc_list:
   | RPAREN

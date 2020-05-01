@@ -8,7 +8,7 @@
 
 open Ustring.Op
 open Msg
-open Linkedlist
+open Fingertree
 
 
 
@@ -116,23 +116,23 @@ and tm_list =
   | TmList   of tm list
 
 and sequence =
-  | SeqList  of tm Linkedlist.sequence
+  | SeqList  of tm Fingertree.sequence
   | SeqNone
 
 and actual_fun =
-  | SeqListFun1 of ((tm Linkedlist.sequence) -> (tm Linkedlist.sequence) -> (tm Linkedlist.sequence))
-  | SeqListFun2 of ((tm Linkedlist.sequence) -> int)
-  | SeqListFun3 of ((tm Linkedlist.sequence) -> tm -> (tm Linkedlist.sequence))
-  | SeqListFun4 of ((tm Linkedlist.sequence) -> bool)
-  | SeqListFun5 of ((tm Linkedlist.sequence) -> tm)
-  | SeqListFun6 of ((tm Linkedlist.sequence) -> (tm Linkedlist.sequence))
-  | SeqListFun7 of ((tm Linkedlist.sequence) -> int -> tm)
-  | SeqListFun8 of ((tm Linkedlist.sequence) -> int -> (tm Linkedlist.sequence))
-  | SeqListFun9 of ((tm -> tm) -> (tm Linkedlist.sequence) -> (tm Linkedlist.sequence))
-  | SeqListFun10 of ((tm -> bool) -> (tm Linkedlist.sequence) -> bool)
-  | SeqListFun11 of ((tm -> bool) -> (tm Linkedlist.sequence) -> tm)
-  | SeqListFun12 of ((tm -> bool) -> (tm Linkedlist.sequence) -> (tm Linkedlist.sequence))
-  | SeqListFun13 of ((tm -> tm -> tm) -> tm -> (tm Linkedlist.sequence) -> tm)
+  | SeqListFun1 of ((tm Fingertree.sequence) -> (tm Fingertree.sequence) -> (tm Fingertree.sequence))
+  | SeqListFun2 of ((tm Fingertree.sequence) -> int)
+  | SeqListFun3 of ((tm Fingertree.sequence) -> tm -> (tm Fingertree.sequence))
+  | SeqListFun4 of ((tm Fingertree.sequence) -> bool)
+  | SeqListFun5 of ((tm Fingertree.sequence) -> tm)
+  | SeqListFun6 of ((tm Fingertree.sequence) -> (tm Fingertree.sequence))
+  | SeqListFun7 of ((tm Fingertree.sequence) -> int -> tm)
+  | SeqListFun8 of ((tm Fingertree.sequence) -> int -> (tm Fingertree.sequence))
+  | SeqListFun9 of ((tm -> tm) -> (tm Fingertree.sequence) -> (tm Fingertree.sequence))
+  | SeqListFun10 of ((tm -> bool) -> (tm Fingertree.sequence) -> bool)
+  | SeqListFun11 of ((tm -> bool) -> (tm Fingertree.sequence) -> tm)
+  | SeqListFun12 of ((tm -> bool) -> (tm Fingertree.sequence) -> (tm Fingertree.sequence))
+  | SeqListFun13 of ((tm -> tm -> tm) -> tm -> (tm Fingertree.sequence) -> tm)
   | SeqFunNone
 
 (* Terms / expressions *)
