@@ -16,7 +16,7 @@ open Ast
 open Comparers
 open Msg
 open Pprint
-open Linkedlist
+open Fingertree
 open Frequencies
 open Dssa
 
@@ -121,7 +121,7 @@ let rec debruijn env t =
 let get_list_from_seqlist seql =
   match seql with
   | SeqList(ll) ->
-    Linkedlist.to_list ll
+    Fingertree.to_list ll
   | _ -> failwith "Sequence type not implemented"
 
 (* Check if two value terms are equal *)
@@ -558,15 +558,15 @@ let rec eval env t =
      | TmList(hd::tl) -> (eval env hd)::(eval_tmlist env (TmList(tl)))
     ) in
   let rec eval_linkedlist_elements ll upd_ll =
-    (if Linkedlist.is_empty ll then
+    (if Fingertree.is_empty ll then
        upd_ll
      else
-       let upd_first = eval env (Linkedlist.first ll) in
-       let ll_tl = Linkedlist.drop ll 1 in
-       eval_linkedlist_elements ll_tl (Linkedlist.push_last upd_ll upd_first)) in
+       let upd_first = eval env (Fingertree.first ll) in
+       let ll_tl = Fingertree.drop ll 1 in
+       eval_linkedlist_elements ll_tl (Fingertree.push_last upd_ll upd_first)) in
   let eval_sequence_elements seq =
     (match seq with
-     | SeqList(ll) -> SeqList(eval_linkedlist_elements ll (Linkedlist.empty))
+     | SeqList(ll) -> SeqList(eval_linkedlist_elements ll (Fingertree.empty))
      | _ -> failwith "Not implemented yet") in
   debug_eval env t;
   match t with

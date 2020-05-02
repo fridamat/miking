@@ -7,7 +7,7 @@
 open Ast
 open Ustring.Op
 open Printf
-open Linkedlist
+open Fingertree
 
 
 (* Debug options *)
@@ -164,10 +164,10 @@ and pprint_const c =
    the pretty printing should be done in basic form. Use e.g. Set(1,2) instead of {1,2} *)
 and pprint basic t =
   let rec pprint_linkedlist ll i =
-    (if i = (Linkedlist.length ll) then
+    (if i = (Fingertree.length ll) then
       us""
     else
-      (pprint false (Linkedlist.nth ll i)) ^. us"," ^. (pprint_linkedlist ll (i+1))) in
+      (pprint false (Fingertree.nth ll i)) ^. us"," ^. (pprint_linkedlist ll (i+1))) in
   let pprint_sequence seq =
     (match seq with
     | SeqList(s) ->

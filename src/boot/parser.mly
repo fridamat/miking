@@ -11,7 +11,7 @@
   open Ustring.Op
   open Msg
   open Ast
-  open Linkedlist
+  open Fingertree
 
   (** Create a new info, taking left and right part *)
   let mkinfo fi1 fi2 =

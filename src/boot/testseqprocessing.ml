@@ -1,5 +1,5 @@
 open Ast
-open Linkedlist
+open Fingertree
 open Pprint
 open Seqprocessing
 open Ustring.Op
@@ -253,7 +253,7 @@ let run_process_steps_test1 =
     TmSeq((create_mock_ti (get_mock_tyseq_int) (us"se1_fi1")),
           us"int",
           TmList([]),
-          SeqList(Linkedlist.from_list [(create_mock_tmconst_int 1 (us"seq1_fi2"))]),
+          SeqList(Fingertree.from_list [(create_mock_tmconst_int 1 (us"seq1_fi2"))]),
           0) in
   let upd_app1 =
     TmApp((create_mock_ti (get_mock_gvoid) (us"app1_fi1")),
@@ -347,12 +347,12 @@ let run_process_steps_test2 =
       TmSeq((create_mock_ti (get_mock_tyseq_int) (us"seq1_fi1")),
             us"int",
             TmList([]),
-            SeqList(Linkedlist.from_list [(create_mock_tmconst_int 1 (us"seq1_fi2")); (create_mock_tmconst_int 2 (us"seq1_fi3"))]),
+            SeqList(Fingertree.from_list [(create_mock_tmconst_int 1 (us"seq1_fi2")); (create_mock_tmconst_int 2 (us"seq1_fi3"))]),
             0) in
     let upd_seqm1 =
       TmSeqMethod((create_mock_ti (get_mock_tyseq_int) (us"seqm1_fi1")),
                   us"length",
-                  SeqListFun2(Linkedlist.length),
+                  SeqListFun2(Fingertree.length),
                   [],
                   0,
                   0,
@@ -466,18 +466,18 @@ let run_process_steps_test3 =
     TmSeq((create_mock_ti (get_mock_tyseq_int) (us"seq1_fi1")),
           us"int",
           TmList([]),
-          SeqList(Linkedlist.from_list [(create_mock_tmconst_int 3 (us"seq1_fi2")); (create_mock_tmconst_int 4 (us"seq1_fi3"))]), (*TODO: Is this set? Check in other tests as well.*)
+          SeqList(Fingertree.from_list [(create_mock_tmconst_int 3 (us"seq1_fi2")); (create_mock_tmconst_int 4 (us"seq1_fi3"))]), (*TODO: Is this set? Check in other tests as well.*)
           0) in
   let upd_seq2 =
     TmSeq((create_mock_ti (get_mock_tyseq_int) (us"seq2_fi1")),
           us"int",
           TmList([]),
-          SeqList(Linkedlist.from_list [(create_mock_tmconst_int 1 (us"seq2_fi2")); (create_mock_tmconst_int 2 (us"seq2_fi3"))]),
+          SeqList(Fingertree.from_list [(create_mock_tmconst_int 1 (us"seq2_fi2")); (create_mock_tmconst_int 2 (us"seq2_fi3"))]),
           0) in
   let upd_seqm1 =
     TmSeqMethod((create_mock_ti (get_mock_tyarrow_tyseq_int_tyseq_int_tyseq_int) (us"seqm1_fi1")),
                 us"append",
-                (SeqListFun1(Linkedlist.append)),
+                (SeqListFun1(Fingertree.append)),
                 [],
                 0,
                 0,
@@ -637,18 +637,18 @@ let run_process_steps_test4 =
     TmSeq((create_mock_ti (get_mock_tyseq_int) (us"seq1_fi1")),
           us"int",
           TmList([]),
-          SeqList(Linkedlist.from_list [(create_mock_tmconst_int 1 (us"seq1_fi2")); (create_mock_tmconst_int 2 (us"seq1_fi3"));]),
+          SeqList(Fingertree.from_list [(create_mock_tmconst_int 1 (us"seq1_fi2")); (create_mock_tmconst_int 2 (us"seq1_fi3"));]),
           0) in
   let upd_seq2 =
     TmSeq((create_mock_ti (get_mock_tyseq_int) (us"seq2_fi1")),
           us"int",
           TmList([]),
-          SeqList(Linkedlist.from_list [(create_mock_tmconst_int 3 (us"seq2_fi2")); (create_mock_tmconst_int 4 (us"seq2_fi3"));]),
+          SeqList(Fingertree.from_list [(create_mock_tmconst_int 3 (us"seq2_fi2")); (create_mock_tmconst_int 4 (us"seq2_fi3"));]),
           1) in
   let upd_seqm1 =
     TmSeqMethod((create_mock_ti (get_mock_tyarrow_tyseq_int_gint) (us"seqm1_fi1")),
                 us"length",
-                SeqListFun2(Linkedlist.length),
+                SeqListFun2(Fingertree.length),
                 [],
                 0,
                 0,
@@ -830,18 +830,18 @@ let run_process_steps_test5 =
     TmSeq((create_mock_ti (get_mock_tyseq_int) (us"seq1_fi1")),
           us"int",
           TmList([]),
-          SeqList(Linkedlist.from_list [(create_mock_tmconst_int 1 (us"seq1_fi2"))]),
+          SeqList(Fingertree.from_list [(create_mock_tmconst_int 1 (us"seq1_fi2"))]),
           0) in
   let upd_seq2 =
     TmSeq((create_mock_ti (get_mock_tyseq_int) (us"seq2_fi1")),
           us"int",
           TmList([]),
-          SeqList(Linkedlist.from_list [(create_mock_tmconst_int 2 (us"seq2_fi2"))]),
+          SeqList(Fingertree.from_list [(create_mock_tmconst_int 2 (us"seq2_fi2"))]),
           0) in
   let upd_seqm1 =
     TmSeqMethod((create_mock_ti (get_mock_tyarrow_tyseq_int_tyseq_int_tyseq_int) (us"seqm1_fi1")),
                 us"append",
-                SeqListFun1(Linkedlist.append),
+                SeqListFun1(Fingertree.append),
                 [],
                 0,
                 0,
@@ -1124,7 +1124,7 @@ let run_process_steps_test7 =
     TmSeq((create_mock_ti (get_mock_tyseq_int) (us"seq1_fi1")),
           us"int",
           TmList([]),
-          SeqList(Linkedlist.from_list [var_x]),
+          SeqList(Fingertree.from_list [var_x]),
           0) in
   let upd_seqm_length =
     TmSeqMethod((create_mock_ti (get_mock_tyarrow_tyseq_int_gint) (us"seqm_length_fi1")),

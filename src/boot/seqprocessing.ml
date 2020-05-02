@@ -1,6 +1,6 @@
 open Ast
 open Dssa
-open Linkedlist
+open Fingertree
 open Typesys
 
 (*Print methods*)
@@ -440,32 +440,32 @@ let rec connect_seqs_w_sel_dss selected_dss rels_assoc_l =
 (*Returns a function implementation given a fnuction name and a data structrue choice.*)
 let get_actual_fun_w_sel_ds fun_name sel_ds =
   match sel_ds, (Ustring.to_utf8 fun_name) with
-  | 0, "is_empty" -> (SeqListFun4(Linkedlist.is_empty))
-  | 0, "first" -> (SeqListFun5(Linkedlist.first))
-  | 0, "last" -> (SeqListFun5(Linkedlist.last))
-  | 0, "push" -> (SeqListFun3(Linkedlist.push))
-  | 0, "pop" -> (SeqListFun6(Linkedlist.pop))
-  | 0, "length" -> (SeqListFun2(Linkedlist.length))
-  | 0, "nth" -> (SeqListFun7(Linkedlist.nth))
-  | 0, "append" -> (SeqListFun1(Linkedlist.append))
-  | 0, "reverse" -> (SeqListFun6(Linkedlist.reverse))
-  | 0, "push_last" -> (SeqListFun3(Linkedlist.push_last))
-  | 0, "pop_last" -> (SeqListFun6(Linkedlist.pop_last))
-  | 0, "take" -> (SeqListFun8(Linkedlist.take))
-  | 0, "drop" -> (SeqListFun8(Linkedlist.drop))
-  | 0, "map" -> (SeqListFun9(Linkedlist.map))
-  | 0, "any" -> (SeqListFun10(Linkedlist.any))
-  | 0, "seqall" -> (SeqListFun10(Linkedlist.all))
-  | 0, "find" -> (SeqListFun11(Linkedlist.find))
-  | 0, "filter" -> (SeqListFun12(Linkedlist.filter))
-  | 0, "foldr" -> (SeqListFun13(Linkedlist.foldr))
-  | 0, "foldl" -> (SeqListFun13(Linkedlist.foldl))
-  | 0, "copy" -> (SeqListFun6(Linkedlist.copy))
+  | 0, "is_empty" -> (SeqListFun4(Fingertree.is_empty))
+  | 0, "first" -> (SeqListFun5(Fingertree.first))
+  | 0, "last" -> (SeqListFun5(Fingertree.last))
+  | 0, "push" -> (SeqListFun3(Fingertree.push))
+  | 0, "pop" -> (SeqListFun6(Fingertree.pop))
+  | 0, "length" -> (SeqListFun2(Fingertree.length))
+  | 0, "nth" -> (SeqListFun7(Fingertree.nth))
+  | 0, "append" -> (SeqListFun1(Fingertree.append))
+  | 0, "reverse" -> (SeqListFun6(Fingertree.reverse))
+  | 0, "push_last" -> (SeqListFun3(Fingertree.push_last))
+  | 0, "pop_last" -> (SeqListFun6(Fingertree.pop_last))
+  | 0, "take" -> (SeqListFun8(Fingertree.take))
+  | 0, "drop" -> (SeqListFun8(Fingertree.drop))
+  | 0, "map" -> (SeqListFun9(Fingertree.map))
+  | 0, "any" -> (SeqListFun10(Fingertree.any))
+  | 0, "seqall" -> (SeqListFun10(Fingertree.all))
+  | 0, "find" -> (SeqListFun11(Fingertree.find))
+  | 0, "filter" -> (SeqListFun12(Fingertree.filter))
+  | 0, "foldr" -> (SeqListFun13(Fingertree.foldr))
+  | 0, "foldl" -> (SeqListFun13(Fingertree.foldl))
+  | 0, "copy" -> (SeqListFun6(Fingertree.copy))
   | _ -> failwith "Method not yet implemented1"
 
 let get_seq_from_list ds_choice l =
   match ds_choice with
-  | 0 -> SeqList(Linkedlist.from_list l)
+  | 0 -> SeqList(Fingertree.from_list l)
   | _ -> failwith "Data structure implementation not implemented"
 
 (*Updates AST with data structure choices. This means updating the corresponding field in TmSeqs and TmSeqMethods, getting the correct function implementation in TmSeqMethods and creating the sequence from the term list in TmSeqs.*)
